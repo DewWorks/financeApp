@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Aplicativo de Controle Financeiro
 
-## Getting Started
+## Descrição
 
-First, run the development server:
+Este é um aplicativo de controle financeiro desenvolvido com Next.js e TypeScript. Ele permite aos usuários gerenciar suas finanças pessoais, registrando receitas e despesas, visualizando saldos e analisando transações através de gráficos intuitivos.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Tecnologias e Bibliotecas Utilizadas
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Next.js**: Framework React para produção.
+- **TypeScript**: Superset tipado de JavaScript.
+- **React**: Biblioteca para construção de interfaces de usuário.
+- **Tailwind CSS**: Framework CSS utilitário para estilização rápida.
+- **shadcn/ui**: Componentes de UI reutilizáveis e acessíveis.
+- **Radix UI**: Biblioteca de componentes primitivos para React.
+- **Lucide React**: Conjunto de ícones para React.
+- **Recharts**: Biblioteca de gráficos para React.
+- **class-variance-authority**: Utilitário para criar variantes de componentes com classes.
+- **clsx**: Utilitário para construir strings de classe condicionalmente.
+- **tailwind-merge**: Ferramenta para mesclar classes Tailwind de forma eficiente.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Funcionalidades
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Registro de receitas e despesas
+- Visualização de saldo total
+- Gráfico de barras para as últimas transações
+- Tabela com todas as transações
+- Interface responsiva e amigável para dispositivos móveis
+- Modais para adicionar novas transações
 
-## Learn More
+## Como Iniciar
 
-To learn more about Next.js, take a look at the following resources:
+1. Clone o repositório:
+   ```
+   git clone [URL_DO_REPOSITÓRIO]
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2. Instale as dependências:
+   ```
+   npm install
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+3. Execute o servidor de desenvolvimento:
+   ```
+   npm run dev
+   ```
 
-## Deploy on Vercel
+4. Abra [http://localhost:3000](http://localhost:3000) no seu navegador para ver o aplicativo.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Estrutura do Projeto
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `/components`: Componentes React reutilizáveis
+  - `/ui`: Componentes de UI básicos (botões, inputs, etc.)
+- `/lib`: Funções utilitárias e helpers
+- `/pages`: Rotas e páginas do Next.js
+- `/public`: Arquivos estáticos
+- `/styles`: Estilos globais e configurações do Tailwind CSS
+
+## Contribuindo
+
+Contribuições são bem-vindas! Por favor, leia as diretrizes de contribuição antes de submeter pull requests.
+
+## Licença
+
+Este projeto está licenciado sob a [Licença MIT](LICENSE).
+
+---
+
+Desenvolvido com ❤️ usando Next.js e TypeScript.
