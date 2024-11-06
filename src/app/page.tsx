@@ -1,13 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { ArrowDownIcon, ArrowUpIcon, DollarSign, PlusIcon, Wallet } from 'lucide-react'
+import { ArrowDownIcon, ArrowUpIcon, DollarSign, Wallet } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts'
+import { AddIncomeDialog } from '@/components/AddIncomeDialog'
+import { AddExpenseDialog } from '@/components/AddExpenseDialog'
 
 interface ITransaction {
   id: number
@@ -28,9 +26,6 @@ export default function DashboardFinanceiro() {
     { id: 5, type: 'expense', description: 'Conta de Luz', amount: 150, date: '2023-05-20' },
   ])
 
-  const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false)
-  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false)
-
   const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0)
   const totalExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0)
   const balance = totalIncome - totalExpense
@@ -44,11 +39,6 @@ export default function DashboardFinanceiro() {
       date: new Date().toISOString().split('T')[0],
     }
     setTransactions([newTransaction, ...transactions])
-    if (type === 'income') {
-      setIsIncomeModalOpen(false)
-    } else {
-      setIsExpenseModalOpen(false)
-    }
   }
 
   const pieChartData = [
@@ -89,82 +79,8 @@ export default function DashboardFinanceiro() {
             <p className="mt-1 text-sm text-gray-600">Visão geral das suas finanças pessoais</p>
           </div>
           <div className="space-x-2">
-            <Dialog open={isIncomeModalOpen} onOpenChange={setIsIncomeModalOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="bg-green-500 text-white hover:bg-green-600">
-                  <PlusIcon className="h-4 w-4 mr-2" />
-                  Receita
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Adicionar Receita</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={(e) => {
-                  e.preventDefault()
-                  const form = e.target as HTMLFormElement
-                  const description = (form.elements.namedItem('description') as HTMLInputElement).value
-                  const amount = parseFloat((form.elements.namedItem('amount') as HTMLInputElement).value)
-                  addTransaction('income', description, amount)
-                }}>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="description" className="text-right">
-                        Descrição
-                      </Label>
-                      <Input id="description" className="col-span-3" />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="amount" className="text-right">
-                        Valor
-                      </Label>
-                      <Input id="amount" type="number" step="0.01" className="col-span-3" />
-                    </div>
-                  </div>
-                  <div className="flex justify-end">
-                    <Button type="submit">Adicionar</Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
-            <Dialog open={isExpenseModalOpen} onOpenChange={setIsExpenseModalOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="bg-red-500 text-white hover:bg-red-600">
-                  <PlusIcon className="h-4 w-4 mr-2" />
-                  Despesa
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Adicionar Despesa</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={(e) => {
-                  e.preventDefault()
-                  const form = e.target as HTMLFormElement
-                  const description = (form.elements.namedItem('description') as HTMLInputElement).value
-                  const amount = parseFloat((form.elements.namedItem('amount') as HTMLInputElement).value)
-                  addTransaction('expense', description, amount)
-                }}>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="description" className="text-right">
-                        Descrição
-                      </Label>
-                      <Input id="description" className="col-span-3" />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="amount" className="text-right">
-                        Valor
-                      </Label>
-                      <Input id="amount" type="number" step="0.01" className="col-span-3" />
-                    </div>
-                  </div>
-                  <div className="flex justify-end">
-                    <Button type="submit">Adicionar</Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
+            <AddIncomeDialog onAddIncome={(description, amount) => addTransaction('income', description, amount)} />
+            <AddExpenseDialog onAddExpense={(description, amount) => addTransaction('expense', description, amount)} />
           </div>
         </div>
 
