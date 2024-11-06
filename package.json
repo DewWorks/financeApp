@@ -13,6 +13,7 @@
     "class-variance-authority": "^0.7.0",
     "finance-app": "file:",
     "lucide-react": "^0.454.0",
+    "mongodb": "^6.10.0",
     "next": "15.0.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

@@ -1,45 +1,23 @@
 'use client'
 
-import { useState } from 'react'
+import { useTransactions } from '@/hooks/useTransactions'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowDownIcon, ArrowUpIcon, DollarSign, Wallet } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts'
 import { AddIncomeDialog } from '@/components/AddIncomeDialog'
 import { AddExpenseDialog } from '@/components/AddExpenseDialog'
 
-interface ITransaction {
-  id: number
-  type: 'income' | 'expense'
-  description: string
-  amount: number
-  date: string
-}
-
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
 
 export default function DashboardFinanceiro() {
-  const [transactions, setTransactions] = useState<ITransaction[]>([
-    { id: 1, type: 'income', description: 'Salário', amount: 3000, date: '2023-05-01' },
-    { id: 2, type: 'expense', description: 'Aluguel', amount: 1000, date: '2023-05-05' },
-    { id: 3, type: 'expense', description: 'Supermercado', amount: 500, date: '2023-05-10' },
-    { id: 4, type: 'income', description: 'Freelance', amount: 800, date: '2023-05-15' },
-    { id: 5, type: 'expense', description: 'Conta de Luz', amount: 150, date: '2023-05-20' },
-  ])
+  const { transactions, loading, error, addTransaction } = useTransactions()
+
+  if (loading) return <div>Carregando...</div>
+  if (error) return <div>Erro: {error}</div>
 
   const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0)
   const totalExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0)
   const balance = totalIncome - totalExpense
-
-  const addTransaction = (type: 'income' | 'expense', description: string, amount: number) => {
-    const newTransaction: ITransaction = {
-      id: transactions.length + 1,
-      type,
-      description,
-      amount,
-      date: new Date().toISOString().split('T')[0],
-    }
-    setTransactions([newTransaction, ...transactions])
-  }
 
   const pieChartData = [
     { name: 'Receitas', value: totalIncome },
@@ -79,8 +57,8 @@ export default function DashboardFinanceiro() {
             <p className="mt-1 text-sm text-gray-600">Visão geral das suas finanças pessoais</p>
           </div>
           <div className="space-x-2">
-            <AddIncomeDialog onAddIncome={(description, amount) => addTransaction('income', description, amount)} />
-            <AddExpenseDialog onAddExpense={(description, amount) => addTransaction('expense', description, amount)} />
+            <AddIncomeDialog onAddIncome={(description, amount) => addTransaction({ type: 'income', description, amount, date: new Date().toISOString() })} />
+            <AddExpenseDialog onAddExpense={(description, amount) => addTransaction({ type: 'expense', description, amount, date: new Date().toISOString() })} />
           </div>
         </div>
 
