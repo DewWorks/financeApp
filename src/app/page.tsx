@@ -10,10 +10,7 @@ import { AddExpenseDialog } from '@/components/AddExpenseDialog'
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
 
 export default function DashboardFinanceiro() {
-  const { transactions, loading, error, addTransaction } = useTransactions()
-
-  if (loading) return <div>Carregando...</div>
-  if (error) return <div>Erro: {error}</div>
+  const { transactions, addTransaction } = useTransactions()
 
   const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0)
   const totalExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0)
