@@ -18,16 +18,13 @@ export function AddIncomeDialog({ onAddIncome }: AddIncomeDialogProps) {
   const [tag, setTag] = useState(incomeTags[0])
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Garantir que amount é um número válido
-    const numericAmount = !isNaN(parseFloat(amount)) ? parseFloat(amount) : 0; // Se não for um número, usa 0
-    
-    onAddIncome(description, numericAmount, tag);
-    setIsOpen(false);
-    setDescription('');
-    setAmount('');
-    setTag(incomeTags[0]);
+    e.preventDefault()
+    const numericAmount = !isNaN(parseFloat(amount)) ? parseFloat(amount) : 0
+    onAddIncome(description, numericAmount, tag)
+    setIsOpen(false)
+    setDescription('')
+    setAmount('')
+    setTag(incomeTags[0])
   }
 
   return (
@@ -38,23 +35,28 @@ export function AddIncomeDialog({ onAddIncome }: AddIncomeDialogProps) {
           Receita
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="bg-white sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Adicionar Receita</DialogTitle>
+          <DialogTitle className="text-lg font-semibold text-center">Adicionar Receita</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="space-y-2">
-            <Label htmlFor="description">Descrição</Label>
+            <Label htmlFor="description" className="text-sm font-medium">
+              Descrição
+            </Label>
             <Input
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Ex: Salário, Freelance"
               required
+              className="w-full"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="amount">Valor (R$)</Label>
+            <Label htmlFor="amount" className="text-sm font-medium">
+              Valor (R$)
+            </Label>
             <Input
               id="amount"
               type="number"
@@ -63,24 +65,29 @@ export function AddIncomeDialog({ onAddIncome }: AddIncomeDialogProps) {
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.00"
               required
+              className="w-full"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="tag">Categoria</Label>
+            <Label htmlFor="tag" className="text-sm font-medium">
+              Categoria
+            </Label>
             <Select value={tag} onValueChange={setTag}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Selecione uma categoria" />
               </SelectTrigger>
               <SelectContent>
                 {incomeTags.map((tag) => (
-                  <SelectItem key={tag} value={tag}>
+                  <SelectItem className='bg-white' key={tag} value={tag}>
                     {tag}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          <Button type="submit" className="w-full">Adicionar Receita</Button>
+          <Button type="submit" className="bg-green-500 text-white w-full mt-6">
+            Adicionar Receita
+          </Button>
         </form>
       </DialogContent>
     </Dialog>
