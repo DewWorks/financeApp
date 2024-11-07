@@ -3,23 +3,31 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { PlusIcon } from 'lucide-react'
+import { expenseTags } from '@/interfaces/ITransaction'
 
 interface AddExpenseDialogProps {
-  onAddExpense: (description: string, amount: number) => void
+  onAddExpense: (description: string, amount: number, tag: string) => void
 }
 
 export function AddExpenseDialog({ onAddExpense }: AddExpenseDialogProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
+  const [tag, setTag] = useState(expenseTags[0])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onAddExpense(description, parseFloat(amount))
+
+    // Garantir que amount é um número válido
+    const numericAmount = !isNaN(parseFloat(amount)) ? parseFloat(amount) : 0; // Se não for um número, usa 0
+
+    onAddExpense(description, numericAmount, tag)
     setIsOpen(false)
     setDescription('')
     setAmount('')
+    setTag(expenseTags[0])
   }
 
   return (
@@ -56,6 +64,21 @@ export function AddExpenseDialog({ onAddExpense }: AddExpenseDialogProps) {
               placeholder="0.00"
               required
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="tag">Categoria</Label>
+            <Select value={tag} onValueChange={setTag}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione uma categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                {expenseTags.map((tag) => (
+                  <SelectItem key={tag} value={tag}>
+                    {tag}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <Button type="submit" className="w-full">Adicionar Despesa</Button>
         </form>
