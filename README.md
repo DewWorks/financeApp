@@ -1,5 +1,7 @@
 # Aplicativo de Controle Financeiro
 
+<img align="center" src="./public/homePrint.png">
+
 ## Descrição
 
 Este é um aplicativo de controle financeiro desenvolvido com Next.js e TypeScript. Ele permite aos usuários gerenciar suas finanças pessoais, registrando receitas e despesas, visualizando saldos e analisando transações através de gráficos intuitivos.

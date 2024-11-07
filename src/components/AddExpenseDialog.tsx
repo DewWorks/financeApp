@@ -3,23 +3,28 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { PlusIcon } from 'lucide-react'
+import { expenseTags } from '@/interfaces/ITransaction'
 
 interface AddExpenseDialogProps {
-  onAddExpense: (description: string, amount: number) => void
+  onAddExpense: (description: string, amount: number, tag: string) => void
 }
 
 export function AddExpenseDialog({ onAddExpense }: AddExpenseDialogProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
+  const [tag, setTag] = useState(expenseTags[0])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onAddExpense(description, parseFloat(amount))
+    const numericAmount = !isNaN(parseFloat(amount)) ? parseFloat(amount) : 0
+    onAddExpense(description, numericAmount, tag)
     setIsOpen(false)
     setDescription('')
     setAmount('')
+    setTag(expenseTags[0])
   }
 
   return (
@@ -30,23 +35,28 @@ export function AddExpenseDialog({ onAddExpense }: AddExpenseDialogProps) {
           Despesa
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="bg-white sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Adicionar Despesa</DialogTitle>
+          <DialogTitle className="text-lg font-semibold text-center">Adicionar Despesa</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="space-y-2">
-            <Label htmlFor="description">Descrição</Label>
+            <Label htmlFor="description" className="text-sm font-medium">
+              Descrição
+            </Label>
             <Input
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Ex: Aluguel, Supermercado"
               required
+              className="w-full"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="amount">Valor (R$)</Label>
+            <Label htmlFor="amount" className="text-sm font-medium">
+              Valor (R$)
+            </Label>
             <Input
               id="amount"
               type="number"
@@ -55,9 +65,29 @@ export function AddExpenseDialog({ onAddExpense }: AddExpenseDialogProps) {
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.00"
               required
+              className="w-full"
             />
           </div>
-          <Button type="submit" className="w-full">Adicionar Despesa</Button>
+          <div className="space-y-2">
+            <Label htmlFor="tag" className="text-sm font-medium">
+              Categoria
+            </Label>
+            <Select value={tag} onValueChange={setTag}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Selecione uma categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                {expenseTags.map((tag) => (
+                  <SelectItem className='bg-white' key={tag} value={tag}>
+                    {tag}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button type="submit" className="bg-red-500 text-white w-full mt-6">
+            Adicionar Despesa
+          </Button>
         </form>
       </DialogContent>
     </Dialog>
