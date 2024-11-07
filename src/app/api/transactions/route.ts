@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import clientPromise from "@/db/connectionDb";
+import { getMongoClient } from "@/db/connectionDb";
 
 export async function GET() {
   try {
     console.log("Starting MongoDB connection...");
-    const client = await clientPromise;
+    const client = await getMongoClient();
     console.log("Connected to MongoDB, fetching transactions...");
 
     const db = client.db("financeApp");
@@ -28,7 +28,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const client = await clientPromise;
+    const client = await getMongoClient();
     const db = client.db("financeApp");
     const { type, description, amount, date } = await request.json();
 
