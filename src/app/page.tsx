@@ -2,17 +2,21 @@
 
 import { useTransactions } from '@/hooks/useTransactions'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowDownIcon, ArrowUpIcon, DollarSign, Wallet } from 'lucide-react'
+import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts'
 import { AddIncomeDialog } from '@/components/AddIncomeDialog'
 import { AddExpenseDialog } from '@/components/AddExpenseDialog'
 import { ITransaction } from '@/interfaces/ITransaction'
 import { SummaryCard } from '@/components/SummaryCard'
 import { TransactionsTable } from '@/components/TransactionsTable'
+import { Button } from '@/components/ui/button'
+import { useRouter } from 'next/navigation'
+import { Title } from '@/components/Title'
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
 
 export default function DashboardFinanceiro() {
+  const router = useRouter()
   const { transactions, addTransaction } = useTransactions()
 
   const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0)
@@ -37,8 +41,17 @@ export default function DashboardFinanceiro() {
     tag: t.tag
   }))
 
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    router.push('/auth/login')
+  }
+
+  const handleLogin = () => {
+    router.push('/auth/login')
+  }
+
   const handleAddIncome = (description: string, amount: number, tag: string) => {
-    const newTransaction: ITransaction = {
+    const newTransaction: Partial<ITransaction> = {
       type: 'income',
       description,
       amount,
@@ -49,7 +62,7 @@ export default function DashboardFinanceiro() {
   }
 
   const handleAddExpense = (description: string, amount: number, tag: string) => {
-    const newTransaction: ITransaction = {
+    const newTransaction: Partial<ITransaction> = {
       type: 'expense',
       description,
       amount,
@@ -64,13 +77,18 @@ export default function DashboardFinanceiro() {
       <nav className="bg-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
-            <div className="flex">
-              <div className="flex-shrink-0 flex items-center">
-                <Wallet className="h-8 w-8 text-blue-600" />
-                <span className="ml-2 text-2xl font-bold text-gray-900">FinançasPro</span>
-              </div>
-            </div>
+            <Title/>
           </div>
+          <div className="flex items-center">
+            <Button onClick={handleLogin} variant="ghost">
+                <LogIn className="h-5 w-5 mr-2" />
+                Entrar
+              </Button>
+              <Button onClick={handleLogout} variant="ghost">
+                <LogOut className="h-5 w-5 mr-2" />
+                Sair
+              </Button>
+            </div>
         </div>
       </nav>
 
