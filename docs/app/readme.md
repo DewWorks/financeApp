@@ -4,8 +4,6 @@
 
 ## Visão Geral
 
-## Visão Geral
-
 O dashboard financeiro é a página principal da aplicação de controle financeiro desenvolvida com Next.js e TypeScript. Ele é projetado para ajudar os usuários a monitorar suas transações financeiras, visualizar saldos e entender a distribuição de receitas e despesas por meio de gráficos interativos e resumos.
 
 O dashboard financeiro utiliza várias bibliotecas e hooks personalizados para exibir informações financeiras através de gráficos, tabelas e cards de resumo.
