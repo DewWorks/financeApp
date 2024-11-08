@@ -33,7 +33,7 @@ Este é um aplicativo de controle financeiro desenvolvido com Next.js e TypeScri
 
 1. Clone o repositório:
    ```
-   git clone [URL_DO_REPOSITÓRIO]
+   git clone https://github.com/JoaoIto/financeApp
    ```
 
 2. Instale as dependências:
@@ -59,12 +59,19 @@ Este é um aplicativo de controle financeiro desenvolvido com Next.js e TypeScri
 
 ## Contribuindo
 
-Contribuições são bem-vindas! Por favor, leia as diretrizes de contribuição antes de submeter pull requests.
+Contribuições são bem-vindas! Por favor, leia as [diretrizes de contribuição](./CONTRIBUTING.md) antes de submeter pull requests.
 
-## Licença
+### Como posso contribuir?
 
-Este projeto está licenciado sob a [Licença MIT](LICENSE).
+- **Enviando Pull Requests**: Detalha o processo de como fazer contribuições de código.
+- **Convenções de Código**: Garante que o código tenha um estilo consistente.
+
+- **Melhorias e novas funcionalidades**: Sugerir novas funcionalidades que agregem ao projeto.
+
+- **Revisão de Código**: Explica o processo de revisão, para que contribuidores saibam o que esperar.
+
+Desenvolvido com ❤️ por [JoaoIto](https://github.com/JoaoIto) usando Next.js e TypeScript.
+
+
 
 ---
-
-Desenvolvido com ❤️ usando Next.js e TypeScript.
