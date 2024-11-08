@@ -3,8 +3,8 @@ import { useState, useEffect } from 'react'
 
 export function useTransactions() {
   const [transactions, setTransactions] = useState<ITransaction[]>([])
-  /* const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null) */
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchTransactions() {
@@ -15,11 +15,11 @@ export function useTransactions() {
         }
         const data = await response.json()
         setTransactions(data)
-        /* setLoading(false) */
+        setLoading(false)
       } catch (error: string | unknown) {
         console.log(error);
-        /* setError('Error fetching transactions')
-        setLoading(false) */
+        setError('Error fetching transactions')
+        setLoading(false)
       }
     }
 
@@ -44,10 +44,10 @@ export function useTransactions() {
       setTransactions(prev => [newTransaction, ...prev])
     } catch (error: string | unknown) {
         console.log(error);
-        /* setError('Error fetching transactions')
-        setLoading(false) */
+        setError('Error fetching transactions')
+        setLoading(false)
     }
   }
 
-  return { transactions, addTransaction }
+  return { transactions, addTransaction, loading, error }
 }
