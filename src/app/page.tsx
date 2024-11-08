@@ -2,7 +2,7 @@
 
 import { useTransactions } from '@/hooks/useTransactions'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogOut } from 'lucide-react'
+import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts'
 import { AddIncomeDialog } from '@/components/AddIncomeDialog'
 import { AddExpenseDialog } from '@/components/AddExpenseDialog'
@@ -43,7 +43,11 @@ export default function DashboardFinanceiro() {
 
   const handleLogout = () => {
     localStorage.removeItem('token')
-    router.push('/login')
+    router.push('/auth/login')
+  }
+
+  const handleLogin = () => {
+    router.push('/auth/login')
   }
 
   const handleAddIncome = (description: string, amount: number, tag: string) => {
@@ -74,13 +78,17 @@ export default function DashboardFinanceiro() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <Title/>
-            <div className="flex items-center">
+          </div>
+          <div className="flex items-center">
+            <Button onClick={handleLogin} variant="ghost">
+                <LogIn className="h-5 w-5 mr-2" />
+                Entrar
+              </Button>
               <Button onClick={handleLogout} variant="ghost">
                 <LogOut className="h-5 w-5 mr-2" />
                 Sair
               </Button>
             </div>
-          </div>
         </div>
       </nav>
 
