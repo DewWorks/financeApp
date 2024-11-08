@@ -23,7 +23,7 @@ export default function RegisterPage() {
         body: JSON.stringify({ name, email, password }),
       })
       if (response.ok) {
-        router.push('/login')
+        router.push('/auth/login')
       } else {
         // Handle errors (e.g., show error message)
       }
