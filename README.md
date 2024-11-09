@@ -17,6 +17,8 @@ Este é um aplicativo de controle financeiro desenvolvido com Next.js e TypeScri
 - **Lucide React**: Conjunto de ícones para React.
 - **Recharts**: Biblioteca de gráficos para React.
 - **class-variance-authority**: Utilitário para criar variantes de componentes com classes.
+- **zod**: Validação de formulários e componentes.
+- **hookform**: Criação de componentes de formulários juntamente com o Reactjs.
 - **clsx**: Utilitário para construir strings de classe condicionalmente.
 - **tailwind-merge**: Ferramenta para mesclar classes Tailwind de forma eficiente.
 
