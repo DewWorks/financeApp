@@ -32,14 +32,67 @@ export function useTransactions() {
         body: JSON.stringify(transaction)
       })
       if (response.ok) {
-        fetchTransactions()
+        await fetchTransactions()
       } else {
-        console.error('Failed to add transaction')
+        const errorData = await response.json()
+        console.error('Failed to add transaction:', errorData.error)
       }
     } catch (error) {
       console.error('Error adding transaction:', error)
     }
   }
 
-  return { transactions, addTransaction }
+  const editTransaction = async (updatedTransaction: Partial<ITransaction>) => {
+    try {
+      const response = await fetch(`/api/transactions/${updatedTransaction._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedTransaction)
+      })
+      
+      if (response.ok) {
+        await fetchTransactions()
+      } else {
+        const errorData = await response.json()
+        console.error('Failed to edit transaction:', errorData.error)
+      }
+    } catch (error) {
+      console.error('Error editing transaction:', error)
+    }
+  }
+
+  const deleteTransaction = async (transactionId: string) => {
+    try {
+      const response = await fetch(`/api/transactions/${transactionId}`, {
+        method: 'DELETE',
+      })
+      if (response.ok) {
+        await fetchTransactions()
+      } else {
+        const errorData = await response.json()
+        console.error('Failed to delete transaction:', errorData.error)
+      }
+    } catch (error) {
+      console.error('Error deleting transaction:', error)
+    }
+  }
+
+  const getTransaction = async (transactionId: string): Promise<ITransaction | null> => {
+    try {
+      const response = await fetch(`/api/transactions/${transactionId}`)
+      if (response.ok) {
+        return await response.json()
+      } else {
+        console.error('Failed to get transaction')
+        return null
+      }
+    } catch (error) {
+      console.error('Error getting transaction:', error)
+      return null
+    }
+  }
+
+  return { transactions, addTransaction, editTransaction, deleteTransaction, getTransaction }
 }

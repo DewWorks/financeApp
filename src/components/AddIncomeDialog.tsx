@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { PlusIcon } from 'lucide-react'
-import { incomeTags } from '@/interfaces/ITransaction'
+import { incomeTags, ITransaction } from '@/interfaces/ITransaction'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -25,14 +25,15 @@ type IncomeFormData = z.infer<typeof incomeSchema>
 
 interface AddIncomeDialogProps {
   onAddIncome: (description: string, amount: number, tag: string, date: string) => void
+  initialData?: ITransaction
 }
 
-export function AddIncomeDialog({ onAddIncome }: AddIncomeDialogProps) {
+export function AddIncomeDialog({ onAddIncome, initialData }: AddIncomeDialogProps) {
   const [isOpen, setIsOpen] = useState(false)
 
   const { control, handleSubmit, reset, formState: { errors } } = useForm<IncomeFormData>({
     resolver: zodResolver(incomeSchema),
-    defaultValues: {
+    defaultValues: initialData || {
       description: '',
       amount: 0,
       tag: incomeTags[0],

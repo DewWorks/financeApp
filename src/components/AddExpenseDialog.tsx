@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { PlusIcon } from 'lucide-react'
-import { expenseTags } from '@/interfaces/ITransaction'
+import { expenseTags, ITransaction } from '@/interfaces/ITransaction'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -25,14 +25,15 @@ type ExpenseFormData = z.infer<typeof expenseSchema>
 
 interface AddExpenseDialogProps {
   onAddExpense: (description: string, amount: number, tag: string, date: string) => void
+  initialData?: ITransaction
 }
 
-export function AddExpenseDialog({ onAddExpense }: AddExpenseDialogProps) {
+export function AddExpenseDialog({ onAddExpense, initialData }: AddExpenseDialogProps) {
   const [isOpen, setIsOpen] = useState(false)
 
   const { control, handleSubmit, reset, formState: { errors } } = useForm<ExpenseFormData>({
     resolver: zodResolver(expenseSchema),
-    defaultValues: {
+    defaultValues: initialData || {
       description: '',
       amount: 0,
       tag: expenseTags[0],

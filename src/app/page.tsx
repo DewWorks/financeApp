@@ -20,7 +20,7 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
 
 export default function DashboardFinanceiro() {
   const router = useRouter()
-  const { transactions, addTransaction } = useTransactions()
+  const { transactions, addTransaction, editTransaction, deleteTransaction } = useTransactions()
   const [selectedTimeRange, setSelectedTimeRange] = useState('all')
 
   const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0)
@@ -81,6 +81,15 @@ export default function DashboardFinanceiro() {
     }
     addTransaction(newTransaction)
   }
+
+  const handleEditTransaction = async (updatedTransaction: Partial<ITransaction>) => {
+    await editTransaction(updatedTransaction)
+  }
+
+  const handleDeleteTransaction = async (transactionId: string) => {
+    await deleteTransaction(transactionId)
+  }
+
 
   const filterTransactions = (timeRange: string) => {
     setSelectedTimeRange(timeRange)
@@ -167,7 +176,10 @@ export default function DashboardFinanceiro() {
               </div>
             </CardHeader>
             <CardContent>
-              <TransactionsTable transactions={transactions} />
+              <TransactionsTable 
+              transactions={transactions} 
+              onEditTransaction={handleEditTransaction}
+              onDeleteTransaction={handleDeleteTransaction} />
             </CardContent>
           </Card>
         </motion.div>
