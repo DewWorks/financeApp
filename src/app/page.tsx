@@ -60,23 +60,23 @@ export default function DashboardFinanceiro() {
     router.push('/auth/login')
   }
 
-  const handleAddIncome = (description: string, amount: number, tag: string) => {
+  const handleAddIncome = (description: string, amount: number, tag: string, date: string) => {
     const newTransaction: Partial<ITransaction> = {
       type: 'income',
       description,
       amount,
-      date: new Date().toISOString(),
+      date,
       tag
     }
     addTransaction(newTransaction)
   }
-
-  const handleAddExpense = (description: string, amount: number, tag: string) => {
+  
+  const handleAddExpense = (description: string, amount: number, tag: string, date: string) => {
     const newTransaction: Partial<ITransaction> = {
       type: 'expense',
       description,
       amount,
-      date: new Date().toISOString(),
+      date,
       tag
     }
     addTransaction(newTransaction)
