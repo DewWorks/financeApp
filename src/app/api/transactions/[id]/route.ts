@@ -31,6 +31,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const transactionId = new ObjectId(params.id) // Acesso ao parâmetro de rota `id` diretamente via `params`
     const updatedTransaction = await request.json()
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { _id, userId: _, ...updateData } = updatedTransaction
 
     const result = await db.collection('transactions').updateOne(
