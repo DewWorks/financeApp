@@ -21,14 +21,13 @@ async function getUserIdFromToken() {
   }
 }
 
-// A função PUT agora usa o tipo NextRequest corretamente
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
     const userId = await getUserIdFromToken()
     const client = await getMongoClient()
     const db = client.db("financeApp")
 
-    const transactionId = new ObjectId(params.id) // Acesso ao parâmetro de rota `id` diretamente via `params`
+    const transactionId = new ObjectId(params.id)
     const updatedTransaction = await request.json()
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -62,7 +61,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     const client = await getMongoClient()
     const db = client.db("financeApp")
 
-    const transactionId = new ObjectId(params.id) // Acesso ao parâmetro de rota `id` diretamente via `params`
+    const transactionId = new ObjectId(params.id)
 
     const result = await db.collection('transactions').deleteOne({ _id: transactionId, userId })
 
