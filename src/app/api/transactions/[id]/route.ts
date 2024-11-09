@@ -21,32 +21,14 @@ async function getUserIdFromToken() {
   }
 }
 
-/* export async function GET(request: Request, { params }: { params: { id: string } }) {
-  try {
-    const userId = await getUserIdFromToken()
-    const client = await getMongoClient()
-    const db = client.db("financeApp")
-    const transactionId = new ObjectId(params.id)
-
-    const transaction = await db.collection('transactions').findOne({ _id: transactionId, userId })
-
-    if (!transaction) {
-      return NextResponse.json({ error: 'Transaction not found' }, { status: 404 })
-    }
-
-    return NextResponse.json(transaction)
-  } catch (error) {
-    console.error('Get transaction error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
- */
 export async function PUT(request: Request, context: { params: { id: string } }) {
   try {
     const userId = await getUserIdFromToken()
     const client = await getMongoClient()
     const db = client.db("financeApp")
-    const transactionId = new ObjectId(context.params.id)
+    
+    // Acesso correto aos parâmetros de rota
+    const transactionId = new ObjectId(context.params.id) // Aqui, `context.params.id` é o acesso correto aos parâmetros da rota
     const updatedTransaction = await request.json()
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -74,13 +56,14 @@ export async function PUT(request: Request, context: { params: { id: string } })
   }
 }
 
-
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, context: { params: { id: string } }) {
   try {
     const userId = await getUserIdFromToken()
     const client = await getMongoClient()
     const db = client.db("financeApp")
-    const transactionId = new ObjectId(params.id)
+    
+    // Acesso correto aos parâmetros de rota
+    const transactionId = new ObjectId(context.params.id) // Aqui, `context.params.id` é o acesso correto aos parâmetros da rota
 
     const result = await db.collection('transactions').deleteOne({ _id: transactionId, userId })
 
