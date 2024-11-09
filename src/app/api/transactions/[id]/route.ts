@@ -41,12 +41,12 @@ async function getUserIdFromToken() {
   }
 }
  */
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, context: { params: { id: string } }) {
   try {
     const userId = await getUserIdFromToken()
     const client = await getMongoClient()
     const db = client.db("financeApp")
-    const transactionId = new ObjectId(params.id)
+    const transactionId = new ObjectId(context.params.id)
     const updatedTransaction = await request.json()
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
