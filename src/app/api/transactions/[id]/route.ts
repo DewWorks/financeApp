@@ -21,17 +21,16 @@ async function getUserIdFromToken() {
   }
 }
 
-export async function PUT(request: Request, context: { params: { id: string } }) {
+// A função PUT agora usa o tipo NextRequest corretamente
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
     const userId = await getUserIdFromToken()
     const client = await getMongoClient()
     const db = client.db("financeApp")
-    
-    // Acesso correto aos parâmetros de rota
-    const transactionId = new ObjectId(context.params.id) // Aqui, `context.params.id` é o acesso correto aos parâmetros da rota
+
+    const transactionId = new ObjectId(params.id) // Acesso ao parâmetro de rota `id` diretamente via `params`
     const updatedTransaction = await request.json()
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { _id, userId: _, ...updateData } = updatedTransaction
 
     const result = await db.collection('transactions').updateOne(
@@ -56,14 +55,13 @@ export async function PUT(request: Request, context: { params: { id: string } })
   }
 }
 
-export async function DELETE(request: Request, context: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
     const userId = await getUserIdFromToken()
     const client = await getMongoClient()
     const db = client.db("financeApp")
-    
-    // Acesso correto aos parâmetros de rota
-    const transactionId = new ObjectId(context.params.id) // Aqui, `context.params.id` é o acesso correto aos parâmetros da rota
+
+    const transactionId = new ObjectId(params.id) // Acesso ao parâmetro de rota `id` diretamente via `params`
 
     const result = await db.collection('transactions').deleteOne({ _id: transactionId, userId })
 
