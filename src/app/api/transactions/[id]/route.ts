@@ -21,7 +21,7 @@ async function getUserIdFromToken() {
   }
 }
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+/* export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
     const userId = await getUserIdFromToken()
     const client = await getMongoClient()
@@ -40,7 +40,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
-
+ */
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
     const userId = await getUserIdFromToken()
