@@ -6,25 +6,44 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { PlusIcon } from 'lucide-react'
 import { incomeTags } from '@/interfaces/ITransaction'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
+
+const incomeTagsTuple = incomeTags as [string, ...string[]]
+
+const incomeSchema = z.object({
+  description: z.string().min(1, 'Descrição é obrigatória'),
+  amount: z.number().positive('O valor deve ser positivo'),
+  tag: z.enum(incomeTagsTuple),
+  date: z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: 'Data inválida',
+  }),
+})
+
+type IncomeFormData = z.infer<typeof incomeSchema>
 
 interface AddIncomeDialogProps {
-  onAddIncome: (description: string, amount: number, tag: string) => void
+  onAddIncome: (description: string, amount: number, tag: string, date: string) => void
 }
 
 export function AddIncomeDialog({ onAddIncome }: AddIncomeDialogProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const [description, setDescription] = useState('')
-  const [amount, setAmount] = useState('')
-  const [tag, setTag] = useState(incomeTags[0])
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    const numericAmount = !isNaN(parseFloat(amount)) ? parseFloat(amount) : 0
-    onAddIncome(description, numericAmount, tag)
+  const { control, handleSubmit, reset, formState: { errors } } = useForm<IncomeFormData>({
+    resolver: zodResolver(incomeSchema),
+    defaultValues: {
+      description: '',
+      amount: 0,
+      tag: incomeTags[0],
+      date: new Date().toISOString().split('T')[0],
+    },
+  })
+
+  const onSubmit = (data: IncomeFormData) => {
+    onAddIncome(data.description, data.amount, data.tag, data.date)
     setIsOpen(false)
-    setDescription('')
-    setAmount('')
-    setTag(incomeTags[0])
+    reset()
   }
 
   return (
@@ -39,51 +58,95 @@ export function AddIncomeDialog({ onAddIncome }: AddIncomeDialogProps) {
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold text-center">Adicionar Receita</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
           <div className="space-y-2">
             <Label htmlFor="description" className="text-sm font-medium">
               Descrição
             </Label>
-            <Input
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Ex: Salário, Freelance"
-              required
-              className="w-full"
+            <Controller
+              name="description"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  id="description"
+                  {...field}
+                  placeholder="Ex: Salário, Freelance"
+                  className="w-full"
+                />
+              )}
             />
+            {errors.description && (
+              <p className="text-red-500 text-sm">{errors.description.message}</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="amount" className="text-sm font-medium">
               Valor (R$)
             </Label>
-            <Input
-              id="amount"
-              type="number"
-              step="0.01"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0.00"
-              required
-              className="w-full"
+            <Controller
+              name="amount"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  id="amount"
+                  type="number"
+                  step="0.01"
+                  {...field}
+                  onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                  placeholder="0.00"
+                  className="w-full"
+                />
+              )}
             />
+            {errors.amount && (
+              <p className="text-red-500 text-sm">{errors.amount.message}</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="tag" className="text-sm font-medium">
               Categoria
             </Label>
-            <Select value={tag} onValueChange={setTag}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Selecione uma categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                {incomeTags.map((tag) => (
-                  <SelectItem className='bg-white' key={tag} value={tag}>
-                    {tag}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Controller
+              name="tag"
+              control={control}
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecione uma categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {incomeTags.map((tag) => (
+                      <SelectItem className='bg-white' key={tag} value={tag}>
+                        {tag}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            {errors.tag && (
+              <p className="text-red-500 text-sm">{errors.tag.message}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="date" className="text-sm font-medium">
+              Data
+            </Label>
+            <Controller
+              name="date"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  id="date"
+                  type="date"
+                  {...field}
+                  className="w-full"
+                />
+              )}
+            />
+            {errors.date && (
+              <p className="text-red-500 text-sm">{errors.date.message}</p>
+            )}
           </div>
           <Button type="submit" className="bg-green-500 text-white w-full mt-6">
             Adicionar Receita
