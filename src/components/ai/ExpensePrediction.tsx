@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/card"
+import { Button } from "@/components/ui/atoms/button"
 import * as brain from 'brain.js'
 import { ITransaction } from '@/interfaces/ITransaction'
 

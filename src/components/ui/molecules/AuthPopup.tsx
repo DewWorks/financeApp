@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import {usePathname, useRouter} from 'next/navigation'
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/atoms/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/card"
 import { motion, AnimatePresence } from 'framer-motion'
-import {Title} from "@/components/Title";
+import {Title} from "@/components/ui/molecules/Title";
 
 export function AuthPopup() {
     const [isVisible, setIsVisible] = useState(false)

@@ -1,11 +1,11 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/atoms/table"
+import { Button } from "@/components/ui/atoms/button"
 import { Pencil, Trash2 } from "lucide-react"
 import { ITransaction } from "@/interfaces/ITransaction"
 import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { AddExpenseDialog } from "./AddExpenseDialog"
-import { AddIncomeDialog } from "./AddIncomeDialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/atoms/dialog"
+import { AddExpenseDialog } from "../organisms/AddExpenseDialog"
+import { AddIncomeDialog } from "../organisms/AddIncomeDialog"
 
 interface TransactionsTableProps {
   transactions: ITransaction[]
