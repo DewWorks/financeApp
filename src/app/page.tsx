@@ -15,6 +15,7 @@ import { Title } from '@/components/Title'
 import { motion } from 'framer-motion'
 import { useState } from 'react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { ExpensePrediction } from '@/components/ai/ExpensePrediction'
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
 
@@ -70,7 +71,7 @@ export default function DashboardFinanceiro() {
     }
     addTransaction(newTransaction)
   }
-  
+
   const handleAddExpense = (description: string, amount: number, tag: string, date: string) => {
     const newTransaction: Partial<ITransaction> = {
       type: 'expense',
@@ -130,6 +131,7 @@ export default function DashboardFinanceiro() {
           <div className="space-x-2">
             <AddIncomeDialog onAddIncome={handleAddIncome} />
             <AddExpenseDialog onAddExpense={handleAddExpense} />
+            <ExpensePrediction transactions={transactions}/>
           </div>
         </motion.div>
 
@@ -176,15 +178,15 @@ export default function DashboardFinanceiro() {
               </div>
             </CardHeader>
             <CardContent>
-              <TransactionsTable 
-              transactions={transactions} 
+              <TransactionsTable
+              transactions={transactions}
               onEditTransaction={handleEditTransaction}
               onDeleteTransaction={handleDeleteTransaction} />
             </CardContent>
           </Card>
         </motion.div>
         <div className="grid grid-cols-1 gap-6 mb-8 lg:grid-cols-2">
-          
+
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
