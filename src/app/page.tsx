@@ -1,9 +1,8 @@
 'use client'
 
 import { useTransactions } from '@/hooks/useTransactions'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/card"
-import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, Info } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area } from 'recharts'
+import { Card, CardContent, CardTitle } from "@/components/ui/atoms/card"
+import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut } from 'lucide-react'
 import { AddIncomeDialog } from '@/components/ui/organisms/AddIncomeDialog'
 import { AddExpenseDialog } from '@/components/ui/organisms/AddExpenseDialog'
 import { ITransaction } from '@/interfaces/ITransaction'
@@ -13,8 +12,6 @@ import { Button } from '@/components/ui/atoms/button'
 import { useRouter } from 'next/navigation'
 import { Title } from '@/components/ui/molecules/Title'
 import { motion } from 'framer-motion'
-import { useState } from 'react'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/atoms/popover'
 import { ExpensePrediction } from '@/components/ai/ExpensePrediction'
 import {CashFlowChart} from "@/components/ui/charts/CashFlowChart";
 import {DistributionChart} from "@/components/ui/charts/DistributionChart";
@@ -26,7 +23,6 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
 export default function DashboardFinanceiro() {
   const router = useRouter()
   const { transactions, addTransaction, editTransaction, deleteTransaction } = useTransactions()
-  const [selectedTimeRange, setSelectedTimeRange] = useState('all')
 
   const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0)
   const totalExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0)
@@ -93,12 +89,6 @@ export default function DashboardFinanceiro() {
 
   const handleDeleteTransaction = async (transactionId: string) => {
     await deleteTransaction(transactionId)
-  }
-
-
-  const filterTransactions = (timeRange: string) => {
-    setSelectedTimeRange(timeRange)
-    // Implement filtering logic based on timeRange
   }
 
   return (
