@@ -24,7 +24,7 @@ export default function LoginPage() {
       if (response.ok) {
         router.push('/')
       } else {
-        // Handle errors (e.g., show error message)
+        console.error('Login error: ERROR IN FORM LOGIN')
       }
     } catch (error) {
       console.error('Login error:', error)

@@ -2,12 +2,14 @@
 import { ObjectId } from 'mongodb'
 import jwt from 'jsonwebtoken'
 import { cookies } from 'next/headers'
+import {router} from "next/client";
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
 export async function getUserIdFromToken() {
   const token = (await cookies()).get('auth_token')?.value
   if (!token) {
+    router.push('/auth/login')
     throw new Error('No token provided')
   }
 
