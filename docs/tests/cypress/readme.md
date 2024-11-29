@@ -1,8 +1,8 @@
-### Teste de Fluxo de Transações - FinancePro
+# Teste de Fluxo de Transações - FinancePro
 
 Este teste automatizado foi desenvolvido utilizando a ferramenta **Cypress** para verificar o fluxo de adição de uma transação de **Receita** na aplicação **FinancePro**.
 
-#### Objetivo do Teste
+## Objetivo do Teste
 
 O objetivo principal desse teste é validar o comportamento da interface da aplicação durante o processo de adição de uma receita, garantindo que:
 
@@ -11,7 +11,15 @@ O objetivo principal desse teste é validar o comportamento da interface da apli
 3. O redirecionamento para a tela inicial (Dashboard Financeiro) aconteça corretamente após a adição da receita.
 4. Os elementos essenciais da tela inicial, como "Saldo Total", "Receitas", e "Despesas", sejam carregados e visíveis, confirmando que o sistema foi atualizado corretamente.
 
-#### O que o Teste Faz
+## **Caso de Teste 1: Teste de Adição de Transação - Cypress**
+
+| **ID** | **Caso de Teste (Título)**                        | **Funcionalidade**                                              | **Pré-condição**                                    | **Procedimento**                                                                                                                                                       | **Resultado Esperado**                                                                                                                                                                 |
+|--------|--------------------------------------------------|----------------------------------------------------------------|-----------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1      | **Teste de Adição de Transação - Cypress**       | Validar a adição de uma receita e a atualização da interface.   | Usuário já deve estar na página inicial do app.     | 1. Visitar a página inicial.<br>2. Clicar na aba "Receita".<br>3. Preencher o formulário com descrição, valor e data.<br>4. Clicar no botão "Adicionar Receita".<br>5. Verificar o redirecionamento para a tela inicial.<br>6. Confirmar que os elementos da tela inicial estão visíveis. | A transação é adicionada corretamente. A página é redirecionada para o Dashboard Financeiro. Os elementos "Dashboard Financeiro", "Saldo Total", "Receitas" e "Despesas" estão visíveis. |
+
+---
+
+## O que o Teste Faz
 
 1. **Acessa a página inicial**: O teste inicia acessando a URL da aplicação no ambiente de produção: `https://finance-app-tau-flax.vercel.app/`.
 
@@ -28,7 +36,7 @@ O objetivo principal desse teste é validar o comportamento da interface da apli
 
 6. **Verifica os elementos da tela inicial**: O teste assegura que os elementos da tela inicial, como "Dashboard Financeiro", "Saldo Total", "Receitas" e "Despesas", estejam visíveis, indicando que a aplicação foi atualizada corretamente com as informações da nova receita.
 
-#### Conclusão
+## Conclusão
 
 Este teste foi desenvolvido para garantir que a funcionalidade de adição de receitas na aplicação **FinancePro** esteja funcionando corretamente, validando tanto a interação com a interface quanto a atualização dos dados. O Cypress foi utilizado para automatizar este processo de teste, proporcionando um fluxo eficiente e seguro de validação.
 

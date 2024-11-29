@@ -1,8 +1,8 @@
-### Teste de Integração com MongoDB em Memória - API
+# Teste de Integração com MongoDB em Memória - API
 
 Este teste de integração foi implementado para verificar o funcionamento de operações de banco de dados dentro de uma aplicação, utilizando o **Jest** e o **MongoDB em Memória**. O objetivo do teste é simular interações com um banco de dados MongoDB em um ambiente isolado e garantir que as funções da API, como recuperação e inserção de usuários, estejam funcionando corretamente.
 
-#### Objetivo do Teste
+## Objetivo do Teste
 
 O objetivo principal é:
 
@@ -11,7 +11,15 @@ O objetivo principal é:
 3. Testar a recuperação de dados de um usuário do banco de dados simulado.
 4. Garantir que a aplicação pode realizar operações de leitura e escrita com o banco de dados de forma correta.
 
-#### O que o Teste Faz
+## **Caso de Teste 2: Teste de Integração - Jest**
+
+| **ID** | **Caso de Teste (Título)**                        | **Funcionalidade**                                              | **Pré-condição**                                    | **Procedimento**                                                                                                                                                       | **Resultado Esperado**                                                                                                                                                                 |
+|--------|--------------------------------------------------|----------------------------------------------------------------|-----------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 2      | **Teste de Integração - Jest**                   | Verificar a integração com o banco de dados em memória.         | O banco de dados em memória deve estar configurado.  | 1. Inicializar o MongoDB em memória.<br>2. Configurar o mock do MongoClient.<br>3. Testar a busca do usuário com o e-mail específico.<br>4. Testar a inserção de uma transação no banco de dados.           | O MongoDB em memória é iniciado corretamente. A busca do usuário retorna os dados simulados (ID, email, senha). A inserção de uma transação retorna um ID fictício. |
+
+---
+
+## O que o Teste Faz
 
 1. **Inicializa o MongoDB em memória**:
     - O teste começa criando um servidor MongoDB em memória usando o **MongoMemoryServer**. Esse servidor simula uma instância do MongoDB em um ambiente isolado, sem necessidade de uma instância real de banco de dados.
@@ -49,7 +57,7 @@ O objetivo principal é:
 4. **it('should mock a user retrieval from the database')**:
     - Testa a operação de busca de um usuário no banco de dados simulado, verificando se a consulta retorna os dados do usuário corretamente.
 
-#### Conclusão
+## Conclusão
 
 Este teste de integração verifica a interação entre a aplicação e um banco de dados simulado, utilizando o **MongoDB em Memória** para garantir que a lógica de banco de dados da aplicação funcione conforme esperado em um ambiente de teste controlado. Ao mockar a conexão com o MongoDB e simular as operações de leitura e escrita, o teste assegura que a aplicação é capaz de realizar operações básicas de banco de dados sem depender de um servidor MongoDB real durante os testes.
 
