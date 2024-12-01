@@ -10,17 +10,23 @@ export function useTransactions() {
 
   const fetchTransactions = async () => {
     try {
-      const response = await fetch('/api/transactions')
+      const response = await fetch('/api/transactions');
       if (response.ok) {
-        const data = await response.json()
-        setTransactions(data)
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          setTransactions(data);
+        } else {
+          console.error('Data fetched is not an array:', data);
+          setTransactions([]);
+        }
       } else {
-        console.error('Failed to fetch transactions')
+        console.error('Failed to fetch transactions');
       }
     } catch (error) {
-      console.error('Error fetching transactions:', error)
+      console.error('Error fetching transactions:', error);
+      setTransactions([]);
     }
-  }
+  };
 
   const addTransaction = async (transaction: Partial<ITransaction>) => {
     try {

@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/atoms/button'
 import { useRouter } from 'next/navigation'
 import { Title } from '@/components/ui/molecules/Title'
 import { motion } from 'framer-motion'
-import { ExpensePrediction } from '@/components/ai/ExpensePrediction'
+//import { ExpensePrediction } from '@/components/ai/ExpensePrediction'
 import {CashFlowChart} from "@/components/ui/charts/CashFlowChart";
 import {DistributionChart} from "@/components/ui/charts/DistributionChart";
 import {RecentTransactionsChart} from "@/components/ui/charts/RecentTransactionChart";
@@ -125,7 +125,7 @@ export default function DashboardFinanceiro() {
           <div className="space-x-2">
             <AddIncomeDialog onAddIncome={handleAddIncome}/>
             <AddExpenseDialog onAddExpense={handleAddExpense}/>
-            <ExpensePrediction transactions={transactions}/>
+            {/*<ExpensePrediction transactions={transactions}/>*/}
           </div>
         </motion.div>
 

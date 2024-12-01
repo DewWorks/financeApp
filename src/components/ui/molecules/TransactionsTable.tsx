@@ -1,6 +1,6 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/atoms/table"
 import { Button } from "@/components/ui/atoms/button"
-import { Pencil, Trash2 } from "lucide-react"
+import {AlertTriangle, Edit2, Pencil, Trash2} from "lucide-react"
 import { ITransaction } from "@/interfaces/ITransaction"
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/atoms/dialog"
@@ -107,45 +107,59 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
       </Table>
 
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Confirmar exclusão</DialogTitle>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Confirmar exclusão
+            </DialogTitle>
           </DialogHeader>
-          <p>Tem certeza que deseja excluir esta transação?</p>
-          {transactionToDelete && (
-            <div>
-              <p><strong>Descrição:</strong> {transactionToDelete.description}</p>
-              <p><strong>Valor:</strong> R$ {transactionToDelete.amount.toFixed(2)}</p>
-              <p><strong>Data:</strong> {new Date(transactionToDelete.date).toLocaleDateString()}</p>
-              <p><strong>Tipo:</strong> {transactionToDelete.type === 'income' ? 'Receita' : 'Despesa'}</p>
-              <p><strong>Tag:</strong> {transactionToDelete.tag}</p>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Cancelar</Button>
-            <Button variant="destructive" onClick={handleConfirmDelete}>Excluir</Button>
+          <div className="py-4">
+            <p className="mb-4 text-muted-foreground">Tem certeza que deseja excluir esta transação?</p>
+            {transactionToDelete && (
+                <div className="space-y-2 rounded-md bg-muted p-4 text-sm">
+                  <p><strong>Descrição:</strong> {transactionToDelete.description}</p>
+                  <p><strong>Valor:</strong> R$ {transactionToDelete.amount.toFixed(2)}</p>
+                  <p><strong>Data:</strong> {new Date(transactionToDelete.date).toLocaleDateString()}</p>
+                  <p><strong>Tipo:</strong> {transactionToDelete.type === 'income' ? 'Receita' : 'Despesa'}</p>
+                  <p><strong>Tag:</strong> {transactionToDelete.tag}</p>
+                </div>
+            )}
+          </div>
+          <DialogFooter className="sm:justify-start">
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button className={`bg-red-600 text-white`} variant="destructive" onClick={handleConfirmDelete}>
+              Excluir
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Editar Transação</DialogTitle>
+            <DialogTitle className="flex items-center gap-2 text-primary">
+              <Edit2 className="h-5 w-5" />
+              Editar Transação
+            </DialogTitle>
           </DialogHeader>
-          {transactionToEdit && (
-            transactionToEdit.type === 'income' ? (
-              <AddIncomeDialog
-                onAddIncome={handleEditTransaction}
-                initialData={transactionToEdit}
-              />
-            ) : (
-              <AddExpenseDialog
-                onAddExpense={handleEditTransaction}
-                initialData={transactionToEdit}
-              />
-            )
-          )}
+          <div className="py-4">
+            {transactionToEdit && (
+                transactionToEdit.type === 'income' ? (
+                    <AddIncomeDialog
+                        onAddIncome={handleEditTransaction}
+                        initialData={transactionToEdit}
+                    />
+                ) : (
+                    <AddExpenseDialog
+                        onAddExpense={handleEditTransaction}
+                        initialData={transactionToEdit}
+                    />
+                )
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </>
