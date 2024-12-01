@@ -10,6 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "preinstall": "apt-get update && apt-get install -y python3-distutils",
     "postinstall": "python -m ensurepip && pip install --upgrade setuptools"
   },
   "dependencies": {
