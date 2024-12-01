@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "apt-get update && apt-get install -y python3-distutils && npm install",
+  "buildCommand": "npm install && npm run build",
   "build": {
     "env": {
       "PIP_DISABLE_PIP_VERSION_CHECK": "1",

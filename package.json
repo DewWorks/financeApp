@@ -10,9 +10,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "preinstall": "apt-get update && apt-get install -y python3-distutils",
-    "postinstall": "python -m ensurepip && pip install --upgrade setuptools"
+    "postinstall": "npm rebuild node-gyp"
   },
+
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
     "@radix-ui/react-label": "^2.1.0",
