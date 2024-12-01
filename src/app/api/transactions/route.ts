@@ -1,6 +1,9 @@
-import { NextResponse } from 'next/server'
+import {NextRequest, NextResponse} from 'next/server'
 import { getMongoClient } from '@/db/connectionDb'
 import { getUserIdFromToken } from '@/app/functions/getUserId';
+
+console.log('getMongoClient:', getMongoClient);
+console.log('getUserIdFromToken:', getUserIdFromToken);
 
 export async function GET() {
   try {
@@ -17,27 +20,27 @@ export async function GET() {
     return NextResponse.json(transactions)
   } catch (error) {
     console.error('Get transactions error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Internal server error' })
   }
 }
 
 
-export async function POST(request: Request) {
+export async function POST(request: Request | NextRequest): Promise<Response | NextResponse> {
   try {
     const userId = await getUserIdFromToken()
     const client = await getMongoClient();
     const db = client.db("financeApp");
     const transaction = await request.json()
 
-    const result = await db.collection('transactions').insertOne({
+     await db.collection('transactions').insertOne({
       ...transaction,
       userId,
       date: new Date(transaction.date),
     })
 
-    return NextResponse.json({ message: 'Transaction added successfully', id: result.insertedId }, { status: 201 })
+    return NextResponse.json({ message: 'Transaction added successfully' })
   } catch (error) {
     console.error('Add transaction error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Internal server error' })
   }
 }

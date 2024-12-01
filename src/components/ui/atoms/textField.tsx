@@ -2,6 +2,7 @@ import React from 'react';
 
 interface TextFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
+  id: string;
 }
 
 export const TextField: React.FC<TextFieldProps> = ({ label, ...props }) => {
