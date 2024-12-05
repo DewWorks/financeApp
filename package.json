@@ -9,8 +9,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "postinstall": "npm rebuild node-gyp"
+    "lint": "next lint"
+   // "postinstall": "npm rebuild node-gyp"
   },
 
   "dependencies": {
