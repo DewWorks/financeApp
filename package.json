@@ -24,6 +24,7 @@
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.53.2",
     "recharts": "^2.13.3",
+    "sweetalert2": "^11.15.2",
     "tailwind-merge": "^2.5.4",
     "zod": "^3.23.8"
   },

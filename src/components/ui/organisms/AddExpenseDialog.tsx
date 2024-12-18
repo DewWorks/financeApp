@@ -1,47 +1,47 @@
 import { useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/atoms/dialog"
+import { Button } from "@/components/ui/atoms/button"
+import { Input } from "@/components/ui/atoms/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/atoms/select"
 import { PlusIcon } from 'lucide-react'
-import { incomeTags } from '@/interfaces/ITransaction'
+import { expenseTags } from '@/interfaces/ITransaction'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 
-const incomeTagsTuple = incomeTags as [string, ...string[]]
+const expenseTagsTuple = expenseTags as [string, ...string[]]
 
-const incomeSchema = z.object({
+const expenseSchema = z.object({
   description: z.string().min(1, 'Descrição é obrigatória'),
   amount: z.number().positive('O valor deve ser positivo'),
-  tag: z.enum(incomeTagsTuple),
+  tag: z.enum(expenseTagsTuple),
   date: z.string().refine((date) => !isNaN(Date.parse(date)), {
     message: 'Data inválida',
   }),
 })
 
-type IncomeFormData = z.infer<typeof incomeSchema>
+type ExpenseFormData = z.infer<typeof expenseSchema>
 
-interface AddIncomeDialogProps {
-  onAddIncome: (description: string, amount: number, tag: string, date: string) => void
+interface AddExpenseDialogProps {
+  onAddExpense: (description: string, amount: number, tag: string, date: string) => void
 }
 
-export function AddIncomeDialog({ onAddIncome }: AddIncomeDialogProps) {
+export function AddExpenseDialog({ onAddExpense }: AddExpenseDialogProps) {
   const [isOpen, setIsOpen] = useState(false)
 
-  const { control, handleSubmit, reset, formState: { errors } } = useForm<IncomeFormData>({
-    resolver: zodResolver(incomeSchema),
+  const { control, handleSubmit, reset, formState: { errors } } = useForm<ExpenseFormData>({
+    resolver: zodResolver(expenseSchema),
     defaultValues: {
       description: '',
       amount: 0,
-      tag: incomeTags[0],
+      tag: expenseTags[0],
       date: new Date().toISOString().split('T')[0],
     },
   })
 
-  const onSubmit = (data: IncomeFormData) => {
-    onAddIncome(data.description, data.amount, data.tag, data.date)
+  const onSubmit = (data: ExpenseFormData) => {
+    onAddExpense(data.description, data.amount, data.tag, data.date)
     setIsOpen(false)
     reset()
   }
@@ -49,14 +49,14 @@ export function AddIncomeDialog({ onAddIncome }: AddIncomeDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="bg-green-500 text-white hover:bg-green-600">
+        <Button variant="outline" className="bg-red-500 text-white hover:bg-red-600">
           <PlusIcon className="h-4 w-4 mr-2" />
-          Receita
+          Despesa
         </Button>
       </DialogTrigger>
       <DialogContent className="bg-white sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="text-lg font-semibold text-center">Adicionar Receita</DialogTitle>
+          <DialogTitle className="text-lg font-semibold text-center">Adicionar Despesa</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
           <div className="space-y-2">
@@ -70,7 +70,7 @@ export function AddIncomeDialog({ onAddIncome }: AddIncomeDialogProps) {
                 <Input
                   id="description"
                   {...field}
-                  placeholder="Ex: Salário, Freelance"
+                  placeholder="Ex: Aluguel, Supermercado"
                   className="w-full"
                 />
               )}
@@ -115,7 +115,7 @@ export function AddIncomeDialog({ onAddIncome }: AddIncomeDialogProps) {
                     <SelectValue placeholder="Selecione uma categoria" />
                   </SelectTrigger>
                   <SelectContent>
-                    {incomeTags.map((tag) => (
+                    {expenseTags.map((tag) => (
                       <SelectItem className='bg-white' key={tag} value={tag}>
                         {tag}
                       </SelectItem>
@@ -148,8 +148,8 @@ export function AddIncomeDialog({ onAddIncome }: AddIncomeDialogProps) {
               <p className="text-red-500 text-sm">{errors.date.message}</p>
             )}
           </div>
-          <Button type="submit" className="bg-green-500 text-white w-full mt-6">
-            Adicionar Receita
+          <Button type="submit" className="bg-red-500 text-white w-full mt-6">
+            Adicionar Despesa
           </Button>
         </form>
       </DialogContent>
