@@ -1,6 +1,6 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/atoms/table"
 import { Button } from "@/components/ui/atoms/button"
-import {AlertTriangle, Edit2, Pencil, Trash2} from "lucide-react"
+import { AlertTriangle, Edit2, Pencil, Trash2 } from 'lucide-react'
 import { ITransaction } from "@/interfaces/ITransaction"
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/atoms/dialog"
@@ -56,55 +56,101 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
 
     return (
         <>
-            <Table>
-                <TableHeader>
-                    <TableRow className="text-black">
-                        <TableHead>Data</TableHead>
-                        <TableHead>Descrição</TableHead>
-                        <TableHead>Valor</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Tag</TableHead>
-                        <TableHead>Ações</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {transactions.map((transaction) => {
-                        const tagColor = getRandomColor();
-                        return (
-                            <TableRow key={transaction._id?.toString()} className={ transaction.type === 'income' ? 'bg-green-50' : 'bg-red-50'}>
-                                <TableCell className="text-black">{new Date(transaction.date).toLocaleDateString()}</TableCell>
-                                <TableCell className="text-black">{transaction.description}</TableCell>
-                                <TableCell className={transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}>
+            {/* Desktop view */}
+            <div className="hidden md:block">
+                <Table>
+                    <TableHeader>
+                        <TableRow className="text-black">
+                            <TableHead>Data</TableHead>
+                            <TableHead>Descrição</TableHead>
+                            <TableHead>Valor</TableHead>
+                            <TableHead>Tipo</TableHead>
+                            <TableHead>Tag</TableHead>
+                            <TableHead>Ações</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {transactions.map((transaction) => {
+                            const tagColor = getRandomColor();
+                            return (
+                                <TableRow key={transaction._id?.toString()} className={ transaction.type === 'income' ? 'bg-green-50' : 'bg-red-50'}>
+                                    <TableCell className="text-black">{new Date(transaction.date).toLocaleDateString()}</TableCell>
+                                    <TableCell className="text-black">{transaction.description}</TableCell>
+                                    <TableCell className={transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}>
+                                        R$ {transaction.amount !== undefined && transaction.amount !== null ? transaction.amount.toFixed(2) : 'N/A'}
+                                    </TableCell>
+                                    <TableCell className={transaction.type === 'income' ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>{transaction.type === 'income' ? 'Receita' : 'Despesa'}</TableCell>
+                                    <TableCell>
+                                        <span
+                                            className="px-2 py-1 rounded-full text-xs font-semibold"
+                                            style={{
+                                                backgroundColor: `${tagColor}20`,
+                                                color: tagColor,
+                                                border: `1px solid ${tagColor}`
+                                            }}
+                                        >
+                                            {transaction.tag}
+                                        </span>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex space-x-2">
+                                            <Button variant="outline" size="sm" onClick={() => handleEditClick(transaction)}>
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
+                                            <Button variant="outline" size="sm" onClick={() => handleDeleteClick(transaction)}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            )
+                        })}
+                    </TableBody>
+                </Table>
+            </div>
+
+            {/* Mobile view */}
+            <div className="md:hidden space-y-4">
+                {transactions.map((transaction) => {
+                    const tagColor = getRandomColor();
+                    return (
+                        <div key={transaction._id?.toString()} className={`p-4 rounded-lg shadow ${transaction.type === 'income' ? 'bg-green-50' : 'bg-red-50'}`}>
+                            <div className="flex justify-between items-start mb-2">
+                                <div>
+                                    <p className="font-bold">{transaction.description}</p>
+                                    <p className="text-sm text-gray-600">{new Date(transaction.date).toLocaleDateString()}</p>
+                                </div>
+                                <span
+                                    className="px-2 py-1 rounded-full text-xs font-semibold"
+                                    style={{
+                                        backgroundColor: `${tagColor}20`,
+                                        color: tagColor,
+                                        border: `1px solid ${tagColor}`
+                                    }}
+                                >
+                                    {transaction.tag}
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center mb-2">
+                                <p className={`font-bold ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
                                     R$ {transaction.amount !== undefined && transaction.amount !== null ? transaction.amount.toFixed(2) : 'N/A'}
-                                </TableCell>
-                                <TableCell className={transaction.type === 'income' ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>{transaction.type === 'income' ? 'Receita' : 'Despesa'}</TableCell>
-                                <TableCell>
-                  <span
-                      className="px-2 py-1 rounded-full text-xs font-semibold"
-                      style={{
-                          backgroundColor: `${tagColor}20`,
-                          color: tagColor,
-                          border: `1px solid ${tagColor}`
-                      }}
-                  >
-                    {transaction.tag}
-                  </span>
-                                </TableCell>
-                                <TableCell>
-                                    <div className="flex space-x-2">
-                                        <Button variant="outline" size="sm" onClick={() => handleEditClick(transaction)}>
-                                            <Pencil className="h-4 w-4" />
-                                        </Button>
-                                        <Button variant="outline" size="sm" onClick={() => handleDeleteClick(transaction)}>
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        )
-                    })}
-                </TableBody>
-            </Table>
+                                </p>
+                                <p className={`text-sm font-semibold ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                                    {transaction.type === 'income' ? 'Receita' : 'Despesa'}
+                                </p>
+                            </div>
+                            <div className="flex justify-end space-x-2">
+                                <Button variant="outline" size="sm" onClick={() => handleEditClick(transaction)}>
+                                    <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={() => handleDeleteClick(transaction)}>
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    )
+                })}
+            </div>
 
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                 <DialogContent className="sm:max-w-[425px] bg-white">
@@ -165,3 +211,4 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
         </>
     )
 }
+
