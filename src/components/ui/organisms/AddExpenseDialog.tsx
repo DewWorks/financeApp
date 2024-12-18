@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/atoms/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/atoms/select"
 import { PlusIcon } from 'lucide-react'
-import { expenseTags } from '@/interfaces/ITransaction'
+import {expenseTags, ITransaction} from '@/interfaces/ITransaction'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -25,6 +25,7 @@ type ExpenseFormData = z.infer<typeof expenseSchema>
 
 interface AddExpenseDialogProps {
   onAddExpense: (description: string, amount: number, tag: string, date: string) => void
+  initialData?: ITransaction;
 }
 
 export function AddExpenseDialog({ onAddExpense }: AddExpenseDialogProps) {
@@ -84,19 +85,19 @@ export function AddExpenseDialog({ onAddExpense }: AddExpenseDialogProps) {
               Valor (R$)
             </Label>
             <Controller
-              name="amount"
-              control={control}
-              render={({ field }) => (
-                <Input
-                  id="amount"
-                  type="number"
-                  step="0.01"
-                  {...field}
-                  onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                  placeholder="0.00"
-                  className="w-full"
-                />
-              )}
+                name="description"
+                control={control}
+                render={({ field }) => {
+                  console.log(field); // Verifique as propriedades disponíveis aqui
+                  return (
+                      <Input
+                          {...field}
+                          id="description"
+                          placeholder="Ex: Aluguel, Supermercado"
+                          className="w-full"
+                      />
+                  );
+                }}
             />
             {errors.amount && (
               <p className="text-red-500 text-sm">{errors.amount.message}</p>

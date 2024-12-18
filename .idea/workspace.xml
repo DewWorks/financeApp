@@ -4,7 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9316f87c-8dd3-4b5d-8f67-06cd48ada7e8" name="Changes" comment="fix to deploy" />
+    <list default="true" id="9316f87c-8dd3-4b5d-8f67-06cd48ada7e8" name="Changes" comment="fix to deploy">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/ui/atoms/input.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ui/atoms/input.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/ui/organisms/AddExpenseDialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ui/organisms/AddExpenseDialog.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/ui/organisms/AddIncomeDialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ui/organisms/AddIncomeDialog.tsx" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -46,7 +51,7 @@
     "Jest.API Test.executor": "Run",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "beta",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "C:/Users/itofr/Documents/Github/JoaoItoBlog/project",
     "node.js.detected.package.eslint": "true",
@@ -149,7 +154,7 @@
       <workItem from="1733616432996" duration="631000" />
       <workItem from="1733762919705" duration="17000" />
       <workItem from="1734291103057" duration="1335000" />
-      <workItem from="1734549407369" duration="1765000" />
+      <workItem from="1734549407369" duration="2676000" />
     </task>
     <task id="LOCAL-00001" summary="chore/feat: popup login page for not login in financePro">
       <option name="closed" value="true" />
