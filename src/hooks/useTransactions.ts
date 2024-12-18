@@ -1,20 +1,44 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import Swal from 'sweetalert2'
 import { ITransaction } from '@/interfaces/ITransaction'
 
 export function useTransactions() {
   const [transactions, setTransactions] = useState<ITransaction[]>([])
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null)
   const router = useRouter()
 
+  const showToast = (message: string, type: 'success' | 'error' | 'warning') => {
+    setToast({ message, type })
+  }
+
   const handleAuthError = useCallback(() => {
-    Swal.fire({
-      title: 'Usuário Desconectado',
-      text: 'Sua sessão expirou. Por favor, faça login novamente.',
-      icon: 'warning',
-      confirmButtonText: 'OK'
-    }).then(() => {
+    const modal = document.createElement('div')
+    modal.innerHTML = `
+      <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg shadow-xl max-w-md w-full">
+          <img src="/logo.png" alt="Logo" class="mx-auto mb-4 w-24 h-24" />
+          <h2 class="text-2xl font-bold mb-4 text-center">Sessão Expirada</h2>
+          <p class="mb-6 text-center">Sua sessão expirou. Por favor, faça login novamente para continuar usando nossa plataforma.</p>
+          <div class="flex justify-center space-x-4">
+            <button id="loginBtn" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Login</button>
+            <button id="registerBtn" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Cadastrar</button>
+          </div>
+        </div>
+      </div>
+    `
+    document.body.appendChild(modal)
+
+    const loginBtn = modal.querySelector('#loginBtn')
+    const registerBtn = modal.querySelector('#registerBtn')
+
+    loginBtn?.addEventListener('click', () => {
+      document.body.removeChild(modal)
       router.push('/auth/login')
+    })
+
+    registerBtn?.addEventListener('click', () => {
+      document.body.removeChild(modal)
+      router.push('/auth/register')
     })
   }, [router])
 
@@ -33,22 +57,12 @@ export function useTransactions() {
         handleAuthError();
       } else {
         console.error('Failed to fetch transactions');
-        Swal.fire({
-          title: 'Erro',
-          text: 'Falha ao carregar transações. Por favor, tente novamente.',
-          icon: 'error',
-          confirmButtonText: 'OK'
-        });
+        showToast('Falha ao carregar transações. Por favor, tente novamente.', 'error');
       }
     } catch (error) {
       console.error('Error fetching transactions:', error);
       setTransactions([]);
-      Swal.fire({
-        title: 'Erro',
-        text: 'Ocorreu um erro ao carregar as transações. Por favor, tente novamente.',
-        icon: 'error',
-        confirmButtonText: 'OK'
-      });
+      showToast('Ocorreu um erro ao carregar as transações. Por favor, tente novamente.', 'error');
     }
   }, [handleAuthError]);
 
@@ -67,32 +81,17 @@ export function useTransactions() {
       })
       if (response.ok) {
         await fetchTransactions()
-        Swal.fire({
-          title: 'Sucesso',
-          text: 'Transação adicionada com sucesso!',
-          icon: 'success',
-          confirmButtonText: 'OK'
-        });
+        showToast('Transação adicionada com sucesso!', 'success');
       } else if (response.status === 401) {
         handleAuthError();
       } else {
         const errorData = await response.json()
         console.error('Failed to add transaction:', errorData.error)
-        Swal.fire({
-          title: 'Erro',
-          text: 'Falha ao adicionar transação. Por favor, tente novamente.',
-          icon: 'error',
-          confirmButtonText: 'OK'
-        });
+        showToast('Falha ao adicionar transação. Por favor, tente novamente.', 'error');
       }
     } catch (error) {
       console.error('Error adding transaction:', error)
-      Swal.fire({
-        title: 'Erro',
-        text: 'Ocorreu um erro ao adicionar a transação. Por favor, tente novamente.',
-        icon: 'error',
-        confirmButtonText: 'OK'
-      });
+      showToast('Ocorreu um erro ao adicionar a transação. Por favor, tente novamente.', 'error');
     }
   }
 
@@ -108,81 +107,38 @@ export function useTransactions() {
 
       if (response.ok) {
         await fetchTransactions()
-        Swal.fire({
-          title: 'Sucesso',
-          text: 'Transação atualizada com sucesso!',
-          icon: 'success',
-          confirmButtonText: 'OK'
-        });
+        showToast('Transação atualizada com sucesso!', 'success');
       } else if (response.status === 401) {
         handleAuthError();
       } else {
         const errorData = await response.json()
         console.error('Failed to edit transaction:', errorData.error)
-        Swal.fire({
-          title: 'Erro',
-          text: 'Falha ao atualizar transação. Por favor, tente novamente.',
-          icon: 'error',
-          confirmButtonText: 'OK'
-        });
+        showToast('Falha ao atualizar transação. Por favor, tente novamente.', 'error');
       }
     } catch (error) {
       console.error('Error editing transaction:', error)
-      Swal.fire({
-        title: 'Erro',
-        text: 'Ocorreu um erro ao atualizar a transação. Por favor, tente novamente.',
-        icon: 'error',
-        confirmButtonText: 'OK'
-      });
+      showToast('Ocorreu um erro ao atualizar a transação. Por favor, tente novamente.', 'error');
     }
   }
 
   const deleteTransaction = async (transactionId: string) => {
     try {
-      const result = await Swal.fire({
-        title: 'Confirmar exclusão',
-        text: 'Tem certeza que deseja excluir esta transação?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Sim, excluir!',
-        cancelButtonText: 'Cancelar'
-      });
-
-      if (result.isConfirmed) {
-        const response = await fetch(`/api/transactions/${transactionId}`, {
-          method: 'DELETE',
-        })
-        if (response.ok) {
-          await fetchTransactions()
-          Swal.fire({
-            title: 'Excluído!',
-            text: 'A transação foi excluída com sucesso.',
-            icon: 'success',
-            confirmButtonText: 'OK'
-          });
-        } else if (response.status === 401) {
-          handleAuthError();
-        } else {
-          const errorData = await response.json()
-          console.error('Failed to delete transaction:', errorData.error)
-          Swal.fire({
-            title: 'Erro',
-            text: 'Falha ao excluir transação. Por favor, tente novamente.',
-            icon: 'error',
-            confirmButtonText: 'OK'
-          });
-        }
+      const response = await fetch(`/api/transactions/${transactionId}`, {
+        method: 'DELETE',
+      })
+      if (response.ok) {
+        await fetchTransactions()
+        showToast('A transação foi excluída com sucesso.', 'success');
+      } else if (response.status === 401) {
+        handleAuthError();
+      } else {
+        const errorData = await response.json()
+        console.error('Failed to delete transaction:', errorData.error)
+        showToast('Falha ao excluir transação. Por favor, tente novamente.', 'error');
       }
     } catch (error) {
       console.error('Error deleting transaction:', error)
-      Swal.fire({
-        title: 'Erro',
-        text: 'Ocorreu um erro ao excluir a transação. Por favor, tente novamente.',
-        icon: 'error',
-        confirmButtonText: 'OK'
-      });
+      showToast('Ocorreu um erro ao excluir a transação. Por favor, tente novamente.', 'error');
     }
   }
 
@@ -196,26 +152,24 @@ export function useTransactions() {
         return null;
       } else {
         console.error('Failed to get transaction')
-        Swal.fire({
-          title: 'Erro',
-          text: 'Falha ao obter detalhes da transação. Por favor, tente novamente.',
-          icon: 'error',
-          confirmButtonText: 'OK'
-        });
+        showToast('Falha ao obter detalhes da transação. Por favor, tente novamente.', 'error');
         return null
       }
     } catch (error) {
       console.error('Error getting transaction:', error)
-      Swal.fire({
-        title: 'Erro',
-        text: 'Ocorreu um erro ao obter detalhes da transação. Por favor, tente novamente.',
-        icon: 'error',
-        confirmButtonText: 'OK'
-      });
+      showToast('Ocorreu um erro ao obter detalhes da transação. Por favor, tente novamente.', 'error');
       return null
     }
   }
 
-  return { transactions, addTransaction, editTransaction, deleteTransaction, getTransaction }
+  return {
+    transactions,
+    addTransaction,
+    editTransaction,
+    deleteTransaction,
+    getTransaction,
+    toast,
+    setToast
+  }
 }
 

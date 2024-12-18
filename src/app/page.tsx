@@ -17,12 +17,13 @@ import {CashFlowChart} from "@/components/ui/charts/CashFlowChart";
 import {DistributionChart} from "@/components/ui/charts/DistributionChart";
 import {RecentTransactionsChart} from "@/components/ui/charts/RecentTransactionChart";
 import {IncomeVsExpensesChart} from "@/components/ui/charts/IncomeVsExpensesChart";
+import {Toast} from "@/components/ui/atoms/toast";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
 
 export default function DashboardFinanceiro() {
   const router = useRouter()
-  const { transactions, addTransaction, editTransaction, deleteTransaction } = useTransactions()
+  const { transactions, addTransaction, editTransaction, deleteTransaction, toast, setToast } = useTransactions()
 
   const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0)
   const totalExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0)
@@ -183,6 +184,13 @@ export default function DashboardFinanceiro() {
                     transactions={transactions}
                     onEditTransaction={handleEditTransaction}
                     onDeleteTransaction={handleDeleteTransaction}/>
+                {toast && (
+                    <Toast
+                        message={toast.message}
+                        type={toast.type}
+                        onClose={() => setToast(null)}
+                    />
+                )}
               </CardContent>
             </Card>
           </motion.div>
