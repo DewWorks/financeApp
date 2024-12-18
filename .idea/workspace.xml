@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="9316f87c-8dd3-4b5d-8f67-06cd48ada7e8" name="Changes" comment="fix to deploy" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="JavaScript File" />
+        <option value="TypeScript File" />
+        <option value="TypeScript JSX File" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 6
+}</component>
+  <component name="ProjectId" id="2otZ6YXB9cABvjw0lsylzynDU6w" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="1" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="autoscrollToSource" value="true" />
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="openDirectoriesWithSingleClick" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Cypress.all tests in api-behavior.test.ts (1).executor": "Run",
+    "Cypress.all tests in api-behavior.test.ts.executor": "Run",
+    "Jest.API POST /transactions.executor": "Run",
+    "Jest.API Test.executor": "Run",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "beta",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "C:/Users/itofr/Documents/Github/JoaoItoBlog/project",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs.jest.jest_package": "C:/Users/itofr/Documents/Github/Finance/finance-app/node_modules/jest",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "preferences.lookFeel",
+    "ts.external.directory.path": "C:\\Users\\itofr\\Documents\\Github\\Finance\\finance-app\\node_modules\\typescript\\lib",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\itofr\Documents\Github\Finance\finance-app\src\components\ui\atoms" />
+      <recent name="C:\Users\itofr\Documents\Github\Finance\finance-app\src\components\ui\molecules" />
+      <recent name="C:\Users\itofr\Documents\Github\Finance\finance-app\src\components\ui\organisms" />
+      <recent name="C:\Users\itofr\Documents\Github\Finance\finance-app\src\tests\cypress" />
+      <recent name="C:\Users\itofr\Documents\Github\Finance\finance-app\src\components\ui\charts" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Jest.API Test">
+    <configuration name="all tests in api-behavior.test.ts (1)" type="JavaScriptTestRunnerCypress" temporary="true">
+      <node-interpreter value="project" />
+      <cypress-package value="$PROJECT_DIR$/node_modules/cypress" />
+      <working-dir value="$PROJECT_DIR$" />
+      <cypress-options value="-q" />
+      <envs />
+      <scope-kind value="TEST" />
+      <test-file value="$PROJECT_DIR$/src/tests/cypress/functional/api-behavior.test.ts" />
+      <test-names>
+        <test-name value="Transactions Flow" />
+        <test-name value="should add a transaction and update the list" />
+      </test-names>
+      <method v="2" />
+    </configuration>
+    <configuration name="all tests in api-behavior.test.ts" type="JavaScriptTestRunnerCypress" temporary="true">
+      <node-interpreter value="project" />
+      <cypress-package value="$PROJECT_DIR$/node_modules/cypress" />
+      <working-dir value="$PROJECT_DIR$" />
+      <cypress-options value="-q" />
+      <envs />
+      <scope-kind value="SUITE" />
+      <test-file value="$PROJECT_DIR$/src/tests/cypress/functional/api-behavior.test.ts" />
+      <test-names>
+        <test-name value="Transactions Flow" />
+      </test-names>
+      <method v="2" />
+    </configuration>
+    <configuration name="API POST /transactions" type="JavaScriptTestRunnerJest" temporary="true" nameIsGenerated="true">
+      <node-interpreter value="project" />
+      <jest-package value="$PROJECT_DIR$/node_modules/jest" />
+      <working-dir value="$PROJECT_DIR$" />
+      <envs />
+      <scope-kind value="SUITE" />
+      <test-file value="$PROJECT_DIR$/src/tests/integration/api-integrations.test.ts" />
+      <test-names>
+        <test-name value="API POST /transactions" />
+      </test-names>
+      <method v="2" />
+    </configuration>
+    <configuration name="API Test" type="JavaScriptTestRunnerJest" temporary="true" nameIsGenerated="true">
+      <node-interpreter value="project" />
+      <jest-package value="$PROJECT_DIR$/node_modules/jest" />
+      <working-dir value="$PROJECT_DIR$" />
+      <envs />
+      <scope-kind value="SUITE" />
+      <test-file value="$PROJECT_DIR$/src/tests/integration/api-integrations.test.ts" />
+      <test-names>
+        <test-name value="API Test" />
+      </test-names>
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Jest.API Test" />
+        <item itemvalue="Cypress.all tests in api-behavior.test.ts" />
+        <item itemvalue="Cypress.all tests in api-behavior.test.ts (1)" />
+        <item itemvalue="Jest.API POST /transactions" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="9316f87c-8dd3-4b5d-8f67-06cd48ada7e8" name="Changes" comment="" />
+      <created>1731690657567</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1731690657567</updated>
+      <workItem from="1731690659379" duration="213000" />
+      <workItem from="1731691334075" duration="7870000" />
+      <workItem from="1731862492548" duration="94000" />
+      <workItem from="1732794189151" duration="687000" />
+      <workItem from="1732913383478" duration="9811000" />
+      <workItem from="1732964856596" duration="4488000" />
+      <workItem from="1733004870138" duration="4165000" />
+      <workItem from="1733079559509" duration="3986000" />
+      <workItem from="1733616432996" duration="631000" />
+      <workItem from="1733762919705" duration="17000" />
+      <workItem from="1734291103057" duration="1335000" />
+      <workItem from="1734549407369" duration="3451000" />
+    </task>
+    <task id="LOCAL-00001" summary="chore/feat: popup login page for not login in financePro">
+      <option name="closed" value="true" />
+      <created>1731693583316</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1731693583316</updated>
+    </task>
+    <task id="LOCAL-00002" summary="layout: a better layout for a title">
+      <option name="closed" value="true" />
+      <created>1731693598122</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1731693598122</updated>
+    </task>
+    <task id="LOCAL-00003" summary="feat: a new preview for expenses with ai in brain.js">
+      <option name="closed" value="true" />
+      <created>1731694654119</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1731694654119</updated>
+    </task>
+    <task id="LOCAL-00004" summary="components/chore: a componentize function bases in atomic structure">
+      <option name="closed" value="true" />
+      <created>1731695924661</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1731695924661</updated>
+    </task>
+    <task id="LOCAL-00005" summary="fix/chore: for run a build and better lint">
+      <option name="closed" value="true" />
+      <created>1731710027139</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1731710027139</updated>
+    </task>
+    <task id="LOCAL-00006" summary="fix/? update for version node">
+      <option name="closed" value="true" />
+      <created>1731710309521</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1731710309521</updated>
+    </task>
+    <task id="LOCAL-00007" summary="fix/? update for version python, not python3">
+      <option name="closed" value="true" />
+      <created>1731710882879</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1731710882879</updated>
+    </task>
+    <task id="LOCAL-00008" summary="add testes to interface and integration api with cypress and jest">
+      <option name="closed" value="true" />
+      <created>1732920835129</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1732920835129</updated>
+    </task>
+    <task id="LOCAL-00009" summary="add better documentation and tests cases">
+      <option name="closed" value="true" />
+      <created>1732921195823</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1732921195823</updated>
+    </task>
+    <task id="LOCAL-00010" summary="fix errors in build">
+      <option name="closed" value="true" />
+      <created>1733081194274</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1733081194274</updated>
+    </task>
+    <task id="LOCAL-00011" summary="in stash component">
+      <option name="closed" value="true" />
+      <created>1733081210485</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1733081210485</updated>
+    </task>
+    <task id="LOCAL-00012" summary="add CRUD in transactions">
+      <option name="closed" value="true" />
+      <created>1733081222110</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1733081222110</updated>
+    </task>
+    <task id="LOCAL-00013" summary="add charts components">
+      <option name="closed" value="true" />
+      <created>1733081389434</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1733081389434</updated>
+    </task>
+    <task id="LOCAL-00014" summary="fix to deploy">
+      <option name="closed" value="true" />
+      <created>1733082350435</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1733082350435</updated>
+    </task>
+    <task id="LOCAL-00015" summary="fix to deploy">
+      <option name="closed" value="true" />
+      <created>1733082579980</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1733082579980</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="chore/feat: popup login page for not login in financePro" />
+    <MESSAGE value="layout: a better layout for a title" />
+    <MESSAGE value="feat: a new preview for expenses with ai in brain.js" />
+    <MESSAGE value="components/chore: a componentize function bases in atomic structure" />
+    <MESSAGE value="fix/chore: for run a build and better lint" />
+    <MESSAGE value="fix/? update for version node" />
+    <MESSAGE value="fix/? update for version python, not python3" />
+    <MESSAGE value="add testes to interface and integration api with cypress and jest" />
+    <MESSAGE value="add better documentation and tests cases" />
+    <MESSAGE value="fix errors in build" />
+    <MESSAGE value="in stash component" />
+    <MESSAGE value="add CRUD in transactions" />
+    <MESSAGE value="add charts components" />
+    <MESSAGE value="fix to deploy" />
+    <option name="LAST_COMMIT_MESSAGE" value="fix to deploy" />
+  </component>
+</project>
