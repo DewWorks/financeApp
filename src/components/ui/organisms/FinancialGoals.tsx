@@ -63,7 +63,7 @@ export function FinancialGoals() {
         setIsDialogOpen(false);
     };
 
-    const handleDeleteGoal = async (goalId) => {
+    const handleDeleteGoal = async (goalId: string) => {
         try {
             const confirm = await Swal.fire({
                 title: 'Tem certeza?',
@@ -153,7 +153,7 @@ export function FinancialGoals() {
                                                 <Button variant="ghost" size="sm" onClick={() => handleOpenEditDialog(goal)}>
                                                     <Edit className="h-4 w-4 text-blue-500" />
                                                 </Button>
-                                                <Button variant="ghost" size="sm" onClick={() => handleDeleteGoal(goal._id?.toString())}>
+                                                <Button variant="ghost" size="sm" onClick={() => handleDeleteGoal(goal._id?.toString() as string)}>
                                                     <Trash2 className="h-4 w-4 text-red-500" />
                                                 </Button>
                                             </div>
