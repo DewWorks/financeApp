@@ -22,6 +22,8 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       })
       if (response.ok) {
+        const data: {message, token} = await response.json();
+        localStorage.setItem('auth_token', data.token);
         router.push('/')
       } else {
         // Handle errors (e.g., show error message)
