@@ -22,6 +22,7 @@ export function useTransactions() {
           setTransactions([]);
         }
       } else if (response.status === 401) {
+        setToast({ message: 'Erro de autenticação', type: 'auth' });
         showToast('Erro de autenticação', 'auth');
       } else {
         console.error('Failed to fetch transactions');

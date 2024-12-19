@@ -38,7 +38,7 @@ export async function POST(request: Request) {
       maxAge: 60 * 60 * 24, // 1 day
       path: '/',
     })
-
+      localStorage.setItem('auth_token', token);
     return NextResponse.json({ message: 'Login successful' }, { status: 200 })
   } catch (error) {
     console.error('Login error:', error)

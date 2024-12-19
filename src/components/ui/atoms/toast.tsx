@@ -30,7 +30,6 @@ export function Toast({ message, type, duration = 3000, onClose }: ToastProps) {
             title: 'Autenticação necessária',
             html: `
                 <div class="flex flex-col items-center">
-                    <img src="/path-to-your-logo.png" alt="Logo" class="mb-4 w-16 h-16" />
                     <h2 class="text-lg font-semibold">Faça login para continuar</h2>
                     <button class="mt-4 bg-blue-500 text-white px-4 py-2 rounded" onClick={() => window.location.href = '/login'}>
                         Fazer Login
