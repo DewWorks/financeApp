@@ -189,7 +189,7 @@ export default function DashboardFinanceiro() {
               transition={{duration: 0.5, delay: 0.4}}
               className="mb-8"
           >
-            <FinancialGoals transactions={transactions} />
+            <FinancialGoals />
           </motion.div>
 
           <motion.div
