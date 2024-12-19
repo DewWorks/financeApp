@@ -12,12 +12,12 @@ import { Button } from '@/components/ui/atoms/button'
 import { useRouter } from 'next/navigation'
 import { Title } from '@/components/ui/molecules/Title'
 import { motion } from 'framer-motion'
-//import { ExpensePrediction } from '@/components/ai/ExpensePrediction'
-import {CashFlowChart} from "@/components/ui/charts/CashFlowChart";
-import {DistributionChart} from "@/components/ui/charts/DistributionChart";
-import {RecentTransactionsChart} from "@/components/ui/charts/RecentTransactionChart";
-import {IncomeVsExpensesChart} from "@/components/ui/charts/IncomeVsExpensesChart";
-import {Toast} from "@/components/ui/atoms/toast";
+import { CashFlowChart } from "@/components/ui/charts/CashFlowChart"
+import { DistributionChart } from "@/components/ui/charts/DistributionChart"
+import { RecentTransactionsChart } from "@/components/ui/charts/RecentTransactionChart"
+import { IncomeVsExpensesChart } from "@/components/ui/charts/IncomeVsExpensesChart"
+import { Toast } from "@/components/ui/atoms/toast"
+import { FinancialGoals } from "@/components/ui/organisms/FinancialGoals"
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
 
@@ -126,7 +126,6 @@ export default function DashboardFinanceiro() {
             <div className="space-x-2">
               <AddIncomeDialog onAddIncome={handleAddIncome}/>
               <AddExpenseDialog onAddExpense={handleAddExpense}/>
-              {/*<ExpensePrediction transactions={transactions}/>*/}
             </div>
           </motion.div>
 
@@ -157,28 +156,23 @@ export default function DashboardFinanceiro() {
                 description={`-${((totalExpense / (totalIncome + totalExpense)) * 100).toFixed(1)}% do total`}
             />
           </motion.div>
+
           <motion.div
               initial={{opacity: 0, y: 20}}
               animate={{opacity: 1, y: 0}}
-              transition={{duration: 0.5, delay: 1.2}}
+              transition={{duration: 0.5, delay: 0.4}}
+              className="mb-8"
+          >
+            <FinancialGoals transactions={transactions} />
+          </motion.div>
+
+          <motion.div
+              initial={{opacity: 0, y: 20}}
+              animate={{opacity: 1, y: 0}}
+              transition={{duration: 0.5, delay: 0.6}}
           >
             <Card className="bg-white shadow-lg mb-8">
               <CardTitle className="text-lg font-semibold text-gray-900">Todas as Transações</CardTitle>
-              {/*
-            <CardHeader className="flex flex-row items-center justify-between">
-
-              <div className="flex space-x-2">
-                <Button onClick={() => filterTransactions('week')}
-                        variant={selectedTimeRange === 'week' ? 'default' : 'outline'}>Semana</Button>
-                <Button onClick={() => filterTransactions('month')}
-                        variant={selectedTimeRange === 'month' ? 'default' : 'outline'}>Mês</Button>
-                <Button onClick={() => filterTransactions('year')}
-                        variant={selectedTimeRange === 'year' ? 'default' : 'outline'}>Ano</Button>
-                <Button onClick={() => filterTransactions('all')}
-                        variant={selectedTimeRange === 'all' ? 'default' : 'outline'}>Todas</Button>
-              </div>
-            </CardHeader>
-            */}
               <CardContent>
                 <TransactionsTable
                     transactions={transactions}
@@ -205,3 +199,4 @@ export default function DashboardFinanceiro() {
       </div>
   )
 }
+
