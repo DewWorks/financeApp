@@ -79,7 +79,7 @@ export function FinancialGoals() {
                 showToast('Meta excluída com sucesso!', 'success');
             }else return
         } catch (error) {
-            showToast('Error deleting goal:', error);
+            showToast('Error deleting goal:', "error");
             console.error({ type: 'error', message: 'Erro ao excluir a meta. Tente novamente.', error: error });
         }
     };
