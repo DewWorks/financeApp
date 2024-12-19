@@ -14,7 +14,7 @@ import {useTransactions} from "@/hooks/useTransactions";
 import Swal from "sweetalert2";
 
 export function FinancialGoals() {
-    const { goals, isLoading, addGoal, editGoal, deleteGoal, showToast } = useGoals();
+    const { goals, addGoal, editGoal, deleteGoal, showToast } = useGoals();
     const { transactions } = useTransactions();
     const [newGoalName, setNewGoalName] = React.useState('');
     const [newGoalAmount, setNewGoalAmount] = React.useState('');
@@ -134,11 +134,7 @@ export function FinancialGoals() {
                 </Dialog>
             </CardHeader>
             <CardContent>
-                {isLoading ? (
-                    <div className="text-center py-8">
-                        <CircularProgressbar value={100} text="Carregando..." />
-                    </div>
-                ) : goals.length === 0 ? (
+                {goals.length === 0 ? (
                     <div className="text-center py-8">
                         <p className="text-lg font-semibold mb-2">Defina suas metas financeiras!</p>
                         <p className="text-gray-600">Clique em &#34;Nova Meta&#34; para começar a planejar seu futuro financeiro.</p>
