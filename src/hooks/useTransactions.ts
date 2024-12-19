@@ -1,46 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
 import { ITransaction } from '@/interfaces/ITransaction'
+import {AuthErrorModal} from "@/components/ui/atoms/swalAuth";
 
 export function useTransactions() {
   const [transactions, setTransactions] = useState<ITransaction[]>([])
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null)
-  const router = useRouter()
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' | 'auth' } | null>(null)
 
-  const showToast = (message: string, type: 'success' | 'error' | 'warning') => {
+  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'auth') => {
     setToast({ message, type })
   }
-
-  const handleAuthError = useCallback(() => {
-    const modal = document.createElement('div')
-    modal.innerHTML = `
-      <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white p-8 rounded-lg shadow-xl max-w-md w-full">
-          <img src="/logo.png" alt="Logo" class="mx-auto mb-4 w-24 h-24" />
-          <h2 class="text-2xl font-bold mb-4 text-center">Sessão Expirada</h2>
-          <p class="mb-6 text-center">Sua sessão expirou. Por favor, faça login novamente para continuar usando nossa plataforma.</p>
-          <div class="flex justify-center space-x-4">
-            <button id="loginBtn" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Login</button>
-            <button id="registerBtn" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Cadastrar</button>
-          </div>
-        </div>
-      </div>
-    `
-    document.body.appendChild(modal)
-
-    const loginBtn = modal.querySelector('#loginBtn')
-    const registerBtn = modal.querySelector('#registerBtn')
-
-    loginBtn?.addEventListener('click', () => {
-      document.body.removeChild(modal)
-      router.push('/auth/login')
-    })
-
-    registerBtn?.addEventListener('click', () => {
-      document.body.removeChild(modal)
-      router.push('/auth/register')
-    })
-  }, [router])
 
   const fetchTransactions = useCallback(async () => {
     try {
@@ -54,7 +22,8 @@ export function useTransactions() {
           setTransactions([]);
         }
       } else if (response.status === 401) {
-        handleAuthError();
+        setToast({ message: 'Erro de autenticação', type: 'auth' });
+        showToast('Erro de autenticação', 'auth');
       } else {
         console.error('Failed to fetch transactions');
         showToast('Falha ao carregar transações. Por favor, tente novamente.', 'error');
@@ -64,7 +33,7 @@ export function useTransactions() {
       setTransactions([]);
       showToast('Ocorreu um erro ao carregar as transações. Por favor, tente novamente.', 'error');
     }
-  }, [handleAuthError]);
+  }, [AuthErrorModal]);
 
   useEffect(() => {
     fetchTransactions()
@@ -83,7 +52,7 @@ export function useTransactions() {
         await fetchTransactions()
         showToast('Transação adicionada com sucesso!', 'success');
       } else if (response.status === 401) {
-        handleAuthError();
+        showToast('Erro de autenticação', 'auth');
       } else {
         const errorData = await response.json()
         console.error('Failed to add transaction:', errorData.error)
@@ -109,7 +78,7 @@ export function useTransactions() {
         await fetchTransactions()
         showToast('Transação atualizada com sucesso!', 'success');
       } else if (response.status === 401) {
-        handleAuthError();
+        showToast('Erro de autenticação', 'auth');
       } else {
         const errorData = await response.json()
         console.error('Failed to edit transaction:', errorData.error)
@@ -130,7 +99,7 @@ export function useTransactions() {
         await fetchTransactions()
         showToast('A transação foi excluída com sucesso.', 'success');
       } else if (response.status === 401) {
-        handleAuthError();
+        showToast('Erro de autenticação', 'auth');
       } else {
         const errorData = await response.json()
         console.error('Failed to delete transaction:', errorData.error)
@@ -148,7 +117,7 @@ export function useTransactions() {
       if (response.ok) {
         return await response.json()
       } else if (response.status === 401) {
-        handleAuthError();
+        showToast('Erro de autenticação', 'auth');
         return null;
       } else {
         console.error('Failed to get transaction')
