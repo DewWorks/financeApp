@@ -85,14 +85,17 @@ export function AddExpenseDialog({ onAddExpense }: AddExpenseDialogProps) {
               Valor (R$)
             </Label>
             <Controller
-                name="description"
+                name="amount"
                 control={control}
                 render={({ field }) => {
                   console.log(field); // Verifique as propriedades disponíveis aqui
                   return (
                       <Input
                           {...field}
-                          id="description"
+                          id="amount"
+                          type="number"
+                          step="0.01"
+                          onChange={(e) => field.onChange(parseFloat(e.target.value))}
                           placeholder="Ex: Aluguel, Supermercado"
                           className="w-full"
                       />
