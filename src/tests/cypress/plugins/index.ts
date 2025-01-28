@@ -1,6 +1,6 @@
-import {MongoClient} from "mongodb";
+import {Document, InsertManyResult, MongoClient} from "mongodb";
 
-module.exports = (on) => {
+module.exports = (on: (arg0: string, arg1: { seedDatabase(): Promise<InsertManyResult<Document>>; }) => void) => {
     on('task', {
         seedDatabase() {
             const uri = 'mongodb://localhost:27017';
