@@ -1,4 +1,3 @@
 {
-  "version": 2,
-  "buildCommand": "apt-get update && apt-get install -y python3-distutils && npm install"
+  "version": 3,
 }
