@@ -10,6 +10,8 @@ export interface ITransaction {
   tag: string
 }
 
+export type ReportFrequency = "weekly" | "biweekly" | "monthly"
+
 export const expenseTags = [
   "Transporte",
   "Alimentação",

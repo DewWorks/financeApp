@@ -20,6 +20,7 @@ import { Toast } from "@/components/ui/atoms/toast"
 import { FinancialGoals } from "@/components/ui/organisms/FinancialGoals"
 import {useEffect} from "react";
 import Swal from "sweetalert2";
+import { ReportButton } from '@/components/ui/molecules/ReportButton'
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
 
@@ -149,9 +150,10 @@ export default function DashboardFinanceiro() {
               <h1 className="text-3xl font-bold text-gray-900">Dashboard Financeiro</h1>
               <p className="mt-1 text-sm text-gray-600">Visão geral das suas finanças pessoais</p>
             </div>
-            <div className="space-x-2">
-              <AddIncomeDialog onAddIncome={handleAddIncome}/>
-              <AddExpenseDialog onAddExpense={handleAddExpense}/>
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+              <AddIncomeDialog onAddIncome={handleAddIncome} />
+              <AddExpenseDialog onAddExpense={handleAddExpense} />
+              <ReportButton transactions={transactions} />
             </div>
           </motion.div>
 

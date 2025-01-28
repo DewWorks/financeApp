@@ -35,3 +35,24 @@ export const getCategoryTotals = (transactions: ITransaction[] | undefined) => {
     )
 }
 
+export const filterTransactionsByFrequency = (
+    transactions: ITransaction[],
+    frequency: ReportFrequency,
+): ITransaction[] => {
+    const now = new Date()
+    const startDate = new Date()
+
+    switch (frequency) {
+        case "weekly":
+            startDate.setDate(now.getDate() - 7)
+            break
+        case "biweekly":
+            startDate.setDate(now.getDate() - 14)
+            break
+        case "monthly":
+            startDate.setMonth(now.getMonth() - 1)
+            break
+    }
+
+    return transactions.filter((t) => new Date(t.date) >= startDate)
+}
