@@ -1,5 +1,5 @@
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Cell } from "recharts";
-import { ITransaction } from "../interfaces/ITransaction";
+import { ITransaction } from "../../../interfaces/ITransaction";
 
 export function TransactionChart({ transactions }: { transactions: ITransaction[] }) {
   const data = transactions.map(t => ({

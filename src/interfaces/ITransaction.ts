@@ -1,7 +1,7 @@
 import { ObjectId } from "mongodb"
 
 export interface ITransaction {
-  _id?: ObjectId
+  _id: ObjectId
   userId: ObjectId
   type: 'income' | 'expense'
   description: string

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/atoms/dialog"
 import { Button } from "@/components/ui/atoms/button"
 import { Input } from "@/components/ui/atoms/input"
-import { Label } from "@/components/ui/label"
+import { Label } from "@/components/ui/atoms/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/atoms/select"
 import { PlusIcon } from 'lucide-react'
 import {expenseTags, ITransaction} from '@/interfaces/ITransaction'
@@ -28,12 +28,12 @@ interface AddExpenseDialogProps {
   initialData?: ITransaction;
 }
 
-export function AddExpenseDialog({ onAddExpense }: AddExpenseDialogProps) {
+export function AddExpenseDialog({ onAddExpense, initialData }: AddExpenseDialogProps) {
   const [isOpen, setIsOpen] = useState(false)
 
   const { control, handleSubmit, reset, formState: { errors } } = useForm<ExpenseFormData>({
     resolver: zodResolver(expenseSchema),
-    defaultValues: {
+    defaultValues: initialData || {
       description: '',
       amount: 0,
       tag: expenseTags[0],

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { AuthPopup } from "@/components/ui/molecules/AuthPopup";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -14,22 +15,23 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "FinanceApp",
+  title: "FinancePro",
   description: "Desenvolvido por JoaoIto DevWorks",
 };
 
 export default function RootLayout({
-  children,
-}: Readonly<{
+                                     children,
+                                   }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+      <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+      {children}
+      <AuthPopup />
       </body>
-    </html>
+      </html>
   );
 }
