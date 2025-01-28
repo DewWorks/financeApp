@@ -24,6 +24,8 @@ export default function LoginPage() {
       })
 
       if (response.ok) {
+        const data: {message: string, token: string} = await response.json();
+        localStorage.setItem('auth_token', data.token);
         Swal.fire({
           icon: 'success',
           title: 'Sucesso!',

@@ -91,11 +91,12 @@ export function AddExpenseDialog({ onAddExpense }: AddExpenseDialogProps) {
                   return (
                       <Input
                           {...field}
-                          type="number"
                           id="amount"
+                          type="number"
+                          step="0.01"
+                          onChange={(e) => field.onChange(parseFloat(e.target.value))}
                           placeholder="R$ 0,00"
                           className="w-full"
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                       />
                   );
                 }}

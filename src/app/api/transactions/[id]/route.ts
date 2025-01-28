@@ -5,7 +5,7 @@ import {getUserIdFromToken} from "@/app/functions/getUserId";
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const resolvedParams = await params; // Resolva a Promise para acessar o valor real de params
+        const resolvedParams = await params;
         const userId = await getUserIdFromToken();
         const client = await getMongoClient();
         const db = client.db('financeApp');
@@ -46,8 +46,10 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
         const db = client.db('financeApp');
 
         const transactionId = new ObjectId(resolvedParams.id);
+        console.log("transactionId", transactionId)
 
         const result = await db.collection('transactions').deleteOne({ _id: transactionId, userId });
+        console.log("result delete: ", result)
 
         if (result.deletedCount === 0) {
             return NextResponse.json({ error: 'Transaction not found' }, { status: 404 });
