@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/atoms/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/atoms/tabs"
 import type { ITransaction, ReportFrequency } from "@/interfaces/ITransaction"
-import { filterTransactionsByFrequency, calculateTotals, getCategoryTotals } from "@/app/functions/report"
+import { filterTransactionsByFrequency, getCategoryTotals } from "@/app/functions/report"
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from "recharts"
 import { SummaryCard } from "../molecules/SummaryCard"
-import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, Upload, Download } from "lucide-react"
+import { ArrowDownIcon, ArrowUpIcon, DollarSign, Upload, Download } from "lucide-react"
 import { generateMonthlyReportPDF } from "@/app/functions/generateFileReportTransactions"
 
 interface ReportModalProps {
@@ -22,14 +22,14 @@ export const ReportModal: React.FC<ReportModalProps> = ({ onClose, transactions:
     const [transactions, setTransactions] = useState<ITransaction[]>(initialTransactions)
     const [selectedFrequency, setSelectedFrequency] = useState<ReportFrequency>("weekly")
     const [filteredTransactions, setFilteredTransactions] = useState<ITransaction[]>([])
-    const [totals, setTotals] = useState({ totalIncome: 0, totalExpenses: 0 })
+    //const [totals, setTotals] = useState({ totalIncome: 0, totalExpenses: 0 })
     const [categoryTotals, setCategoryTotals] = useState<Record<string, number>>({})
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     useEffect(() => {
         const filtered = filterTransactionsByFrequency(transactions, selectedFrequency)
         setFilteredTransactions(filtered)
-        setTotals(calculateTotals(filtered))
+        //setTotals(calculateTotals(filtered))
         setCategoryTotals(getCategoryTotals(filtered))
     }, [selectedFrequency, transactions])
 
