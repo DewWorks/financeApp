@@ -9,6 +9,7 @@ import { filterTransactionsByFrequency, calculateTotals, getCategoryTotals } fro
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from "recharts"
 import { SummaryCard } from "../molecules/SummaryCard"
 import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, Upload, Download } from "lucide-react"
+import { generateMonthlyReportPDF } from "@/app/functions/generateFileReportTransactions"
 
 interface ReportModalProps {
     onClose: () => void
@@ -71,29 +72,33 @@ export const ReportModal: React.FC<ReportModalProps> = ({ onClose, transactions:
     }
 
     const generateMonthlyReport = () => {
-        const monthlyTransactions = filterTransactionsByFrequency(transactions, "monthly")
-        const monthlyTotals = calculateTotals(monthlyTransactions)
-        const monthlyCategoryTotals = getCategoryTotals(monthlyTransactions)
+        generateMonthlyReportPDF(transactions);
+    };
 
-        let reportContent = "Relatório Financeiro Mensal\n\n"
-        reportContent += `Saldo Total: R$ ${(monthlyTotals.totalIncome - monthlyTotals.totalExpenses).toFixed(2)}\n`
-        reportContent += `Total de Receitas: R$ ${monthlyTotals.totalIncome.toFixed(2)}\n`
-        reportContent += `Total de Despesas: R$ ${monthlyTotals.totalExpenses.toFixed(2)}\n\n`
-        reportContent += "Distribuição por Categoria:\n"
-
-        Object.entries(monthlyCategoryTotals).forEach(([category, total]) => {
-            reportContent += `${category}: R$ ${total.toFixed(2)}\n`
-        })
-
-        const blob = new Blob([reportContent], { type: "text/plain;charset=utf-8" })
-        const url = URL.createObjectURL(blob)
-        const link = document.createElement("a")
-        link.href = url
-        link.download = "relatorio_mensal.txt"
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-    }
+    // const generateMonthlyReport = () => {
+    //     const monthlyTransactions = filterTransactionsByFrequency(transactions, "monthly")
+    //     const monthlyTotals = calculateTotals(monthlyTransactions)
+    //     const monthlyCategoryTotals = getCategoryTotals(monthlyTransactions)
+    //
+    //     let reportContent = "Relatório Financeiro Mensal\n\n"
+    //     reportContent += `Saldo Total: R$ ${(monthlyTotals.totalIncome - monthlyTotals.totalExpenses).toFixed(2)}\n`
+    //     reportContent += `Total de Receitas: R$ ${monthlyTotals.totalIncome.toFixed(2)}\n`
+    //     reportContent += `Total de Despesas: R$ ${monthlyTotals.totalExpenses.toFixed(2)}\n\n`
+    //     reportContent += "Distribuição por Categoria:\n"
+    //
+    //     Object.entries(monthlyCategoryTotals).forEach(([category, total]) => {
+    //         reportContent += `${category}: R$ ${total.toFixed(2)}\n`
+    //     })
+    //
+    //     const blob = new Blob([reportContent], { type: "text/plain;charset=utf-8" })
+    //     const url = URL.createObjectURL(blob)
+    //     const link = document.createElement("a")
+    //     link.href = url
+    //     link.download = "relatorio_mensal.txt"
+    //     document.body.appendChild(link)
+    //     link.click()
+    //     document.body.removeChild(link)
+    // }
 
     return (
         <motion.div
