@@ -12,17 +12,20 @@ import { Button } from '@/components/ui/atoms/button'
 import { useRouter } from 'next/navigation'
 import { Title } from '@/components/ui/molecules/Title'
 import { motion } from 'framer-motion'
-import { ExpensePrediction } from '@/components/ai/ExpensePrediction'
-import {CashFlowChart} from "@/components/ui/charts/CashFlowChart";
-import {DistributionChart} from "@/components/ui/charts/DistributionChart";
-import {RecentTransactionsChart} from "@/components/ui/charts/RecentTransactionChart";
-import {IncomeVsExpensesChart} from "@/components/ui/charts/IncomeVsExpensesChart";
+import { CashFlowChart } from "@/components/ui/charts/CashFlowChart"
+import { DistributionChart } from "@/components/ui/charts/DistributionChart"
+import { RecentTransactionsChart } from "@/components/ui/charts/RecentTransactionChart"
+import { IncomeVsExpensesChart } from "@/components/ui/charts/IncomeVsExpensesChart"
+import { Toast } from "@/components/ui/atoms/toast"
+import { FinancialGoals } from "@/components/ui/organisms/FinancialGoals"
+import {useEffect} from "react";
+import Swal from "sweetalert2";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
 
 export default function DashboardFinanceiro() {
   const router = useRouter()
-  const { transactions, addTransaction, editTransaction, deleteTransaction } = useTransactions()
+  const { transactions, addTransaction, editTransaction, deleteTransaction, toast, setToast } = useTransactions()
 
   const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0)
   const totalExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0)
@@ -91,15 +94,39 @@ export default function DashboardFinanceiro() {
     await deleteTransaction(transactionId)
   }
 
-  return (
-    <div className="min-h-screen bg-gray-100">
-      <nav className="bg-white shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <Title/>
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token')
+    if (!token) {
+      Swal.fire({
+        title: 'Autenticação necessária',
+        html: `
+          <div class="flex flex-col items-center">
+            <h2 class="text-lg font-semibold">Faça login para continuar</h2>
+            <button class="mt-4 bg-blue-500 text-white px-4 py-2 rounded" onClick="window.location.href = '/auth/login'">
+              Fazer Login
+            </button>
           </div>
-          <div className="flex items-center">
-            <Button onClick={handleLogin} variant="ghost">
+        `,
+        showCloseButton: true,
+        showConfirmButton: false,
+        customClass: {
+          popup: 'p-4 bg-white rounded-lg shadow-md',
+          title: 'text-lg font-semibold',
+          htmlContainer: 'flex flex-col items-center'
+        }
+      })
+    }
+  }, [])
+
+  return (
+      <div className="min-h-screen bg-gray-100">
+        <nav className="bg-white shadow-md">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between h-16">
+              <Title/>
+            </div>
+            <div className="flex items-center">
+              <Button onClick={handleLogin} variant="ghost">
                 <LogIn className="h-5 w-5 mr-2" />
                 Entrar
               </Button>
@@ -108,92 +135,94 @@ export default function DashboardFinanceiro() {
                 Sair
               </Button>
             </div>
-        </div>
-      </nav>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <motion.div
-            initial={{opacity: 0, y: -20}}
-            animate={{opacity: 1, y: 0}}
-            transition={{duration: 0.5}}
-            className="flex justify-between items-center mb-8"
-        >
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard Financeiro</h1>
-            <p className="mt-1 text-sm text-gray-600">Visão geral das suas finanças pessoais</p>
           </div>
-          <div className="space-x-2">
-            <AddIncomeDialog onAddIncome={handleAddIncome}/>
-            <AddExpenseDialog onAddExpense={handleAddExpense}/>
-            <ExpensePrediction transactions={transactions}/>
+        </nav>
+
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <motion.div
+              initial={{opacity: 0, y: -20}}
+              animate={{opacity: 1, y: 0}}
+              transition={{duration: 0.5}}
+              className="flex justify-between items-center mb-8"
+          >
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Dashboard Financeiro</h1>
+              <p className="mt-1 text-sm text-gray-600">Visão geral das suas finanças pessoais</p>
+            </div>
+            <div className="space-x-2">
+              <AddIncomeDialog onAddIncome={handleAddIncome}/>
+              <AddExpenseDialog onAddExpense={handleAddExpense}/>
+            </div>
+          </motion.div>
+
+          <motion.div
+              initial={{opacity: 0, y: 20}}
+              animate={{opacity: 1, y: 0}}
+              transition={{duration: 0.5, delay: 0.2}}
+              className="grid grid-cols-1 gap-6 mb-8 sm:grid-cols-2 lg:grid-cols-3"
+          >
+            <SummaryCard
+                title="Saldo Total"
+                value={balance}
+                icon={DollarSign}
+                description="Atualizado agora"
+            />
+            <SummaryCard
+                title="Receitas"
+                value={totalIncome}
+                icon={ArrowUpIcon}
+                valueColor="text-green-600"
+                description={`+${((totalIncome / (totalIncome + totalExpense)) * 100).toFixed(1)}% do total`}
+            />
+            <SummaryCard
+                title="Despesas"
+                value={totalExpense}
+                icon={ArrowDownIcon}
+                valueColor="text-red-600"
+                description={`-${((totalExpense / (totalIncome + totalExpense)) * 100).toFixed(1)}% do total`}
+            />
+          </motion.div>
+
+          <motion.div
+              initial={{opacity: 0, y: 20}}
+              animate={{opacity: 1, y: 0}}
+              transition={{duration: 0.5, delay: 0.4}}
+              className="mb-8"
+          >
+            <FinancialGoals />
+          </motion.div>
+
+          <motion.div
+              initial={{opacity: 0, y: 20}}
+              animate={{opacity: 1, y: 0}}
+              transition={{duration: 0.5, delay: 0.6}}
+          >
+            <Card className="bg-white shadow-lg mb-8">
+              <CardTitle className="text-lg font-semibold text-gray-900">Todas as Transações</CardTitle>
+              <CardContent>
+                <TransactionsTable
+                    transactions={transactions}
+                    onEditTransaction={handleEditTransaction}
+                    onDeleteTransaction={handleDeleteTransaction}/>
+                {toast && (
+                    <Toast
+                        message={toast.message}
+                        type={toast.type}
+                        onClose={() => setToast(null)}
+                    />
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+          <div className="grid grid-cols-1 gap-6 mb-8 lg:grid-cols-2">
+            <DistributionChart pieChartData={pieChartData} colors={COLORS}/>
+            <RecentTransactionsChart barChartData={barChartData}/>
           </div>
-        </motion.div>
 
-        <motion.div
-            initial={{opacity: 0, y: 20}}
-            animate={{opacity: 1, y: 0}}
-            transition={{duration: 0.5, delay: 0.2}}
-            className="grid grid-cols-1 gap-6 mb-8 sm:grid-cols-2 lg:grid-cols-3"
-        >
-          <SummaryCard
-              title="Saldo Total"
-              value={balance}
-              icon={DollarSign}
-              description="Atualizado agora"
-          />
-          <SummaryCard
-              title="Receitas"
-              value={totalIncome}
-              icon={ArrowUpIcon}
-              valueColor="text-green-600"
-              description={`+${((totalIncome / (totalIncome + totalExpense)) * 100).toFixed(1)}% do total`}
-          />
-          <SummaryCard
-              title="Despesas"
-              value={totalExpense}
-              icon={ArrowDownIcon}
-              valueColor="text-red-600"
-              description={`-${((totalExpense / (totalIncome + totalExpense)) * 100).toFixed(1)}% do total`}
-          />
-        </motion.div>
-        <motion.div
-            initial={{opacity: 0, y: 20}}
-            animate={{opacity: 1, y: 0}}
-            transition={{duration: 0.5, delay: 1.2}}
-        >
-          <Card className="bg-white shadow-lg mb-8">
-            <CardTitle className="text-lg font-semibold text-gray-900">Todas as Transações</CardTitle>
-            {/*
-            <CardHeader className="flex flex-row items-center justify-between">
-
-              <div className="flex space-x-2">
-                <Button onClick={() => filterTransactions('week')}
-                        variant={selectedTimeRange === 'week' ? 'default' : 'outline'}>Semana</Button>
-                <Button onClick={() => filterTransactions('month')}
-                        variant={selectedTimeRange === 'month' ? 'default' : 'outline'}>Mês</Button>
-                <Button onClick={() => filterTransactions('year')}
-                        variant={selectedTimeRange === 'year' ? 'default' : 'outline'}>Ano</Button>
-                <Button onClick={() => filterTransactions('all')}
-                        variant={selectedTimeRange === 'all' ? 'default' : 'outline'}>Todas</Button>
-              </div>
-            </CardHeader>
-            */}
-            <CardContent>
-              <TransactionsTable
-                  transactions={transactions}
-                  onEditTransaction={handleEditTransaction}
-                  onDeleteTransaction={handleDeleteTransaction}/>
-            </CardContent>
-          </Card>
-        </motion.div>
-        <div className="grid grid-cols-1 gap-6 mb-8 lg:grid-cols-2">
-          <DistributionChart pieChartData={pieChartData} colors={COLORS}/>
-          <RecentTransactionsChart barChartData={barChartData}/>
-        </div>
-
-        <CashFlowChart lineChartData={lineChartData}/>
-        <IncomeVsExpensesChart areaChartData={areaChartData}/>
-      </main>
-    </div>
+          <CashFlowChart lineChartData={lineChartData}/>
+          <IncomeVsExpensesChart areaChartData={areaChartData}/>
+        </main>
+      </div>
   )
 }
+

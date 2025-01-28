@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/atoms/input"
 import { Label } from "@/components/ui/atoms/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/atoms/select"
 import { PlusIcon } from 'lucide-react'
-import { expenseTags, ITransaction } from '@/interfaces/ITransaction'
+import {expenseTags, ITransaction} from '@/interfaces/ITransaction'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -25,7 +25,7 @@ type ExpenseFormData = z.infer<typeof expenseSchema>
 
 interface AddExpenseDialogProps {
   onAddExpense: (description: string, amount: number, tag: string, date: string) => void
-  initialData?: ITransaction
+  initialData?: ITransaction;
 }
 
 export function AddExpenseDialog({ onAddExpense, initialData }: AddExpenseDialogProps) {
@@ -85,19 +85,21 @@ export function AddExpenseDialog({ onAddExpense, initialData }: AddExpenseDialog
               Valor (R$)
             </Label>
             <Controller
-              name="amount"
-              control={control}
-              render={({ field }) => (
-                <Input
-                  id="amount"
-                  type="number"
-                  step="0.01"
-                  {...field}
-                  onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                  placeholder="0.00"
-                  className="w-full"
-                />
-              )}
+                name="amount"
+                control={control}
+                render={({ field }) => {
+                  return (
+                      <Input
+                          {...field}
+                          id="amount"
+                          type="number"
+                          step="0.01"
+                          onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                          placeholder="R$ 0,00"
+                          className="w-full"
+                      />
+                  );
+                }}
             />
             {errors.amount && (
               <p className="text-red-500 text-sm">{errors.amount.message}</p>

@@ -23,7 +23,7 @@ export function DistributionChart({ pieChartData, colors }: DistributionChartPro
                         <PopoverTrigger>
                             <Info className="h-5 w-5 text-gray-500" />
                         </PopoverTrigger>
-                        <PopoverContent>
+                        <PopoverContent className="bg-white">
                             Este gráfico mostra a proporção entre suas receitas e despesas totais, permitindo uma visualização rápida do equilíbrio financeiro.
                         </PopoverContent>
                     </Popover>

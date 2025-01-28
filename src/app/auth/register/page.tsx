@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/atoms/button"
 import { Input } from "@/components/ui/atoms/input"
-import { Label } from "@/components/ui/atoms/label"
+import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/card"
 import { Title } from '@/components/ui/molecules/Title'
 

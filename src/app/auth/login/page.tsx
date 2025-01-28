@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/atoms/input"
 import { Label } from "@/components/ui/atoms/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/card"
 import { Title } from '@/components/ui/molecules/Title'
+import Swal from "sweetalert2";
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -21,16 +22,34 @@ export default function LoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       })
+
       if (response.ok) {
-        router.push('/')
+        const data: {message: string, token: string} = await response.json();
+        localStorage.setItem('auth_token', data.token);
+        Swal.fire({
+          icon: 'success',
+          title: 'Sucesso!',
+          text: 'Login realizado com sucesso.',
+        }).then(() => {
+          router.push('/')
+        })
       } else {
-        console.error('Login error: ERROR IN FORM LOGIN')
+        const errorData = await response.json()
+        Swal.fire({
+          icon: 'error',
+          title: 'Erro!',
+          text: errorData.message || 'Erro ao realizar login.',
+        })
       }
     } catch (error) {
       console.error('Login error:', error)
+      Swal.fire({
+        icon: 'error',
+        title: 'Erro!',
+        text: 'Ocorreu um erro inesperado. Tente novamente mais tarde.',
+      })
     }
   }
-
   const routerRegister = () => {
     router.push('/auth/register')
   }
