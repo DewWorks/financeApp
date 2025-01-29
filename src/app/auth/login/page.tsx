@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/atoms/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/card"
 import { Title } from '@/components/ui/molecules/Title'
 import Swal from "sweetalert2";
+import { IUser } from '@/interfaces/IUser'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -24,12 +25,17 @@ export default function LoginPage() {
       })
 
       if (response.ok) {
-        const data: {message: string, token: string} = await response.json();
+        const data: { token: string, tutorialGuide: boolean, executeQuery: boolean, userId: string } = await response.json();
         localStorage.setItem('auth_token', data.token);
+        localStorage.setItem('tutorial-guide', data.tutorialGuide.toString());
+        localStorage.setItem('execute-query', data.executeQuery.toString());
+        localStorage.setItem('user-id', data.userId.toString());
         Swal.fire({
           icon: 'success',
           title: 'Sucesso!',
           text: 'Login realizado com sucesso.',
+          confirmButtonText: "Entrar",
+          timer: 5000,
         }).then(() => {
           router.push('/')
         })
