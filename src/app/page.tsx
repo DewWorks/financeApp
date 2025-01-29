@@ -32,8 +32,6 @@ export default function DashboardFinanceiro() {
   const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0)
   const totalExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0)
   const balance = totalIncome - totalExpense
-  
-  const userId = localStorage.getItem('user-id')
 
   const pieChartData = [
     { name: 'Receitas', value: totalIncome },
@@ -61,6 +59,11 @@ export default function DashboardFinanceiro() {
 
   const [runTutorial, setRunTutorial] = useState(false)
 
+  const getUserIdLocal = () => {
+    const userId = localStorage.getItem('user-id')
+    return userId
+  }
+  
   // Verificar se o tutorial já foi visto
   useEffect(() => {
     const hasSeenTutorial = localStorage.getItem('tutorial-guide')
@@ -139,6 +142,7 @@ export default function DashboardFinanceiro() {
             driverObj.destroy(); // Finaliza o tutorial
             window.scrollTo({top: 0, behavior: "smooth"}); // Retorna ao topo
 
+            const userId = getUserIdLocal();
             try {
               await fetch("/api/admin/users/tutorialFinished", {
                 method: "POST",
