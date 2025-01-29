@@ -32,8 +32,7 @@ export default function DashboardFinanceiro() {
   const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0)
   const totalExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0)
   const balance = totalIncome - totalExpense
-
-  const hasSeenTutorial = localStorage.getItem('tutorial-guide')
+  
   const userId = localStorage.getItem('user-id')
 
   const pieChartData = [
@@ -64,7 +63,8 @@ export default function DashboardFinanceiro() {
 
   // Verificar se o tutorial já foi visto
   useEffect(() => {
-    if (hasSeenTutorial === 'false') {
+    const hasSeenTutorial = localStorage.getItem('tutorial-guide')
+    if (!runTutorial && hasSeenTutorial === 'false') {
       setRunTutorial(true)
     }
   }, [])
@@ -148,13 +148,12 @@ export default function DashboardFinanceiro() {
                 body: JSON.stringify({ userId }),
               });
 
-              console.log("Tutorial status updated successfully");
-
-              const hasSeenTutorial = localStorage.setItem('tutorial-guide', true.toString())
             } catch (error) {
               console.error("Failed to update tutorial status:", error);
             }
-
+            setRunTutorial(false)
+            updateLocalTutorial()
+            
             // Exibe alerta de sucesso
             Swal.fire({
               title: "🎉 Tutorial Concluído!",
@@ -175,6 +174,10 @@ export default function DashboardFinanceiro() {
   const handleLogout = () => {
     localStorage.removeItem('token')
     router.push('/auth/login')
+  }
+
+  const updateLocalTutorial = () => {
+    localStorage.setItem("tutorial-guide", "true");
   }
 
   const handleLogin = () => {
