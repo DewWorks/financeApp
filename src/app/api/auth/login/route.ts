@@ -38,7 +38,7 @@ export async function POST(request: Request) {
       maxAge: 60 * 60 * 24, // 1 day
       path: '/',
     })
-    return NextResponse.json({ message: 'Login successful', token: token }, { status: 200 })
+    return NextResponse.json({ message: 'Login successful', token: token, userId: user._id, tutorialGuide: user.tutorialGuide, executeQuery: user.executeQuery }, { status: 200 })
   } catch (error) {
     console.error('Login error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
