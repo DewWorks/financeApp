@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/atoms/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/card"
 import { Title } from '@/components/ui/molecules/Title'
 import Swal from "sweetalert2";
-import { IUser } from '@/interfaces/IUser'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')

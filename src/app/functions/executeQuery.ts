@@ -1,5 +1,4 @@
 import { getMongoClient } from "@/db/connectionDb";
-import { User } from "../models/User";
 
 export async function updateAllUsersFields() {
     try {
