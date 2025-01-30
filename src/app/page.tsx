@@ -40,8 +40,8 @@ export default function DashboardFinanceiro() {
     const { theme, toggleTheme } = useTheme()
 
     return (
-        <Button onClick={toggleTheme} variant="ghost" className="m-4 dark:text-white light:text-black">
-          {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+        <Button onClick={toggleTheme} variant="ghost" className="my-4 dark:text-white light:text-black">
+          {theme === "light" ? <Moon className="h-5 w-5 sm:h-4 sm:h-4" /> : <Sun className="h-5 w-5" />}
         </Button>
     )
   }
