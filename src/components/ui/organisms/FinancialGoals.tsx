@@ -95,7 +95,7 @@ export function FinancialGoals() {
                     <DialogTrigger asChild>
                         <Button variant="outline" size="sm" className="bg-blue-600 text-white">
                             <Plus className="h-4 w-4 mr-2" />
-                            Nova Meta
+                            Nova
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="bg-white">

@@ -1,6 +1,6 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/atoms/table"
 import { Button } from "@/components/ui/atoms/button"
-import { AlertTriangle, Edit2, Pencil, Trash2 } from 'lucide-react'
+import { AlertTriangle, Edit, Edit2, Trash2 } from 'lucide-react'
 import { ITransaction } from "@/interfaces/ITransaction"
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/atoms/dialog"
@@ -95,10 +95,10 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
                                     <TableCell>
                                         <div className="flex space-x-2">
                                             <Button variant="outline" size="sm" onClick={() => handleEditClick(transaction)}>
-                                                <Pencil className="h-4 w-4" />
+                                                <Edit className="text-blue-600 h-4 w-4" />
                                             </Button>
                                             <Button variant="outline" size="sm" onClick={() => handleDeleteClick(transaction)}>
-                                                <Trash2 className="h-4 w-4" />
+                                                <Trash2 className="text-red-500 h-4 w-4" />
                                             </Button>
                                         </div>
                                     </TableCell>
@@ -140,11 +140,22 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
                                 </p>
                             </div>
                             <div className="flex justify-end space-x-2">
-                                <Button variant="outline" size="sm" onClick={() => handleEditClick(transaction)}>
-                                    <Pencil className="h-4 w-4" />
+                                <Button
+                                    className="p-2 hover:text-blue-700"
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleEditClick(transaction)}
+                                >
+                                    <Edit className="h-4 w-4 text-blue-600" />
                                 </Button>
-                                <Button variant="outline" size="sm" onClick={() => handleDeleteClick(transaction)}>
-                                    <Trash2 className="h-4 w-4" />
+
+                                <Button
+                                    className="p-2 hover:text-red-700"
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleDeleteClick(transaction)}
+                                >
+                                    <Trash2 className="h-4 w-4 text-red-500" />
                                 </Button>
                             </div>
                         </div>
