@@ -5,6 +5,7 @@ export interface IGoal {
     userId: ObjectId
     name: string;
     targetAmount: number;
-    currentAmount: number;
+    currentAmount: number;  
     tag: string;
+    date?: string | Date | null;
 }

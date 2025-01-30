@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/atoms/button";
 import { Input } from "@/components/ui/atoms/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/atoms/dialog";
 import { Target, Plus, DollarSign, Trash2, Edit } from 'lucide-react';
+import { Thermometer, ThermometerSnowflake, ThermometerSun } from 'lucide-react';
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 import { incomeTags } from '@/interfaces/ITransaction';
@@ -18,6 +19,7 @@ export function FinancialGoals() {
     const { transactions } = useTransactions();
     const [newGoalName, setNewGoalName] = React.useState('');
     const [newGoalAmount, setNewGoalAmount] = React.useState('');
+    const [newGoalDeadline, setNewGoalDeadline] = React.useState('');
     const [newGoalTag, setNewGoalTag] = React.useState(incomeTags[0]);
     const [isDialogOpen, setIsDialogOpen] = React.useState(false);
     const [editingGoal, setEditingGoal] = React.useState<IGoal | null>(null);
@@ -29,11 +31,44 @@ export function FinancialGoals() {
         return Math.min(currentAmount, goal.targetAmount);
     };
 
+    const getThermometerStatus = (goal: IGoal) => {
+        if (!goal.date) return { color: 'gray', icon: <Thermometer className="h-5 w-5 text-gray-500" />, label: 'Sem prazo' };
+
+        const deadlineDate = new Date(goal.date);
+        const today = new Date();
+        const timeDiff = deadlineDate.getTime() - today.getTime();
+        const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24)); // Converte ms para dias
+        const progressPercentage = (goal.currentAmount / goal.targetAmount) * 100;
+
+        // Lógica para definir a cor e o ícone com base no tempo e progresso
+        if (daysLeft <= 7 && progressPercentage < 50) {
+            return { color: 'red', icon: <Thermometer className="h-5 w-5 text-red-500" />, label: 'Muito quente' };
+        } else if (daysLeft <= 14 && progressPercentage < 70) {
+            return { color: 'orange', icon: <ThermometerSun className="h-5 w-5 text-orange-500" />, label: 'Quente' };
+        } else if (daysLeft > 30 && progressPercentage < 30) {
+            return { color: 'blue', icon: <ThermometerSnowflake className="h-5 w-5 text-blue-500" />, label: 'Frio' };
+        } else if (daysLeft > 30 && progressPercentage > 70) {
+            return { color: 'green', icon: <Thermometer className="h-5 w-5 text-green-500" />, label: 'Equilibrado' };
+        } else {
+            return { color: 'gray', icon: <Thermometer className="h-5 w-5 text-gray-500" />, label: 'Neutro' };
+        }
+    };
+
+    const handleOpenNewGoalDialog = () => {
+        setEditingGoal(null);
+        setNewGoalName('');
+        setNewGoalAmount('');
+        setNewGoalTag(incomeTags[0]);
+        setNewGoalDeadline('');
+        setIsDialogOpen(true);
+    };
+
     const handleOpenEditDialog = (goal: IGoal) => {
         setEditingGoal(goal);
         setNewGoalName(goal.name);
         setNewGoalAmount(goal.targetAmount.toString());
         setNewGoalTag(goal.tag);
+        setNewGoalDeadline(goal.date ? goal.date.toString() : '');
         setIsDialogOpen(true);
     };
 
@@ -49,6 +84,7 @@ export function FinancialGoals() {
                 name: newGoalName,
                 targetAmount: parseFloat(newGoalAmount),
                 tag: newGoalTag,
+                date: newGoalDeadline,
                 currentAmount: editingGoal.currentAmount,
             });
         } else {
@@ -56,6 +92,7 @@ export function FinancialGoals() {
                 name: newGoalName,
                 targetAmount: parseFloat(newGoalAmount),
                 tag: newGoalTag,
+                date: newGoalDeadline,
                 currentAmount: 0,
             });
         }
@@ -93,7 +130,7 @@ export function FinancialGoals() {
                 </div>
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="bg-blue-600 text-white">
+                        <Button variant="outline" size="sm" className="bg-blue-600 text-white" onClick={handleOpenNewGoalDialog}>
                             <Plus className="h-4 w-4 mr-2" />
                             Nova
                         </Button>
@@ -113,6 +150,12 @@ export function FinancialGoals() {
                                 placeholder="Valor alvo"
                                 value={newGoalAmount}
                                 onChange={(e) => setNewGoalAmount(e.target.value)}
+                            />
+                            <Input
+                                type="date"
+                                placeholder="Data final"
+                                value={newGoalDeadline}
+                                onChange={(e) => setNewGoalDeadline(e.target.value)}
                             />
                             <Select value={newGoalTag} onValueChange={setNewGoalTag}>
                                 <SelectTrigger>
@@ -143,6 +186,7 @@ export function FinancialGoals() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {goals.map(goal => {
                             const currentAmount = calculateGoalProgress(goal);
+                            const { color, icon, label } = getThermometerStatus(goal);
                             return (
                                 <Card key={goal._id?.toString()} className="bg-gray-50">
                                     <CardContent className="p-4">
@@ -177,6 +221,11 @@ export function FinancialGoals() {
                                                     R$ {currentAmount.toFixed(2)} / R$ {goal.targetAmount.toFixed(2)}
                                                 </p>
                                                 <p className="text-sm text-gray-600 mt-1">Tag: {goal.tag}</p>
+                                                <p className="text-sm text-gray-600 mt-1">Data final: {goal.date ? new Date(goal.date).toLocaleDateString() : 'Não definida'}</p>
+                                                <div className="flex items-center mt-2 space-x-2">
+                                                    {icon}
+                                                    <p className={`text-${color}-600 font-medium`}>{label}</p>
+                                                </div>
                                             </div>
                                         </div>
                                     </CardContent>

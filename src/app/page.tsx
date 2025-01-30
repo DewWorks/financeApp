@@ -51,7 +51,6 @@ export default function DashboardFinanceiro() {
         }
 
         const userData = await response.json();
-        console.log("setando user: ", userData)
         setUser(userData);
       } catch (error) {
         console.error("Erro ao buscar usuário:", error);
