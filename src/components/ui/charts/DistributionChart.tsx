@@ -16,9 +16,9 @@ export function DistributionChart({ pieChartData, colors }: DistributionChartPro
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.4 }}
         >
-            <Card className="bg-white shadow-lg">
+            <Card className="bg-white shadow-lg dark:bg-gray-800">
                 <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle className="text-lg font-semibold text-gray-900">Distribuição de Receitas e Despesas</CardTitle>
+                    <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">Distribuição de Receitas e Despesas</CardTitle>
                     <Popover>
                         <PopoverTrigger>
                             <Info className="h-5 w-5 text-gray-500" />
