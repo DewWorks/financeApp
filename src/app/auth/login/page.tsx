@@ -34,7 +34,7 @@ export default function LoginPage() {
           title: 'Sucesso!',
           text: 'Login realizado com sucesso.',
           confirmButtonText: "Entrar",
-          timer: 5000,
+          timer: 3000,
         }).then(() => {
           router.push('/')
         })

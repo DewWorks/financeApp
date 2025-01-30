@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/atoms/input"
 import { Label } from "@/components/ui/atoms/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/card"
 import { Title } from '@/components/ui/molecules/Title'
+import Swal from 'sweetalert2'
 
 export default function RegisterPage() {
   const [name, setName] = useState('')
@@ -21,14 +22,42 @@ export default function RegisterPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password }),
-      })
+      });
+
       if (response.ok) {
-        router.push('/auth/login')
+        Swal.fire({
+          icon: 'success',
+          title: 'Sucesso!',
+          text: 'Cadastro realizado com sucesso.',
+          confirmButtonText: "Entrar",
+          timer: 3000,
+        }).then(() => {
+          router.push('/auth/login');
+        });
       } else {
-        // Handle errors (e.g., show error message)
+        const errorData = await response.json();
+        Swal.fire({
+          icon: 'error',
+          title: 'Erro!',
+          text: errorData.message || 'Erro ao realizar cadastro.',
+        });
       }
-    } catch (error) {
-      console.error('Registration error:', error)
+    } catch (error: unknown) {
+      console.error("Erro ao cadastrar:", error);
+
+      let errorMessage = 'Ocorreu um erro ao tentar cadastrar. Por favor, tente novamente.';
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+
+      Swal.fire({
+        icon: 'error',
+        title: 'Erro inesperado!',
+        text: errorMessage,
+      });
     }
   }
 
