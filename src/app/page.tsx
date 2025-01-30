@@ -4,7 +4,7 @@ import { useTransactions } from '@/hooks/useTransactions'
 import { driver } from "driver.js";
 import 'driver.js/dist/driver.css'
 import { Card, CardContent, CardTitle } from "@/components/ui/atoms/card"
-import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut } from 'lucide-react'
+import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, User } from 'lucide-react'
 import { AddIncomeDialog } from '@/components/ui/organisms/AddIncomeDialog'
 import { AddExpenseDialog } from '@/components/ui/organisms/AddExpenseDialog'
 import { ITransaction } from '@/interfaces/ITransaction'
@@ -22,17 +22,46 @@ import { Toast } from "@/components/ui/atoms/toast"
 import { FinancialGoals } from "@/components/ui/organisms/FinancialGoals"
 import {useEffect, useState} from "react";
 import Swal from "sweetalert2";
+import { IUser } from '@/interfaces/IUser';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
 
 export default function DashboardFinanceiro() {
   const router = useRouter()
+  const [user, setUser] = useState<IUser | null >(null);
   const { transactions, addTransaction, editTransaction, deleteTransaction, toast, setToast } = useTransactions()
 
   const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0)
   const totalExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0)
   const balance = totalIncome - totalExpense
 
+  useEffect(() => {
+    const fetchUser = async () => {
+      const userId = localStorage.getItem("user-id");
+
+      if (!userId) {
+        setUser(null);
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/admin/users/${userId}`);
+        if (!response.ok) {
+          throw new Error("Usuário não encontrado");
+        }
+
+        const userData = await response.json();
+        console.log("setando user: ", userData)
+        setUser(userData);
+      } catch (error) {
+        console.error("Erro ao buscar usuário:", error);
+        setUser(null);
+      }
+    };
+
+    fetchUser();
+  }, []);
+  
   const pieChartData = [
     { name: 'Receitas', value: totalIncome },
     { name: 'Despesas', value: totalExpense },
@@ -184,10 +213,6 @@ export default function DashboardFinanceiro() {
     localStorage.setItem("tutorial-guide", "true");
   }
 
-  const handleLogin = () => {
-    router.push('/auth/login')
-  }
-
   const handleAddIncome = (description: string, amount: number, tag: string, date: string) => {
     const newTransaction: Partial<ITransaction> = {
       type: 'income',
@@ -250,14 +275,48 @@ export default function DashboardFinanceiro() {
               <Title/>
             </div>
             <div className="flex items-center">
-              <Button onClick={handleLogin} variant="ghost">
-                <LogIn className="h-5 w-5 mr-2" />
-                Entrar
-              </Button>
-              <Button onClick={handleLogout} variant="ghost">
-                <LogOut className="h-5 w-5 mr-2" />
-                Sair
-              </Button>
+              {user ? (
+                  <motion.div
+                      className="flex items-center space-x-3 px-3 py-2 rounded-lg shadow-sm cursor-pointer"
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                  >
+                    <motion.div
+                        className="text-gray-700 font-semibold select-none cursor-default"
+                        initial={{ rotate: -10 }}
+                        animate={{ rotate: 0 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                      <User className="h-6 w-6 text-blue-600 cursor-default" />
+                    </motion.div>
+                    <motion.span
+                        className="text-gray-700 font-semibold cursor-default"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.5, delay: 0.2 }}
+                    >
+                      {user.name}
+                    </motion.span>
+                    <Button
+                        onClick={handleLogout}
+                        variant="ghost"
+                    >
+                      <LogOut className="h-5 w-5 mr-2 text-red-500" />
+                      Sair
+                    </Button>
+                  </motion.div>
+              ) : (
+                  <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.3 }}
+                  >
+                    <Button onClick={() => (window.location.href = "/auth/login")} variant="ghost">
+                      <LogIn className="h-5 w-5 mr-2 text-green-600" />
+                      Entrar
+                    </Button>
+                  </motion.div>
+              )}
             </div>
           </div>
         </nav>
@@ -324,7 +383,7 @@ export default function DashboardFinanceiro() {
               transition={{duration: 0.5, delay: 0.6}}
           >
             <Card className="bg-white shadow-lg mb-8">
-              <CardTitle id="transactions-table" className="text-lg font-semibold text-gray-900">Todas as Transações</CardTitle>
+              <CardTitle id="transactions-table" className="text-lg font-semibold text-gray-900 p-4">Todas as Transações</CardTitle>
               <CardContent>
                 <TransactionsTable
                     transactions={transactions}
