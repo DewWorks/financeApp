@@ -55,13 +55,13 @@ export function AddExpenseDialog({ onAddExpense, initialData }: AddExpenseDialog
           Despesa
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-white sm:max-w-[425px]">
+      <DialogContent className="bg-white sm:max-w-[425px] dark:bg-gray-800">
         <DialogHeader>
-          <DialogTitle className="text-lg font-semibold text-center">Adicionar Despesa</DialogTitle>
+          <DialogTitle className="text-lg font-semibold text-center dark:text-white">Adicionar Despesa</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
           <div className="space-y-2">
-            <Label htmlFor="description" className="text-sm font-medium">
+            <Label htmlFor="description" className="text-sm font-medium dark:text-white">
               Descrição
             </Label>
             <Controller
@@ -72,7 +72,7 @@ export function AddExpenseDialog({ onAddExpense, initialData }: AddExpenseDialog
                   id="description"
                   {...field}
                   placeholder="Ex: Aluguel, Supermercado"
-                  className="w-full"
+                  className="w-full dark:text-white"
                 />
               )}
             />
@@ -81,7 +81,7 @@ export function AddExpenseDialog({ onAddExpense, initialData }: AddExpenseDialog
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="amount" className="text-sm font-medium">
+            <Label htmlFor="amount" className="text-sm font-medium dark:text-white">
               Valor (R$)
             </Label>
             <Controller
@@ -96,7 +96,7 @@ export function AddExpenseDialog({ onAddExpense, initialData }: AddExpenseDialog
                           step="0.01"
                           onChange={(e) => field.onChange(parseFloat(e.target.value))}
                           placeholder="R$ 0,00"
-                          className="w-full"
+                          className="w-full dark:text-white"
                       />
                   );
                 }}
@@ -106,7 +106,7 @@ export function AddExpenseDialog({ onAddExpense, initialData }: AddExpenseDialog
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="tag" className="text-sm font-medium">
+            <Label htmlFor="tag" className="text-sm font-medium dark:text-white">
               Categoria
             </Label>
             <Controller
@@ -114,7 +114,7 @@ export function AddExpenseDialog({ onAddExpense, initialData }: AddExpenseDialog
               control={control}
               render={({ field }) => (
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full dark:text-white">
                     <SelectValue placeholder="Selecione uma categoria" />
                   </SelectTrigger>
                   <SelectContent>
@@ -132,7 +132,7 @@ export function AddExpenseDialog({ onAddExpense, initialData }: AddExpenseDialog
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="date" className="text-sm font-medium">
+            <Label htmlFor="date" className="text-sm font-medium dark:text-white">
               Data
             </Label>
             <Controller
@@ -143,7 +143,7 @@ export function AddExpenseDialog({ onAddExpense, initialData }: AddExpenseDialog
                   id="date"
                   type="date"
                   {...field}
-                  className="w-full"
+                  className="w-full dark:text-white"
                 />
               )}
             />
