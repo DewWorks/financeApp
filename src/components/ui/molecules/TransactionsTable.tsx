@@ -9,8 +9,8 @@ import { AddIncomeDialog } from "../organisms/AddIncomeDialog"
 
 interface TransactionsTableProps {
     transactions: ITransaction[]
-    onEditTransaction: (transaction: ITransaction) => void
-    onDeleteTransaction: (transactionId: string) => void
+    onEditTransaction?: (transaction: ITransaction) => void
+    onDeleteTransaction?: (transactionId: string) => void
 }
 
 function getRandomColor() {
@@ -34,7 +34,7 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
     }
 
     const handleConfirmDelete = () => {
-        if (transactionToDelete && transactionToDelete._id) {
+        if (transactionToDelete && transactionToDelete._id && onDeleteTransaction) {
             onDeleteTransaction(transactionToDelete._id.toString())
             setDeleteDialogOpen(false)
             setTransactionToDelete(null)
@@ -42,7 +42,7 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
     }
 
     const handleEditTransaction = async (description: string, amount: number, tag: string, date: string) => {
-        if (transactionToEdit) {
+        if (transactionToEdit && transactionToEdit._id && onEditTransaction) {
             const updatedTransaction = { ...transactionToEdit, description, amount, tag, date }
             try {
                 onEditTransaction(updatedTransaction)

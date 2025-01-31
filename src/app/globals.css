@@ -50,3 +50,9 @@
 .custom-popover .driver-popover-close-btn:hover {
     color: #cc0000 !important;
 }
+
+@layer base {
+    img{
+        display: initial;
+    }
+}
