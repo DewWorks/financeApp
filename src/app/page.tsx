@@ -25,6 +25,7 @@ import Swal from "sweetalert2"
 import type { IUser } from "@/interfaces/IUser"
 import { ThemeProvider, useTheme } from "@/components/ui/organisms/ThemeContext"
 import { ReportButton } from '@/components/ui/molecules/ReportButton'
+import { useGoals } from "@/hooks/useGoals"
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"]
 
@@ -32,7 +33,8 @@ export default function DashboardFinanceiro() {
   const router = useRouter()
   const [user, setUser] = useState<IUser | null>(null)
   const { transactions, addTransaction, editTransaction, deleteTransaction, toast, setToast } = useTransactions()
-
+  const { goals } = useGoals()
+  
   const totalIncome = transactions.filter((t) => t.type === "income").reduce((sum, t) => sum + t.amount, 0)
   const totalExpense = transactions.filter((t) => t.type === "expense").reduce((sum, t) => sum + t.amount, 0)
   const balance = totalIncome - totalExpense
@@ -341,9 +343,10 @@ export default function DashboardFinanceiro() {
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Dashboard Financeiro</h1>
                 <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Visão geral das suas finanças pessoais</p>
               </div>
-              <div className="space-x-2" id="add-transactions">
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2" id="add-transactions">
                 <AddIncomeDialog onAddIncome={handleAddIncome} />
                 <AddExpenseDialog onAddExpense={handleAddExpense} />
+                {user && <ReportButton user={user} transactions={transactions} goals={goals} />}
               </div>
             </motion.div>
 

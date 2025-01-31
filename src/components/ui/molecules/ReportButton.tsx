@@ -5,12 +5,16 @@ import { ReportModal } from '@/components/ui/organisms/ReportModal';
 import { Button } from '@/components/ui/atoms/button';
 import { motion } from 'framer-motion';
 import { ITransaction } from '@/interfaces/ITransaction';
+import { IGoal } from '@/interfaces/IGoal';
+import { IUser } from '@/interfaces/IUser';
 
 interface ReportButtonProps {
     transactions: ITransaction[];
+    user: IUser
+    goals: IGoal[]
 }
 
-export const ReportButton: React.FC<ReportButtonProps> = ({ transactions }) => {
+export const ReportButton: React.FC<ReportButtonProps> = ({ user, transactions, goals }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const handleOpenModal = () => setIsModalOpen(true);
@@ -27,7 +31,7 @@ export const ReportButton: React.FC<ReportButtonProps> = ({ transactions }) => {
                 <span className="text-lg">📊</span>
                 <span>Relatório</span>
             </Button>
-            {isModalOpen && <ReportModal onClose={handleCloseModal} transactions={transactions} />}
+            {isModalOpen && <ReportModal onClose={handleCloseModal} user={user} transactions={transactions} goals={goals} />}
         </motion.div>
     );
 };
