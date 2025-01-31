@@ -19,9 +19,9 @@ export function CashFlowChart({ lineChartData }: CashFlowChartProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.8 }}
         >
-            <Card className="bg-white shadow-lg mb-8">
+            <Card className="bg-white shadow-lg mb-8 dark:bg-gray-800">
                 <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle className="text-lg font-semibold text-gray-900">Fluxo de Caixa</CardTitle>
+                    <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">Fluxo de Caixa</CardTitle>
                     <Popover>
                         <PopoverTrigger>
                             <Info className="h-5 w-5 text-gray-500" />

@@ -23,6 +23,8 @@ export async function POST(request: Request) {
       name,
       email,
       password: hashedPassword,
+      tutorialGuide: false,
+      executeQuery: false
     })
 
     return NextResponse.json({ message: 'User registered successfully' }, { status: 201 })

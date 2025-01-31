@@ -1,6 +1,6 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/atoms/table"
 import { Button } from "@/components/ui/atoms/button"
-import { AlertTriangle, Edit2, Pencil, Trash2 } from 'lucide-react'
+import { AlertTriangle, Edit, Edit2, Trash2 } from 'lucide-react'
 import { ITransaction } from "@/interfaces/ITransaction"
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/atoms/dialog"
@@ -57,10 +57,10 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
     return (
         <>
             {/* Desktop view */}
-            <div className="hidden md:block">
+            <div className="hidden md:block dark:bg-gray-800 ">
                 <Table>
                     <TableHeader>
-                        <TableRow className="text-black">
+                        <TableRow className="text-black dark:text-white">
                             <TableHead>Data</TableHead>
                             <TableHead>Descrição</TableHead>
                             <TableHead>Valor</TableHead>
@@ -74,13 +74,13 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
                             const tagColor = getRandomColor();
                             return (
                                 <TableRow key={transaction._id?.toString()} className={ transaction.type === 'income' ? 'bg-green-50' : 'bg-red-50'}>
-                                    <TableCell className="text-black">{new Date(transaction.date).toLocaleDateString()}</TableCell>
-                                    <TableCell className="text-black">{transaction.description}</TableCell>
-                                    <TableCell className={transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}>
+                                    <TableCell className="text-black dark:text-white dark:bg-gray-800">{new Date(transaction.date).toLocaleDateString()}</TableCell>
+                                    <TableCell className="text-black dark:text-white dark:bg-gray-800">{transaction.description}</TableCell>
+                                    <TableCell className={transaction.type === 'income' ? 'text-green-600 dark:bg-gray-800' : 'text-red-600 dark:bg-gray-800'}>
                                         R$ {transaction.amount !== undefined && transaction.amount !== null ? transaction.amount.toFixed(2) : 'N/A'}
                                     </TableCell>
-                                    <TableCell className={transaction.type === 'income' ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>{transaction.type === 'income' ? 'Receita' : 'Despesa'}</TableCell>
-                                    <TableCell>
+                                    <TableCell className={transaction.type === 'income' ? 'text-green-600 font-bold dark:bg-gray-800' : 'text-red-600 font-bold dark:bg-gray-800'}>{transaction.type === 'income' ? 'Receita' : 'Despesa'}</TableCell>
+                                    <TableCell className="dark:bg-gray-800">
                                         <span
                                             className="px-2 py-1 rounded-full text-xs font-semibold"
                                             style={{
@@ -92,13 +92,13 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
                                             {transaction.tag}
                                         </span>
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="dark:bg-gray-800">
                                         <div className="flex space-x-2">
                                             <Button variant="outline" size="sm" onClick={() => handleEditClick(transaction)}>
-                                                <Pencil className="h-4 w-4" />
+                                                <Edit className="text-blue-600 h-4 w-4" />
                                             </Button>
                                             <Button variant="outline" size="sm" onClick={() => handleDeleteClick(transaction)}>
-                                                <Trash2 className="h-4 w-4" />
+                                                <Trash2 className="text-red-500 h-4 w-4" />
                                             </Button>
                                         </div>
                                     </TableCell>
@@ -110,15 +110,15 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
             </div>
 
             {/* Mobile view */}
-            <div className="md:hidden space-y-4">
+            <div className="md:hidden space-y-4 dark:bg-gray-800">
                 {transactions.map((transaction) => {
                     const tagColor = getRandomColor();
                     return (
-                        <div key={transaction._id?.toString()} className={`p-4 rounded-lg shadow ${transaction.type === 'income' ? 'bg-green-50' : 'bg-red-50'}`}>
-                            <div className="flex justify-between items-start mb-2">
+                        <div key={transaction._id?.toString()} className={`p-4 rounded-lg shadow dark:bg-gray-800 ${transaction.type === 'income' ? 'bg-green-50' : 'bg-red-50'}`}>
+                            <div className="flex justify-between items-start mb-2 dark:bg-gray-800">
                                 <div>
-                                    <p className="font-bold">{transaction.description}</p>
-                                    <p className="text-sm text-gray-600">{new Date(transaction.date).toLocaleDateString()}</p>
+                                    <p className="font-bold dark:text-white">{transaction.description}</p>
+                                    <p className="text-sm text-gray-600 dark:text-white">{new Date(transaction.date).toLocaleDateString()}</p>
                                 </div>
                                 <span
                                     className="px-2 py-1 rounded-full text-xs font-semibold"
@@ -140,11 +140,22 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
                                 </p>
                             </div>
                             <div className="flex justify-end space-x-2">
-                                <Button variant="outline" size="sm" onClick={() => handleEditClick(transaction)}>
-                                    <Pencil className="h-4 w-4" />
+                                <Button
+                                    className="p-2 hover:text-blue-700"
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleEditClick(transaction)}
+                                >
+                                    <Edit className="h-4 w-4 text-blue-600" />
                                 </Button>
-                                <Button variant="outline" size="sm" onClick={() => handleDeleteClick(transaction)}>
-                                    <Trash2 className="h-4 w-4" />
+
+                                <Button
+                                    className="p-2 hover:text-red-700"
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleDeleteClick(transaction)}
+                                >
+                                    <Trash2 className="h-4 w-4 text-red-500" />
                                 </Button>
                             </div>
                         </div>
@@ -153,7 +164,7 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
             </div>
 
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                <DialogContent className="sm:max-w-[425px] bg-white">
+                <DialogContent className="sm:max-w-[425px] bg-white dark:bg-gray-900 dark:text-white">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-destructive">
                             <AlertTriangle className="h-5 w-5" />
@@ -184,7 +195,7 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
             </Dialog>
 
             <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-                <DialogContent className="sm:max-w-[425px] bg-white">
+                <DialogContent className="sm:max-w-[425px] bg-white dark:bg-gray-900 dark:text-white">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-primary">
                             <Edit2 className="h-5 w-5" />
@@ -211,4 +222,3 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
         </>
     )
 }
-
