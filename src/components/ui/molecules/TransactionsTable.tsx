@@ -147,18 +147,20 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
               {transaction.type === "income" ? "Receita" : "Despesa"}
             </span>
                                             </div>
-                                            <span className={`text-sm ${transaction.type === "income" ? "text-green-500" : "text-red-500"}`}>
-            {new Date(transaction.date).toLocaleDateString()}
-          </span>
+                                            <div className="flex space-x-2">
+                                                <Button variant="outline" size="sm" onClick={() => handleEditClick(transaction)}>
+                                                    <Edit className="text-blue-600 h-4 w-4" />
+                                                </Button>
+                                                <Button variant="outline" size="sm" onClick={() => handleDeleteClick(transaction)}>
+                                                    <Trash2 className="text-red-500 h-4 w-4" />
+                                                </Button>
+                                            </div>
                                         </div>
-
-                                        <h3 className="text-lg font-semibold text-gray-800 mb-2 dark:text-white">{transaction.description}</h3>
-
                                         <div className="flex items-center space-x-2 text-sm text-gray-600 mb-2">
                                             <Calendar className="w-4 h-4" />
                                             <span>{new Date(transaction.date).toLocaleDateString()}</span>
                                         </div>
-
+                                        <h3 className="text-lg font-semibold text-gray-800 mb-2 dark:text-white">{transaction.description}</h3>
                                         <div className="flex items-center space-x-2 text-sm text-gray-600 mb-2">
                                             <Tag className="w-4 h-4" />
                                             <span
