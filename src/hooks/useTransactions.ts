@@ -3,26 +3,35 @@ import { ITransaction } from '@/interfaces/ITransaction'
 import {AuthErrorModal} from "@/components/ui/atoms/swalAuth";
 
 export function useTransactions() {
-  const [transactions, setTransactions] = useState<ITransaction[]>([])
+  const [originalTransactions, setOriginalTransactions] = useState<ITransaction[]>([]);
+  const [transactions, setTransactions] = useState<ITransaction[]>([]);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' | 'auth' } | null>(null)
-
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  const [availableMonths, setAvailableMonths] = useState<number[]>([]);
+  
   const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'auth') => {
     setToast({ message, type })
   }
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
 
   const getTransactions = useCallback(async () => {
     try {
       const response = await fetch(`/api/transactions?page=${currentPage}&limit=10`);
       if (response.ok) {
-        const data = await response.json();
-
-        // Corrigindo a verificação de `transactions`
+        const data: { totalPages: number, transactions: ITransaction[]} = await response.json();
         if (data && data.transactions && Array.isArray(data.transactions)) {
           setTransactions(data.transactions);
+          setOriginalTransactions(data.transactions);
           setTotalPages(data.totalPages || 1);
+          const months = Array.from(
+              new Set(
+                  data.transactions.map((transaction: { date: string | number | Date; }) =>
+                      Number(new Date(transaction.date).getMonth() + 1)
+                  )
+              )
+          ) as number[];
+          setAvailableMonths(months.sort((a, b) => a - b));
         } else {
           console.error('Unexpected data format:', data);
           setTransactions([]);
@@ -42,7 +51,22 @@ export function useTransactions() {
   }, [currentPage]);
 
   useEffect(() => {
-    getTransactions();
+    if (selectedMonth !== null) {
+      const filtered = originalTransactions.filter(
+          transaction => new Date(transaction.date).getMonth() + 1 === selectedMonth
+      );
+      setTransactions(filtered);
+      console.log("o tamanho das transactions: ", filtered)
+      const newTotalPages = Math.floor(filtered.length / 10) || 1;
+      console.log("o total pages: ", newTotalPages)
+      setTotalPages(newTotalPages);
+    } else {
+      setTransactions(originalTransactions);
+    }
+  }, [selectedMonth, originalTransactions]);
+
+  useEffect(() => {
+    const transactions = getTransactions();
   }, [getTransactions]);
 
   const handlePreviousPage = () => {
@@ -56,7 +80,19 @@ export function useTransactions() {
       setCurrentPage((prev) => prev + 1);
     }
   };
-  
+
+  const filterTransactionsByMonth = (month: number | null) => {
+    setSelectedMonth(month);
+    if (month === null) {
+      // Recarrega os dados da API para garantir que originalTransactions contenha todas as transações
+      getTransactions();
+    }
+  };
+
+  const filteredTransactions = selectedMonth !== null
+      ? originalTransactions.filter(transaction => new Date(transaction.date).getMonth() + 1 === selectedMonth)
+      : originalTransactions;
+
   const fetchTransactions = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/transactions');
@@ -176,6 +212,7 @@ export function useTransactions() {
 
   return {
     transactions,
+    filteredTransactions,
     addTransaction,
     editTransaction,
     deleteTransaction,
@@ -186,6 +223,9 @@ export function useTransactions() {
     totalPages,
     handlePreviousPage,
     handleNextPage,
+    filterTransactionsByMonth,
+    selectedMonth,
+    availableMonths
   }
 }
 

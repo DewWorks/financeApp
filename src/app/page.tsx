@@ -32,7 +32,7 @@ const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"]
 export default function DashboardFinanceiro() {
   const router = useRouter()
   const [user, setUser] = useState<IUser | null>(null)
-  const { transactions, addTransaction, editTransaction, deleteTransaction, toast, setToast, currentPage, totalPages, handlePreviousPage, handleNextPage } = useTransactions()
+  const { transactions, filteredTransactions, addTransaction, editTransaction, deleteTransaction, toast, setToast, currentPage, totalPages, handlePreviousPage, handleNextPage, filterTransactionsByMonth, selectedMonth, availableMonths } = useTransactions()
   const { goals } = useGoals()
   
   const totalIncome = transactions.filter((t) => t.type === "income").reduce((sum, t) => sum + t.amount, 0)
@@ -398,7 +398,6 @@ export default function DashboardFinanceiro() {
                 </CardTitle>
                 <CardContent>
                   {/* Paginação */}
-                  {totalPages > 1 && (
                       <div className="flex justify-center items-center mt-4 space-x-4">
                         {/* Botão de Página Anterior */}
                         <Button
@@ -423,9 +422,26 @@ export default function DashboardFinanceiro() {
                           <ChevronRight className="h-5 w-5" />
                         </Button>
                       </div>
-                  )}
+                  {/* Filtro por mês */}
+                  <div className="flex justify-center space-x-2 my-4">
+                    {availableMonths.map((month) => (
+                        <button
+                            key={month}
+                            className={`px-3 py-1 rounded-lg border ${selectedMonth === month ? 'bg-blue-500 text-white' : 'bg-white text-gray-800'}`}
+                            onClick={() => filterTransactionsByMonth(month)}
+                        >
+                          {new Date(0, month - 1).toLocaleString('pt-BR', { month: 'long' })}
+                        </button>
+                    ))}
+                    <button
+                        className="px-3 py-1 rounded-lg border bg-red-500 text-white"
+                        onClick={() => filterTransactionsByMonth(null)}
+                    >
+                      Limpar Filtro
+                    </button>
+                  </div>
                   <TransactionsTable
-                      transactions={transactions}
+                      transactions={filteredTransactions}
                       onEditTransaction={handleEditTransaction}
                       onDeleteTransaction={handleDeleteTransaction}
                   />
