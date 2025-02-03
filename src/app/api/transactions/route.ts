@@ -28,31 +28,44 @@ async function getUserIdFromToken() {
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const userId = await getUserIdFromToken()
-    console.log("UserId log: ", userId)
+    const userId = await getUserIdFromToken();
+    console.log("UserId log: ", userId);
+
+    // Obtendo parâmetros de paginação da query string
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "10", 10);
+    const skip = (page - 1) * limit;
+
     const client = await getMongoClient();
     const db = client.db("financeApp");
 
+    // Obtendo transações paginadas
     const transactions = await db.collection('transactions')
         .find({ userId })
         .sort({ date: -1 })
-        .toArray()
+        .skip(skip)
+        .limit(limit)
+        .toArray();
 
-    return NextResponse.json(transactions)
+    // Contando o total de transações para paginação
+    const totalTransactions = await db.collection('transactions').countDocuments({ userId });
+    const totalPages = Math.ceil(totalTransactions / limit);
+
+    return NextResponse.json({ transactions, totalPages });
   } catch (error) {
-    console.error('Get transactions error:', error)
+    console.error('Get transactions error:', error);
     if (error instanceof AuthError) {
-      return NextResponse.json({ error: error.message }, { status: error.status })
+      return NextResponse.json({ error: error.message }, { status: error.status });
     }
     if (error instanceof Error && error.name === 'MongoNetworkError') {
-      return NextResponse.json({ error: 'Database connection error' }, { status: 503 })
+      return NextResponse.json({ error: 'Database connection error' }, { status: 503 });
     }
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
-
 
 export async function POST(request: Request) {
   try {

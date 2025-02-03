@@ -10,13 +10,60 @@ export function useTransactions() {
     setToast({ message, type })
   }
 
-  const fetchTransactions = useCallback(async () => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const getTransactions = useCallback(async () => {
     try {
-      const response = await fetch('/api/transactions');
+      const response = await fetch(`/api/transactions?page=${currentPage}&limit=10`);
       if (response.ok) {
         const data = await response.json();
-        if (Array.isArray(data)) {
-          setTransactions(data);
+
+        // Corrigindo a verificação de `transactions`
+        if (data && data.transactions && Array.isArray(data.transactions)) {
+          setTransactions(data.transactions);
+          setTotalPages(data.totalPages || 1);
+        } else {
+          console.error('Unexpected data format:', data);
+          setTransactions([]);
+        }
+      } else if (response.status === 401) {
+        setToast({ message: 'Erro de autenticação', type: 'auth' });
+        showToast('Erro de autenticação', 'auth');
+      } else {
+        console.error('Failed to fetch transactions');
+        showToast('Falha ao carregar transações. Por favor, tente novamente.', 'error');
+      }
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+      setTransactions([]);
+      showToast('Ocorreu um erro ao carregar as transações. Por favor, tente novamente.', 'error');
+    }
+  }, [currentPage]);
+
+  useEffect(() => {
+    getTransactions();
+  }, [getTransactions]);
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage((prev) => prev - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage((prev) => prev + 1);
+    }
+  };
+  
+  const fetchTransactions = useCallback(async () => {
+    try {
+      const response = await fetch('/api/admin/transactions');
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data.transactions)) {
+          setTransactions(data.transactions);
         } else {
           console.error('Data fetched is not an array:', data);
           setTransactions([]);
@@ -34,10 +81,6 @@ export function useTransactions() {
       showToast('Ocorreu um erro ao carregar as transações. Por favor, tente novamente.', 'error');
     }
   }, [AuthErrorModal]);
-
-  useEffect(() => {
-    fetchTransactions()
-  }, [fetchTransactions])
 
   const addTransaction = async (transaction: Partial<ITransaction>) => {
     try {
@@ -138,7 +181,11 @@ export function useTransactions() {
     deleteTransaction,
     getTransaction,
     toast,
-    setToast
+    setToast,
+    currentPage,
+    totalPages,
+    handlePreviousPage,
+    handleNextPage,
   }
 }
 
