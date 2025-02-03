@@ -427,7 +427,11 @@ export default function DashboardFinanceiro() {
                     {availableMonths.map((month) => (
                         <button
                             key={month}
-                            className={`p-2 rounded-lg border ${selectedMonth === month ? 'bg-blue-500 text-white' : 'bg-white text-gray-800'}`}
+                            className={`p-2 rounded-lg border transition-colors
+    ${selectedMonth === month
+                                ? 'bg-blue-500 text-white' 
+                                : 'bg-white text-gray-800 dark:bg-gray-800 dark:text-white'
+                            }`}
                             onClick={() => filterTransactionsByMonth(month)}
                         >
                           {new Date(0, month - 1).toLocaleString('pt-BR', { month: 'long' })}

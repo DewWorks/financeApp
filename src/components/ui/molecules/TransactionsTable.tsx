@@ -152,7 +152,7 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
           </span>
                                         </div>
 
-                                        <h3 className="text-lg font-semibold text-gray-800 mb-2">{transaction.description}</h3>
+                                        <h3 className="text-lg font-semibold text-gray-800 mb-2 dark:text-white">{transaction.description}</h3>
 
                                         <div className="flex items-center space-x-2 text-sm text-gray-600 mb-2">
                                             <Calendar className="w-4 h-4" />
