@@ -1,6 +1,6 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/atoms/table"
 import { Button } from "@/components/ui/atoms/button"
-import { AlertTriangle, Edit, Edit2, Trash2 } from 'lucide-react'
+import { AlertTriangle, Edit, Edit2, Trash2, Repeat } from 'lucide-react'
 import { ITransaction } from "@/interfaces/ITransaction"
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/atoms/dialog"
@@ -41,9 +41,9 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
         }
     }
 
-    const handleEditTransaction = async (description: string, amount: number, tag: string, date: string) => {
+    const handleEditTransaction = async (description: string, amount: number, tag: string, date: string, isRecurring?: boolean, recurrenceCount?: number) => {
         if (transactionToEdit && transactionToEdit._id && onEditTransaction) {
-            const updatedTransaction = { ...transactionToEdit, description, amount, tag, date }
+            const updatedTransaction = { ...transactionToEdit, description, amount, tag, date, isRecurring, recurrenceCount }
             try {
                 onEditTransaction(updatedTransaction)
                 setEditDialogOpen(false)
@@ -78,6 +78,12 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
                                     <TableCell className="text-black dark:text-white dark:bg-gray-800">{transaction.description}</TableCell>
                                     <TableCell className={transaction.type === 'income' ? 'text-green-600 dark:bg-gray-800' : 'text-red-600 dark:bg-gray-800'}>
                                         R$ {transaction.amount !== undefined && transaction.amount !== null ? transaction.amount.toFixed(2) : 'N/A'}
+                                        {transaction.isRecurring && transaction.recurrenceCount && (
+                                            <span className={`ml-1 text-xs text-gray-500 dark:text-gray-400 flex items-center ${transaction.type === 'income' ? 'text-green-600 dark:bg-gray-800' : 'text-red-600 dark:bg-gray-800'}`}>
+            <Repeat className="h-3 w-3 mr-1" />
+                                                {transaction.recurrenceCount}x
+        </span>
+                                        )}
                                     </TableCell>
                                     <TableCell className={transaction.type === 'income' ? 'text-green-600 font-bold dark:bg-gray-800' : 'text-red-600 font-bold dark:bg-gray-800'}>{transaction.type === 'income' ? 'Receita' : 'Despesa'}</TableCell>
                                     <TableCell className="dark:bg-gray-800">

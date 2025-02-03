@@ -236,13 +236,16 @@ export default function DashboardFinanceiro() {
     addTransaction(newTransaction)
   }
 
-  const handleAddExpense = (description: string, amount: number, tag: string, date: string) => {
+  const handleAddExpense = (description: string, amount: number, tag: string, date: string, isRecurring: boolean,
+                            recurrenceCount: number,) => {
     const newTransaction: Partial<ITransaction> = {
       type: "expense",
       description,
       amount,
       date,
       tag,
+      isRecurring,
+      recurrenceCount
     }
     addTransaction(newTransaction)
   }
