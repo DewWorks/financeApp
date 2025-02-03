@@ -11,7 +11,6 @@ import 'swiper/css';
 import 'swiper/css/pagination';
 import { Pagination } from 'swiper/modules';
 import {Card, CardContent } from "../atoms/card"
-import { cn } from "@/lib/utils"
 
 interface TransactionsTableProps {
     transactions: ITransaction[]
@@ -162,7 +161,14 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
 
                                         <div className="flex items-center space-x-2 text-sm text-gray-600 mb-2">
                                             <Tag className="w-4 h-4" />
-                                            <span>{transaction.tag}</span>
+                                            <span
+                                                className="px-2 py-1 rounded-full text-xs font-semibold"
+                                                style={{
+                                                    backgroundColor: `${tagColor}20`,
+                                                    color: tagColor,
+                                                    border: `1px solid ${tagColor}`
+                                                }}
+                                            >{transaction.tag}</span>
                                         </div>
 
                                         {transaction.isRecurring && (

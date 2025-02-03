@@ -66,7 +66,7 @@ export function useTransactions() {
   }, [selectedMonth, originalTransactions]);
 
   useEffect(() => {
-    const transactions = getTransactions();
+    getTransactions();
   }, [getTransactions]);
 
   const handlePreviousPage = () => {
