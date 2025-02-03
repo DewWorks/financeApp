@@ -4,7 +4,7 @@ import { useTransactions } from "@/hooks/useTransactions"
 import { driver } from "driver.js"
 import "driver.js/dist/driver.css"
 import { Card, CardContent, CardTitle } from "@/components/ui/atoms/card"
-import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, User, Moon, Sun } from "lucide-react"
+import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, User, Moon, Sun, ChevronLeft, ChevronRight } from "lucide-react"
 import { AddIncomeDialog } from "@/components/ui/organisms/AddIncomeDialog"
 import { AddExpenseDialog } from "@/components/ui/organisms/AddExpenseDialog"
 import type { ITransaction } from "@/interfaces/ITransaction"
@@ -32,7 +32,7 @@ const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"]
 export default function DashboardFinanceiro() {
   const router = useRouter()
   const [user, setUser] = useState<IUser | null>(null)
-  const { transactions, addTransaction, editTransaction, deleteTransaction, toast, setToast } = useTransactions()
+  const { transactions, filteredTransactions, addTransaction, editTransaction, deleteTransaction, toast, setToast, currentPage, totalPages, handlePreviousPage, handleNextPage, filterTransactionsByMonth, selectedMonth, availableMonths } = useTransactions()
   const { goals } = useGoals()
   
   const totalIncome = transactions.filter((t) => t.type === "income").reduce((sum, t) => sum + t.amount, 0)
@@ -236,13 +236,16 @@ export default function DashboardFinanceiro() {
     addTransaction(newTransaction)
   }
 
-  const handleAddExpense = (description: string, amount: number, tag: string, date: string) => {
+  const handleAddExpense = (description: string, amount: number, tag: string, date: string, isRecurring: boolean,
+                            recurrenceCount: number,) => {
     const newTransaction: Partial<ITransaction> = {
       type: "expense",
       description,
       amount,
       date,
       tag,
+      isRecurring,
+      recurrenceCount
     }
     addTransaction(newTransaction)
   }
@@ -394,8 +397,55 @@ export default function DashboardFinanceiro() {
                   Todas as Transações
                 </CardTitle>
                 <CardContent>
+                  {/* Paginação */}
+                      <div className="flex justify-center items-center mt-4 space-x-4">
+                        {/* Botão de Página Anterior */}
+                        <Button
+                            onClick={handlePreviousPage}
+                            disabled={currentPage === 1}
+                            className="p-2 rounded-lg border dark:border-gray-600 bg-blue-600 text-white disabled:opacity-50"
+                        >
+                          <ChevronLeft className="h-5 w-5" />
+                        </Button>
+
+                        {/* Indicador de Página Atual */}
+                        <span className="text-md font-semibold dark:text-white">
+                    Página {currentPage} de {totalPages}
+                </span>
+
+                        {/* Botão de Próxima Página */}
+                        <Button
+                            onClick={handleNextPage}
+                            disabled={currentPage === totalPages}
+                            className="p-2 rounded-lg border dark:border-gray-600 disabled:opacity-50 bg-blue-600 text-white"
+                        >
+                          <ChevronRight className="h-5 w-5" />
+                        </Button>
+                      </div>
+                  {/* Filtro por mês */}
+                  <div className="flex justify-center space-x-2 my-4">
+                    {availableMonths.map((month) => (
+                        <button
+                            key={month}
+                            className={`p-2 rounded-lg border transition-colors
+    ${selectedMonth === month
+                                ? 'bg-blue-500 text-white' 
+                                : 'bg-white text-gray-800 dark:bg-gray-800 dark:text-white'
+                            }`}
+                            onClick={() => filterTransactionsByMonth(month)}
+                        >
+                          {new Date(0, month - 1).toLocaleString('pt-BR', { month: 'long' })}
+                        </button>
+                    ))}
+                    <button
+                        className="p-2 rounded-lg border bg-red-500 text-white"
+                        onClick={() => filterTransactionsByMonth(null)}
+                    >
+                      Limpar
+                    </button>
+                  </div>
                   <TransactionsTable
-                      transactions={transactions}
+                      transactions={filteredTransactions}
                       onEditTransaction={handleEditTransaction}
                       onDeleteTransaction={handleDeleteTransaction}
                   />
