@@ -1,11 +1,17 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/atoms/table"
 import { Button } from "@/components/ui/atoms/button"
-import { AlertTriangle, Edit, Edit2, Trash2, Repeat } from 'lucide-react'
+import { AlertTriangle, Edit, Edit2, Trash2, Repeat, ArrowUpCircle, ArrowDownCircle, Tag, RepeatIcon, Calendar } from 'lucide-react'
 import { ITransaction } from "@/interfaces/ITransaction"
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/atoms/dialog"
 import { AddExpenseDialog } from "../organisms/AddExpenseDialog"
 import { AddIncomeDialog } from "../organisms/AddIncomeDialog"
+import { Swiper, SwiperSlide } from 'swiper/react';
+import 'swiper/css';
+import 'swiper/css/pagination';
+import { Pagination } from 'swiper/modules';
+import {Card, CardContent } from "../atoms/card"
+import { cn } from "@/lib/utils"
 
 interface TransactionsTableProps {
     transactions: ITransaction[]
@@ -117,56 +123,65 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
 
             {/* Mobile view */}
             <div className="md:hidden space-y-4 dark:bg-gray-800">
-                {transactions.map((transaction) => {
-                    const tagColor = getRandomColor();
-                    return (
-                        <div key={transaction._id?.toString()} className={`p-4 rounded-lg shadow dark:bg-gray-800 ${transaction.type === 'income' ? 'bg-green-50' : 'bg-red-50'}`}>
-                            <div className="flex justify-between items-start mb-2 dark:bg-gray-800">
-                                <div>
-                                    <p className="font-bold dark:text-white">{transaction.description}</p>
-                                    <p className="text-sm text-gray-600 dark:text-white">{new Date(transaction.date).toLocaleDateString()}</p>
-                                </div>
-                                <span
-                                    className="px-2 py-1 rounded-full text-xs font-semibold"
-                                    style={{
-                                        backgroundColor: `${tagColor}20`,
-                                        color: tagColor,
-                                        border: `1px solid ${tagColor}`
-                                    }}
-                                >
-                                    {transaction.tag}
-                                </span>
-                            </div>
-                            <div className="flex justify-between items-center mb-2">
-                                <p className={`font-bold ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                                    R$ {transaction.amount !== undefined && transaction.amount !== null ? transaction.amount.toFixed(2) : 'N/A'}
-                                </p>
-                                <p className={`text-sm font-semibold ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                                    {transaction.type === 'income' ? 'Receita' : 'Despesa'}
-                                </p>
-                            </div>
-                            <div className="flex justify-end space-x-2">
-                                <Button
-                                    className="p-2 hover:text-blue-700"
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleEditClick(transaction)}
-                                >
-                                    <Edit className="h-4 w-4 text-blue-600" />
-                                </Button>
+                <Swiper
+                    spaceBetween={10}
+                    slidesPerView={1}
+                    pagination={{ clickable: true }}
+                    modules={[Pagination]}
+                    className="pb-6"
+                >
+                    {transactions.map((transaction) => {
+                        const tagColor = getRandomColor();
+                        return (
+                            <SwiperSlide key={transaction._id?.toString()}>
+                                <Card className={`p-2 rounded-lg shadow dark:bg-gray-800 
+            ${transaction.type === 'income' ? 'bg-green-50 border border-green-500' : 'bg-red-50 border border-red-500'}`}>
+                                    <CardContent className="p-4">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center space-x-2">
+                                                {transaction.type === "income" ? (
+                                                    <ArrowUpCircle className="w-4 h-4 text-green-500" />
+                                                ) : (
+                                                    <ArrowDownCircle className="w-4 h-4 text-red-500" />
+                                                )}
+                                                <span className={`font-semibold text-sm ${transaction.type === "income" ? "text-green-500" : "text-red-500"}`}>
+              {transaction.type === "income" ? "Receita" : "Despesa"}
+            </span>
+                                            </div>
+                                            <span className={`text-sm ${transaction.type === "income" ? "text-green-500" : "text-red-500"}`}>
+            {new Date(transaction.date).toLocaleDateString()}
+          </span>
+                                        </div>
 
-                                <Button
-                                    className="p-2 hover:text-red-700"
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleDeleteClick(transaction)}
-                                >
-                                    <Trash2 className="h-4 w-4 text-red-500" />
-                                </Button>
-                            </div>
-                        </div>
-                    )
-                })}
+                                        <h3 className="text-lg font-semibold text-gray-800 mb-2">{transaction.description}</h3>
+
+                                        <div className="flex items-center space-x-2 text-sm text-gray-600 mb-2">
+                                            <Calendar className="w-4 h-4" />
+                                            <span>{new Date(transaction.date).toLocaleDateString()}</span>
+                                        </div>
+
+                                        <div className="flex items-center space-x-2 text-sm text-gray-600 mb-2">
+                                            <Tag className="w-4 h-4" />
+                                            <span>{transaction.tag}</span>
+                                        </div>
+
+                                        {transaction.isRecurring && (
+                                            <div className="flex items-center space-x-2 text-sm text-gray-600">
+                                                <RepeatIcon className="w-4 h-4" />
+                                                <span>Recorrente {transaction.recurrenceCount && `(${transaction.recurrenceCount}x)`}</span>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </SwiperSlide>
+                        );
+                    })}
+                </Swiper>
+
+                {/* Exibir quantidade total de transações */}
+                <p className="text-center text-sm text-gray-500 dark:text-white mt-2">
+                    Total de transações: {transactions.length}
+                </p>
             </div>
 
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

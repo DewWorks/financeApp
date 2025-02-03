@@ -409,7 +409,7 @@ export default function DashboardFinanceiro() {
                         </Button>
 
                         {/* Indicador de Página Atual */}
-                        <span className="text-lg font-semibold dark:text-white">
+                        <span className="text-md font-semibold dark:text-white">
                     Página {currentPage} de {totalPages}
                 </span>
 
@@ -427,17 +427,17 @@ export default function DashboardFinanceiro() {
                     {availableMonths.map((month) => (
                         <button
                             key={month}
-                            className={`px-3 py-1 rounded-lg border ${selectedMonth === month ? 'bg-blue-500 text-white' : 'bg-white text-gray-800'}`}
+                            className={`p-2 rounded-lg border ${selectedMonth === month ? 'bg-blue-500 text-white' : 'bg-white text-gray-800'}`}
                             onClick={() => filterTransactionsByMonth(month)}
                         >
                           {new Date(0, month - 1).toLocaleString('pt-BR', { month: 'long' })}
                         </button>
                     ))}
                     <button
-                        className="px-3 py-1 rounded-lg border bg-red-500 text-white"
+                        className="p-2 rounded-lg border bg-red-500 text-white"
                         onClick={() => filterTransactionsByMonth(null)}
                     >
-                      Limpar Filtro
+                      Limpar
                     </button>
                   </div>
                   <TransactionsTable
