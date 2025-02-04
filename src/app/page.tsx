@@ -26,15 +26,19 @@ import type { IUser } from "@/interfaces/IUser"
 import { ThemeProvider, useTheme } from "@/components/ui/organisms/ThemeContext"
 import { ReportButton } from '@/components/ui/molecules/ReportButton'
 import { useGoals } from "@/hooks/useGoals"
+import SliderMonthSelector from "@/components/ui/molecules/SliderMonth"
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"]
 
 export default function DashboardFinanceiro() {
   const router = useRouter()
   const [user, setUser] = useState<IUser | null>(null)
-  const { transactions, filteredTransactions, addTransaction, editTransaction, deleteTransaction, toast, setToast, currentPage, totalPages, handlePreviousPage, handleNextPage, filterTransactionsByMonth, selectedMonth, availableMonths } = useTransactions()
+  const { transactions, filteredTransactions, monthlyTransactions, addTransaction, editTransaction, deleteTransaction, toast, setToast, currentPage, totalPages, handlePreviousPage, handleNextPage, filterTransactionsByMonth, selectedMonth, availableMonths } = useTransactions()
   const { goals } = useGoals()
   
+  console.log("Transactions padrão: ", transactions)
+  console.log("filteredTransactions padrão: ", filteredTransactions)
+  console.log("monthlyTransactions padrão: ", monthlyTransactions)
   const totalIncome = transactions.filter((t) => t.type === "income").reduce((sum, t) => sum + t.amount, 0)
   const totalExpense = transactions.filter((t) => t.type === "expense").reduce((sum, t) => sum + t.amount, 0)
   const balance = totalIncome - totalExpense
@@ -80,20 +84,20 @@ export default function DashboardFinanceiro() {
     { name: "Despesas", value: totalExpense },
   ]
 
-  const barChartData = transactions.slice(0, 5).map((t) => ({
+  const barChartData = monthlyTransactions.slice(0, 5).map((t) => ({
     name: t.description,
     valor: t.amount,
     tipo: t.type === "income" ? "Receita" : "Despesa",
     tag: t.tag,
   }))
 
-  const lineChartData = transactions.slice(0, 10).map((t) => ({
+  const lineChartData = monthlyTransactions.slice(0, 10).map((t) => ({
     data: t.date,
     valor: t.type === "income" ? t.amount : -t.amount,
     tag: t.tag,
   }))
 
-  const areaChartData = transactions.slice(0, 15).map((t) => ({
+  const areaChartData = monthlyTransactions.slice(0, 15).map((t) => ({
     data: t.date,
     receita: t.type === "income" ? t.amount : 0,
     despesa: t.type === "expense" ? t.amount : 0,
@@ -423,29 +427,11 @@ export default function DashboardFinanceiro() {
                         </Button>
                       </div>
                   {/* Filtro por mês */}
-                  <div className="flex justify-center space-x-2 my-4">
-                    {availableMonths.map((month) => (
-                        <button
-                            key={month}
-                            className={`p-2 rounded-lg border transition-colors
-    ${selectedMonth === month
-                                ? 'bg-blue-500 text-white' 
-                                : 'bg-white text-gray-800 dark:bg-gray-800 dark:text-white'
-                            }`}
-                            onClick={() => filterTransactionsByMonth(month)}
-                        >
-                          {new Date(0, month - 1).toLocaleString('pt-BR', { month: 'long' })}
-                        </button>
-                    ))}
-                    <button
-                        className="p-2 rounded-lg border bg-red-500 text-white"
-                        onClick={() => filterTransactionsByMonth(null)}
-                    >
-                      Limpar
-                    </button>
+                  <div className="flex justify-center space-x-2 my-4 overflow-x-auto">
+                    <SliderMonthSelector onSelectMonth={filterTransactionsByMonth} />
                   </div>
                   <TransactionsTable
-                      transactions={filteredTransactions}
+                      transactions={selectedMonth ? transactions : monthlyTransactions}
                       onEditTransaction={handleEditTransaction}
                       onDeleteTransaction={handleDeleteTransaction}
                   />
