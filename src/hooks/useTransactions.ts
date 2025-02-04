@@ -3,7 +3,6 @@ import { ITransaction } from '@/interfaces/ITransaction'
 import {AuthErrorModal} from "@/components/ui/atoms/swalAuth";
 
 export function useTransactions() {
-  const [originalTransactions, setOriginalTransactions] = useState<ITransaction[]>([]);
   const [transactions, setTransactions] = useState<ITransaction[]>([]);
   const [monthlyTransactions, setMonthlyTransactions] = useState<ITransaction[]>([]);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' | 'auth' } | null>(null)
@@ -86,10 +85,6 @@ export function useTransactions() {
       setCurrentPage(1);
     }
   };
-
-  const filteredTransactions = selectedMonth !== null
-      ? originalTransactions.filter(transaction => new Date(transaction.date).getMonth() + 1 === selectedMonth)
-      : originalTransactions;
 
   const fetchTransactions = useCallback(async () => {
     try {
@@ -210,7 +205,6 @@ export function useTransactions() {
 
   return {
     transactions,
-    filteredTransactions,
     monthlyTransactions,
     addTransaction,
     editTransaction,

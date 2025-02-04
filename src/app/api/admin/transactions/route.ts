@@ -12,7 +12,7 @@ class AuthError extends Error {
 export async function GET() {
     try {
         const userId = await getUserIdFromToken()
-        console.log("UserId log: ", userId)
+        
         const client = await getMongoClient();
         const db = client.db("financeApp");
 

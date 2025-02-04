@@ -20,8 +20,6 @@ export async function GET(req: Request) {
         const startDate = new Date(year, month - 1, 1); // Primeiro dia do mês
         const endDate = new Date(year, month, 0, 23, 59, 59, 999); // Último dia do mês
 
-        console.log("🔍 Buscando transações entre:", { startDate, endDate });
-
         const client = await getMongoClient();
         const db = client.db("financeApp");
 

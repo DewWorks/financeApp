@@ -33,12 +33,9 @@ const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"]
 export default function DashboardFinanceiro() {
   const router = useRouter()
   const [user, setUser] = useState<IUser | null>(null)
-  const { transactions, filteredTransactions, monthlyTransactions, addTransaction, editTransaction, deleteTransaction, toast, setToast, currentPage, totalPages, handlePreviousPage, handleNextPage, filterTransactionsByMonth, selectedMonth, availableMonths } = useTransactions()
+  const { transactions, monthlyTransactions, addTransaction, editTransaction, deleteTransaction, toast, setToast, currentPage, totalPages, handlePreviousPage, handleNextPage, filterTransactionsByMonth, selectedMonth } = useTransactions()
   const { goals } = useGoals()
   
-  console.log("Transactions padrão: ", transactions)
-  console.log("filteredTransactions padrão: ", filteredTransactions)
-  console.log("monthlyTransactions padrão: ", monthlyTransactions)
   const totalIncome = transactions.filter((t) => t.type === "income").reduce((sum, t) => sum + t.amount, 0)
   const totalExpense = transactions.filter((t) => t.type === "expense").reduce((sum, t) => sum + t.amount, 0)
   const balance = totalIncome - totalExpense

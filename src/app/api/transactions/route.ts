@@ -13,7 +13,7 @@ class AuthError extends Error {
   }
 }
 
-export async function getUserIdFromToken() {
+async function getUserIdFromToken() {
   const token = (await cookies()).get('auth_token')?.value
   if (!token) {
     throw new AuthError('No token provided', 401)
@@ -68,8 +68,6 @@ export async function GET(req: Request) {
       userId,
       date: { $gte: startDate, $lt: endDate }
     });
-    
-    console.log("chegando aqui: ", {totalTransactions})
 
     const totalPages = Math.ceil(totalTransactions / limit);
 
