@@ -31,38 +31,49 @@ async function getUserIdFromToken() {
 export async function GET(req: Request) {
   try {
     const userId = await getUserIdFromToken();
-    console.log("UserId log: ", userId);
 
-    // Obtendo parâmetros de paginação da query string
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "10", 10);
+    let month = parseInt(searchParams.get("month") || `${new Date().getMonth() + 1}`, 10);
+    if (isNaN(month) || month < 1 || month > 12) {
+      month = new Date().getMonth() + 1;
+    }
+
+    const year = new Date().getFullYear();
     const skip = (page - 1) * limit;
+
+    const startDate = new Date(year, month - 1, 1); // Primeiro dia do mês
+    const endDate = new Date(year, month, 0, 23, 59, 59, 999); // Último dia do mês
 
     const client = await getMongoClient();
     const db = client.db("financeApp");
 
-    // Obtendo transações paginadas
+    // Obtendo transações paginadas do mês selecionado
     const transactions = await db.collection('transactions')
-        .find({ userId })
+        .find({
+          userId,
+          date: {
+            $gte: new Date(startDate),
+            $lt: new Date(endDate)
+          }
+        })
         .sort({ date: -1 })
         .skip(skip)
         .limit(limit)
         .toArray();
 
-    // Contando o total de transações para paginação
-    const totalTransactions = await db.collection('transactions').countDocuments({ userId });
+    // Contando total de transações no mês para paginação
+    const totalTransactions = await db.collection('transactions').countDocuments({
+      userId,
+      date: { $gte: startDate, $lt: endDate }
+    });
+
     const totalPages = Math.ceil(totalTransactions / limit);
 
     return NextResponse.json({ transactions, totalPages });
   } catch (error) {
     console.error('Get transactions error:', error);
-    if (error instanceof AuthError) {
-      return NextResponse.json({ error: error.message }, { status: error.status });
-    }
-    if (error instanceof Error && error.name === 'MongoNetworkError') {
-      return NextResponse.json({ error: 'Database connection error' }, { status: 503 });
-    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

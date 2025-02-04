@@ -27,11 +27,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             }
         );
 
-        console.log('userid: ', userId);
-        console.log('Resolved Params ID:', resolvedParams.id);
-        console.log('Goal ID:', goalId);
-        console.log('Document:', result);
-
         if (result.matchedCount === 0) {
             return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
         }
