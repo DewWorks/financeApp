@@ -63,6 +63,19 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
         <>
             {/* Desktop view */}
             <div className="hidden md:block dark:bg-gray-800 ">
+                {/* Se houver transações, exibir a quantidade total */}
+                {transactions.length > 0 && (
+                    <p className="text-center text-md text-gray-500 font-semibold dark:text-white mt-2">
+                        Total de transações: {transactions.length}
+                    </p>
+                )}
+
+                {/* Se não houver transações, exibir a mensagem de aviso */}
+                {transactions.length === 0 && (
+                    <p className="text-center text-md text-red-500 font-semibold mt-2">
+                        Não há transações!
+                    </p>
+                )}
                 <Table>
                     <TableHeader>
                         <TableRow className="text-black dark:text-white">
@@ -90,7 +103,11 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
         </span>
                                         )}
                                     </TableCell>
-                                    <TableCell className={transaction.type === 'income' ? 'text-green-600 font-bold dark:bg-gray-800' : 'text-red-600 font-bold dark:bg-gray-800'}>{transaction.type === 'income' ? 'Receita' : 'Despesa'}</TableCell>
+                                    <TableCell className={transaction.type === 'income' ? 'text-green-600 font-bold dark:bg-gray-800' : 'text-red-600 font-bold dark:bg-gray-800'}>{transaction.type === "income" ? (
+                                        <ArrowUpCircle className="w-4 h-4 text-green-500" />
+                                    ) : (
+                                        <ArrowDownCircle className="w-4 h-4 text-red-500" />
+                                    )}</TableCell>
                                     <TableCell className="dark:bg-gray-800">
                                         <span
                                             className="px-2 py-1 rounded-full text-xs font-semibold"
@@ -186,10 +203,19 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
                     })}
                 </Swiper>
 
-                {/* Exibir quantidade total de transações */}
-                <p className="text-center text-sm text-gray-500 dark:text-white mt-2">
-                    Total de transações: {transactions.length}
-                </p>
+                {/* Se houver transações, exibir a quantidade total */}
+                {transactions.length > 0 && (
+                    <p className="text-center text-md text-gray-500 font-semibold dark:text-white mt-2">
+                        Total de transações: {transactions.length}
+                    </p>
+                )}
+
+                {/* Se não houver transações, exibir a mensagem de aviso */}
+                {transactions.length === 0 && (
+                    <p className="text-center text-md text-red-500 font-semibold mt-2">
+                        Não há transações!
+                    </p>
+                )}
             </div>
 
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
