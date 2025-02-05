@@ -1,4 +1,4 @@
-import { updateAllUsersFields } from "@/app/functions/executeQuery";
+import { updateAllUsersFields } from "@/app/functions/updateUsersTutorialGuide";
 import { NextResponse } from 'next/server'
 
 // Rota para atualizar os campos tutorialGuide e executeQuery

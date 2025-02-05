@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/atoms/popover"
 import { Info } from 'lucide-react'
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
-import {formatDate, formatShortDate, getMonthName } from '@/lib/utils'
+import {formatDate, formatShortDate } from '@/lib/utils'
 
 interface IncomeVsExpensesChartProps {
     areaChartData: Array<{
