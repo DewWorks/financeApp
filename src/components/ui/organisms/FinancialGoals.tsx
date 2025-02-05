@@ -12,17 +12,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useGoals } from '@/hooks/useGoals';
 import {IGoal} from "@/interfaces/IGoal";
 import {useTransactions} from "@/hooks/useTransactions";
+import { Swiper, SwiperSlide } from 'swiper/react';
+import 'swiper/css';
+import 'swiper/css/pagination';
+import { Pagination } from 'swiper/modules';
 import Swal from "sweetalert2";
 
 export function FinancialGoals() {
     const { goals, addGoal, editGoal, deleteGoal, showToast } = useGoals();
-    const { transactions } = useTransactions();
+    const { transactions, monthlyTransactions } = useTransactions();
     const [newGoalName, setNewGoalName] = React.useState('');
     const [newGoalAmount, setNewGoalAmount] = React.useState('');
     const [newGoalDeadline, setNewGoalDeadline] = React.useState('');
     const [newGoalTag, setNewGoalTag] = React.useState(incomeTags[0]);
     const [isDialogOpen, setIsDialogOpen] = React.useState(false);
     const [editingGoal, setEditingGoal] = React.useState<IGoal | null>(null);
+
+    console.log("aqui transactions para calcular: ", transactions)
+    console.log("aqui monthlyTransactions para calcular: ", monthlyTransactions);
 
     const calculateGoalProgress = (goal: IGoal) => {
         const currentAmount = transactions.filter(
@@ -189,24 +196,79 @@ export function FinancialGoals() {
                     </DialogContent>
                 </Dialog>
             </CardHeader>
-            <CardContent>
-                {goals.length === 0 ? (
-                    <div className="text-center py-8">
-                        <p className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">
-                            Defina suas metas financeiras!
-                        </p>
-                        <p className="text-gray-600 dark:text-gray-400">
-                            Clique em &quot;Nova Meta&quot; para começar a planejar seu futuro financeiro.
-                        </p>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {goals.map((goal) => {
-                            const currentAmount = calculateGoalProgress(goal)
-                            const { color, icon, label } = getThermometerStatus(goal)
-                            return (
-                                <Card key={goal._id?.toString()} className="bg-gray-50 dark:bg-gray-700">
-                                    <CardContent className="p-4">
+
+            {/* Desktop View */}
+            <div className="hidden md:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+                {goals.map((goal) => {
+                    const currentAmount = calculateGoalProgress(goal);
+                    const { color, icon, label } = getThermometerStatus(goal);
+                    return (
+                        <Card key={goal._id?.toString()} className="bg-gray-50 dark:bg-gray-700">
+                            <CardContent className="p-4 shadow-md">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">{goal.name}</h3>
+                                    <div className="flex items-center space-x-2">
+                                        <DollarSign className="h-5 w-5 text-green-500 dark:text-green-400" />
+                                        <Button variant="ghost" size="sm" onClick={() => handleOpenEditDialog(goal)}>
+                                            <Edit className="h-4 w-4 text-blue-500 dark:text-blue-400" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleDeleteGoal(goal._id?.toString() as string)}
+                                        >
+                                            <Trash2 className="h-4 w-4 text-red-500 dark:text-red-400" />
+                                        </Button>
+                                    </div>
+                                </div>
+                                <div className="flex items-center space-x-4">
+                                    <div className="w-20 h-20">
+                                        <CircularProgressbar
+                                            value={(currentAmount / goal.targetAmount) * 100}
+                                            text={`${((currentAmount / goal.targetAmount) * 100).toFixed(0)}%`}
+                                            styles={buildStyles({
+                                                textSize: "22px",
+                                                pathColor: `rgba(62, 152, 199, ${currentAmount / goal.targetAmount})`,
+                                                textColor: "#3e98c7",
+                                                trailColor: "#d6d6d6",
+                                            })}
+                                        />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Progresso</p>
+                                        <p className="font-medium text-gray-900 dark:text-gray-100">
+                                            R$ {currentAmount.toFixed(2)} / R$ {goal.targetAmount.toFixed(2)}
+                                        </p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Tag: {goal.tag}</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                            Data final: {goal.date ? new Date(goal.date).toLocaleDateString() : "Não definida"}
+                                        </p>
+                                        <div className="flex items-center mt-2 space-x-2">
+                                            {icon}
+                                            <p className={`text-${color}-600 dark:text-${color}-400 font-medium`}>{label}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    );
+                })}
+            </div>
+
+            {/* Mobile View com Swiper */}
+            <div className="md:hidden p-4">
+                <Swiper
+                    slidesPerView={1}
+                    pagination={{ clickable: true }}
+                    modules={[Pagination]}
+                >
+                    {goals.map((goal) => {
+                        const currentAmount = calculateGoalProgress(goal);
+                        const { color, icon, label } = getThermometerStatus(goal);
+                        return (
+                            <SwiperSlide key={goal._id?.toString()}>
+                                <Card className="bg-gray-50 dark:bg-gray-700 shadow-lg p-4">
+                                    <CardContent>
                                         <div className="flex items-center justify-between mb-4">
                                             <h3 className="font-semibold text-gray-900 dark:text-gray-100">{goal.name}</h3>
                                             <div className="flex items-center space-x-2">
@@ -222,6 +284,14 @@ export function FinancialGoals() {
                                                     <Trash2 className="h-4 w-4 text-red-500 dark:text-red-400" />
                                                 </Button>
                                             </div>
+                                        </div>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Tag: {goal.tag}</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                            Data final: {goal.date ? new Date(goal.date).toLocaleDateString() : "Não definida"}
+                                        </p>
+                                        <div className="flex items-center mt-2 space-x-2">
+                                            {icon}
+                                            <p className={`text-${color}-600 dark:text-${color}-400 font-medium`}>{label}</p>
                                         </div>
                                         <div className="flex items-center space-x-4">
                                             <div className="w-20 h-20">
@@ -253,11 +323,11 @@ export function FinancialGoals() {
                                         </div>
                                     </CardContent>
                                 </Card>
-                            )
-                        })}
-                    </div>
-                )}
-            </CardContent>
+                            </SwiperSlide>
+                        );
+                    })}
+                </Swiper>
+            </div>
         </Card>
-    )
+    );
 }
