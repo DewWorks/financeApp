@@ -10,6 +10,7 @@ export interface ITransaction {
   tag: string
   isRecurring?: boolean,
   recurrenceCount?: number,
+  createdAt: string | Date;
 }
 
 export type ReportFrequency = "weekly" | "biweekly" | "monthly"
