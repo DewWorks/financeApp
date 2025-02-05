@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/atoms/button"
 import { Input } from "@/components/ui/atoms/input"
 import { Label } from "@/components/ui/atoms/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/atoms/select"
-import { PlusIcon } from 'lucide-react'
 import { incomeTags, ITransaction } from '@/interfaces/ITransaction'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { PlusIcon, CheckSquare, Square } from 'lucide-react'
 import * as z from 'zod'
 
 const incomeTagsTuple = incomeTags as [string, ...string[]]
@@ -19,17 +19,21 @@ const incomeSchema = z.object({
   date: z.string().refine((date) => !isNaN(Date.parse(date)), {
     message: 'Data inválida',
   }),
+  isRecurring: z.boolean().default(false),
+  recurrenceCount: z.number().nullable().optional(),
 })
 
 type IncomeFormData = z.infer<typeof incomeSchema>
 
 interface AddIncomeDialogProps {
-  onAddIncome: (description: string, amount: number, tag: string, date: string) => void
+  onAddIncome: (description: string, amount: number, tag: string, date: string, isRecurring: boolean,
+                recurrenceCount: number) => void
   initialData?: ITransaction
 }
 
 export function AddIncomeDialog({ onAddIncome, initialData }: AddIncomeDialogProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [isRecurring, setIsRecurring] = useState(false)
 
   const { control, handleSubmit, reset, formState: { errors } } = useForm<IncomeFormData>({
     resolver: zodResolver(incomeSchema),
@@ -38,11 +42,13 @@ export function AddIncomeDialog({ onAddIncome, initialData }: AddIncomeDialogPro
       amount: 0,
       tag: incomeTags[0],
       date: new Date().toISOString().split('T')[0],
+      isRecurring: false,
+      recurrenceCount: null,
     },
   })
 
   const onSubmit = (data: IncomeFormData) => {
-    onAddIncome(data.description, data.amount, data.tag, data.date)
+    onAddIncome(data.description, data.amount, data.tag, data.date, data.isRecurring, data.recurrenceCount ?? 1)
     setIsOpen(false)
     reset()
   }
@@ -55,9 +61,9 @@ export function AddIncomeDialog({ onAddIncome, initialData }: AddIncomeDialogPro
           Receita
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-white sm:max-w-[425px] dark:bg-gray-800">
+      <DialogContent className="bg-white sm:max-w-[425px] dark:bg-gray-800 dark:text-white">
         <DialogHeader>
-          <DialogTitle className="text-lg font-semibold text-center dark:text-white">Adicionar Receita</DialogTitle>
+          <DialogTitle className="text-lg font-semibold text-center">Adicionar Receita</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
           <div className="space-y-2">
@@ -117,7 +123,7 @@ export function AddIncomeDialog({ onAddIncome, initialData }: AddIncomeDialogPro
                   </SelectTrigger>
                   <SelectContent>
                     {incomeTags.map((tag) => (
-                      <SelectItem className='bg-white' key={tag} value={tag}>
+                      <SelectItem className='bg-white dark:bg-gray-800 dark:text-white' key={tag} value={tag}>
                         {tag}
                       </SelectItem>
                     ))}
@@ -149,6 +155,43 @@ export function AddIncomeDialog({ onAddIncome, initialData }: AddIncomeDialogPro
               <p className="text-red-500 text-sm">{errors.date.message}</p>
             )}
           </div>
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2 dark:text-white">
+              <Controller name="isRecurring" control={control} render={({ field }) => (
+                  <button id="isRecurring" type="button" onClick={() => {
+                    const newValue = !field.value;
+                    field.onChange(newValue);
+                    setIsRecurring(newValue);
+                  }}>
+                    {field.value ? <CheckSquare className="w-5 h-5 text-red-500" /> : <Square className="w-5 h-5 text-gray-400" />}
+                  </button>
+              )} />
+              <Label className="cursor-pointer" htmlFor="isRecurring">Receita recorrente</Label>
+            </div>
+          </div>
+          {isRecurring &&(
+              <Controller
+                  name="recurrenceCount"
+                  control={control}
+                  render={({ field }) => (
+                      <Select
+                          onValueChange={(value) => field.onChange(Number(value))}
+                          defaultValue={field.value ? field.value.toString() : undefined}
+                      >
+                        <SelectTrigger className="max-h-10 overflow-y-auto dark:text-white">
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-32 overflow-y-auto">
+                          {[...Array(24).keys()].map((num) => (
+                              <SelectItem className="bg-white dark:bg-gray-800 dark:text-white" key={num + 1} value={(num + 1).toString()}>
+                                {num + 1} vezes
+                              </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                  )}
+              />
+          )}
           <Button type="submit" className="bg-green-500 text-white w-full mt-6">
             Adicionar Receita
           </Button>

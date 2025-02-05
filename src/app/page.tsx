@@ -226,13 +226,16 @@ export default function DashboardFinanceiro() {
     localStorage.setItem("tutorial-guide", "true")
   }
 
-  const handleAddIncome = (description: string, amount: number, tag: string, date: string) => {
+  const handleAddIncome = (description: string, amount: number, tag: string, date: string, isRecurring: boolean,
+                           recurrenceCount: number) => {
     const newTransaction: Partial<ITransaction> = {
       type: "income",
       description,
       amount,
       date,
       tag,
+      isRecurring,
+      recurrenceCount
     }
     addTransaction(newTransaction)
   }

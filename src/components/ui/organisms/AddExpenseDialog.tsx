@@ -97,7 +97,26 @@ export function AddExpenseDialog({ onAddExpense, initialData }: AddExpenseDialog
               )} />
               {errors.tag && <p className="text-red-500 text-sm">{errors.tag.message}</p>}
             </div>
-
+            <div className="space-y-2">
+              <Label htmlFor="date" className="text-sm font-medium dark:text-white">
+                Data
+              </Label>
+              <Controller
+                  name="date"
+                  control={control}
+                  render={({ field }) => (
+                      <Input
+                          id="date"
+                          type="date"
+                          {...field}
+                          className="w-full dark:text-white"
+                      />
+                  )}
+              />
+              {errors.date && (
+                  <p className="text-red-500 text-sm">{errors.date.message}</p>
+              )}
+            </div>
             <div className="space-y-2">
               <div className="flex items-center space-x-2 dark:text-white">
                 <Controller name="isRecurring" control={control} render={({ field }) => (
