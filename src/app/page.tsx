@@ -315,7 +315,7 @@ export default function DashboardFinanceiro() {
                       >
                         {user.name}
                       </motion.span>
-                      <Button onClick={handleLogout} variant="ghost" className="text-white">
+                      <Button onClick={handleLogout} variant="ghost" className="text-gray-700 dark:text-gray-300">
                         <LogOut className="h-5 w-5 mr-2 text-red-500" />
                         Sair
                       </Button>

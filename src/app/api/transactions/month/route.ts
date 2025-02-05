@@ -32,8 +32,6 @@ export async function GET(req: Request) {
             .sort({ date: -1 })
             .toArray();
 
-        console.log("📌 Total de transações encontradas:", transactions.length);
-
         return NextResponse.json({ transactions });
     } catch (error) {
         console.error('Get monthly transactions error:', error);

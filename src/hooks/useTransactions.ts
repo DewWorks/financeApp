@@ -30,7 +30,6 @@ export function useTransactions() {
     }
   }, [selectedMonth]);
 
-  // ✅ Carregar transações paginadas para a tabela
   const getTransactions = useCallback(async () => {
     try {
       const response = await fetch(`/api/transactions?page=${currentPage}&limit=10&month=${selectedMonth}`);
@@ -63,7 +62,7 @@ export function useTransactions() {
 
       setAvailableMonths(months);
     }
-  }, [transactions]); // Atualiza quando `transactions` mudar
+  }, [transactions]);
 
   const handlePreviousPage = () => {
     if (currentPage > 1) {
