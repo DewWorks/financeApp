@@ -7,29 +7,28 @@ import { Target, Plus, DollarSign, Trash2, Edit } from 'lucide-react';
 import { Thermometer, ThermometerSnowflake, ThermometerSun } from 'lucide-react';
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
-import { incomeTags } from '@/interfaces/ITransaction';
+import { incomeTags, ITransaction } from '@/interfaces/ITransaction';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/atoms/select";
 import { useGoals } from '@/hooks/useGoals';
 import {IGoal} from "@/interfaces/IGoal";
-import {useTransactions} from "@/hooks/useTransactions";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import { Pagination } from 'swiper/modules';
 import Swal from "sweetalert2";
 
-export function FinancialGoals() {
+interface FinancialGoalsProps {
+    transactions: ITransaction[];
+}
+
+export function FinancialGoals({ transactions }: FinancialGoalsProps) {
     const { goals, addGoal, editGoal, deleteGoal, showToast } = useGoals();
-    const { transactions, monthlyTransactions } = useTransactions();
     const [newGoalName, setNewGoalName] = React.useState('');
     const [newGoalAmount, setNewGoalAmount] = React.useState('');
     const [newGoalDeadline, setNewGoalDeadline] = React.useState('');
     const [newGoalTag, setNewGoalTag] = React.useState(incomeTags[0]);
     const [isDialogOpen, setIsDialogOpen] = React.useState(false);
     const [editingGoal, setEditingGoal] = React.useState<IGoal | null>(null);
-
-    console.log("aqui transactions para calcular: ", transactions)
-    console.log("aqui monthlyTransactions para calcular: ", monthlyTransactions);
 
     const calculateGoalProgress = (goal: IGoal) => {
         const currentAmount = transactions.filter(
