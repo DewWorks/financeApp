@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/atoms/popover"
 import { Info } from 'lucide-react'
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
+import {formatDate, formatShortDate, getMonthName } from '@/lib/utils'
 
 interface IncomeVsExpensesChartProps {
     areaChartData: Array<{
@@ -33,14 +34,17 @@ export function IncomeVsExpensesChart({ areaChartData }: IncomeVsExpensesChartPr
                 </CardHeader>
                 <CardContent>
                     <ResponsiveContainer width="100%" height={300}>
-                        <AreaChart data={areaChartData}>
+                        <AreaChart data={areaChartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="data" />
-                            <YAxis />
-                            <Tooltip />
+                            <XAxis dataKey="data" tickFormatter={formatShortDate} label={{ value: "Datas", position: "insideBottom", offset: -5 }} />
+                            <YAxis label={{ value: "Valores", angle: -90, position: "insideLeft" }} />
+                            <Tooltip
+                                labelFormatter={(dateString) => formatDate(dateString)}
+                                formatter={(value: number) => [`R$ ${value.toFixed(2)}`, ""]}
+                            />
                             <Legend />
-                            <Area type="monotone" dataKey="receita" stackId="1" stroke="#82ca9d" fill="#82ca9d" name="Receita" />
-                            <Area type="monotone" dataKey="despesa" stackId="1" stroke="#8884d8" fill="#8884d8" name="Despesa" />
+                            <Area type="monotone" dataKey="receita" stroke="#ff3300" fill="#ff3300" name="Receita" />
+                            <Area type="monotone" dataKey="despesa" stroke="#8884d8" fill="#8884d8" name="Despesa" />
                         </AreaChart>
                     </ResponsiveContainer>
                 </CardContent>
