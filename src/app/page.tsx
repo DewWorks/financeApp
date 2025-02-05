@@ -4,7 +4,7 @@ import { useTransactions } from "@/hooks/useTransactions"
 import { driver } from "driver.js"
 import "driver.js/dist/driver.css"
 import { Card, CardContent, CardTitle } from "@/components/ui/atoms/card"
-import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, User, Moon, Sun, ChevronLeft, ChevronRight } from "lucide-react"
+import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, User, Moon, Sun, ChevronLeft, ChevronRight, Search, RefreshCw } from "lucide-react"
 import { AddIncomeDialog } from "@/components/ui/organisms/AddIncomeDialog"
 import { AddExpenseDialog } from "@/components/ui/organisms/AddExpenseDialog"
 import type { ITransaction } from "@/interfaces/ITransaction"
@@ -28,12 +28,28 @@ import { ReportButton } from '@/components/ui/molecules/ReportButton'
 import { useGoals } from "@/hooks/useGoals"
 import SliderMonthSelector from "@/components/ui/molecules/SliderMonth"
 
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"]
+const COLORS = ["#0088FE", "#ff6666", "#FFBB28", "#FF8042", "#8884D8"]
 
 export default function DashboardFinanceiro() {
   const router = useRouter()
   const [user, setUser] = useState<IUser | null>(null)
-  const { transactions, monthlyTransactions, addTransaction, editTransaction, deleteTransaction, toast, setToast, currentPage, totalPages, handlePreviousPage, handleNextPage, filterTransactionsByMonth, selectedMonth } = useTransactions()
+  const {
+    transactions,
+    getAllTransactions,
+    getTransactions,
+    monthlyTransactions,
+    addTransaction,
+    editTransaction,
+    deleteTransaction,
+    toast,
+    setToast,
+    currentPage,
+    totalPages,
+    handlePreviousPage,
+    handleNextPage,
+    filterTransactionsByMonth,
+    selectedMonth
+  } = useTransactions()
   const { goals } = useGoals()
   
   const totalIncome = transactions.filter((t) => t.type === "income").reduce((sum, t) => sum + t.amount, 0)
@@ -226,13 +242,16 @@ export default function DashboardFinanceiro() {
     localStorage.setItem("tutorial-guide", "true")
   }
 
-  const handleAddIncome = (description: string, amount: number, tag: string, date: string) => {
+  const handleAddIncome = (description: string, amount: number, tag: string, date: string, isRecurring: boolean,
+                           recurrenceCount: number) => {
     const newTransaction: Partial<ITransaction> = {
       type: "income",
       description,
       amount,
       date,
       tag,
+      isRecurring,
+      recurrenceCount
     }
     addTransaction(newTransaction)
   }
@@ -315,7 +334,7 @@ export default function DashboardFinanceiro() {
                       >
                         {user.name}
                       </motion.span>
-                      <Button onClick={handleLogout} variant="ghost" className="text-white">
+                      <Button onClick={handleLogout} variant="ghost" className="text-gray-700 dark:text-gray-300">
                         <LogOut className="h-5 w-5 mr-2 text-red-500" />
                         Sair
                       </Button>
@@ -385,7 +404,7 @@ export default function DashboardFinanceiro() {
                 transition={{ duration: 0.5, delay: 0.4 }}
                 className="mb-8"
             >
-              <FinancialGoals />
+              <FinancialGoals transactions={transactions}/>
             </motion.div>
 
             <motion.div
@@ -394,9 +413,25 @@ export default function DashboardFinanceiro() {
                 transition={{ duration: 0.5, delay: 0.6 }}
             >
               <Card className="bg-white dark:bg-gray-800 shadow-lg mb-8 transition-colors duration-200">
+                <div className="w-full flex justify-between">
                 <CardTitle id="transactions-table" className="text-lg font-semibold text-gray-900 dark:text-gray-100 p-4">
-                  Todas as Transações
+                  Tabela de Transações
                 </CardTitle>
+                  <div className="flex flex-col sm:flex-row gap-2 justify-center sm:justify-start">
+                    <Button
+                        variant="default"
+                        className="transition-all bg-blue-600 text-white m-2"
+                        onClick={getAllTransactions}
+                    >
+                      <Search className="mr-2 h-4 w-4" />
+                      Buscar Todas
+                    </Button>
+                    <Button variant="outline" className="transition-all bg-red-600 text-white m-2" onClick={getTransactions}>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Limpar Filtros
+                    </Button>
+                  </div>
+                </div>
                 <CardContent>
                   {/* Paginação */}
                       <div className="flex justify-center items-center mt-4 space-x-4">

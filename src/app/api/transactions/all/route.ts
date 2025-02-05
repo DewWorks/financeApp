@@ -8,11 +8,10 @@ class AuthError extends Error {
         this.name = 'AuthError';
     }
 }
-
 export async function GET() {
     try {
         const userId = await getUserIdFromToken()
-        
+
         const client = await getMongoClient();
         const db = client.db("financeApp");
 

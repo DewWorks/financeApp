@@ -8,4 +8,5 @@ export interface IGoal {
     currentAmount: number;  
     tag: string;
     date?: string | Date | null;
+    createdAt: string | Date;
 }

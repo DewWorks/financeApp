@@ -24,7 +24,7 @@ interface SliderMonthSelectorProps {
 }
 
 export default function SliderMonthSelector({ onSelectMonth }: SliderMonthSelectorProps) {
-    const [selectedMonth, setSelectedMonth] = useState(1)
+    const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
     const sliderRef = useRef<HTMLInputElement>(null)
 
     useEffect(() => {

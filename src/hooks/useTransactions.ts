@@ -9,11 +9,27 @@ export function useTransactions() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
-  const [availableMonths, setAvailableMonths] = useState<number[]>([]);
 
   const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'auth') => {
     setToast({ message, type })
   }
+
+  const getAllTransactions = useCallback(async () => {
+    try {
+      const response = await fetch('/api/transactions/all');
+      if (response.ok) {
+        const data = await response.json();
+
+        setTransactions(data);
+        setMonthlyTransactions(data);
+      } else {
+        showToast('Falha ao carregar todas as transações.', 'error');
+      }
+    } catch (error) {
+      console.error('Erro ao buscar todas as transações:', error);
+      showToast('Erro ao carregar todas as transações.', 'error');
+    }
+  }, [setTransactions]);
 
   const getMonthlyTransactions = useCallback(async () => {
     try {
@@ -30,7 +46,6 @@ export function useTransactions() {
     }
   }, [selectedMonth]);
 
-  // ✅ Carregar transações paginadas para a tabela
   const getTransactions = useCallback(async () => {
     try {
       const response = await fetch(`/api/transactions?page=${currentPage}&limit=10&month=${selectedMonth}`);
@@ -50,20 +65,16 @@ export function useTransactions() {
   useEffect(() => {
     getMonthlyTransactions(); // Carregar todas as transações do mês para gráficos e totais
     getTransactions(); // Carregar apenas as transações paginadas para a tabela
+    getAllTransactions(); // Carregar para as metas
   }, [currentPage, selectedMonth, getTransactions]);
 
   useEffect(() => {
-    // 🔹 Se houver transações, extrai os meses disponíveis delas
     if (transactions.length > 0) {
-      const months = Array.from(
-          new Set(
-              transactions.map((transaction) => new Date(transaction.date).getMonth() + 1)
-          )
-      ).sort((a, b) => a - b); // Ordena os meses corretamente
-
-      setAvailableMonths(months);
+      setTransactions(transactions);
+    } else {
+      setTransactions(monthlyTransactions);
     }
-  }, [transactions]); // Atualiza quando `transactions` mudar
+  }, [transactions, monthlyTransactions]);
 
   const handlePreviousPage = () => {
     if (currentPage > 1) {
@@ -205,6 +216,9 @@ export function useTransactions() {
 
   return {
     transactions,
+    setTransactions,
+    getAllTransactions,
+    getTransactions,
     monthlyTransactions,
     addTransaction,
     editTransaction,
@@ -218,7 +232,6 @@ export function useTransactions() {
     handleNextPage,
     filterTransactionsByMonth,
     selectedMonth,
-    availableMonths
   }
 }
 
