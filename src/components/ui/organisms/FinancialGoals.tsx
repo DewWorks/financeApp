@@ -31,9 +31,9 @@ export function FinancialGoals({ transactions }: FinancialGoalsProps) {
     const [editingGoal, setEditingGoal] = React.useState<IGoal | null>(null);
 
     const calculateGoalProgress = (goal: IGoal) => {
-        const currentAmount = transactions.filter(
+        const currentAmount = Array.isArray(transactions) ? transactions.filter(
             (t) => t.tag === goal.tag && t.type === 'income'
-        ).reduce((sum, t) => sum + t.amount, 0);
+        ).reduce((sum, t) => sum + t.amount, 0) : 0;
         return Math.min(currentAmount, goal.targetAmount);
     };
 

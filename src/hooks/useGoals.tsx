@@ -39,6 +39,7 @@ export function useGoals() {
 
     const addGoal = async (goal: Partial<IGoal>) => {
         try {
+            showToast('Adicionando meta...', 'warning');
             const response = await fetch('/api/goals', {
                 method: 'POST',
                 headers: {
@@ -64,6 +65,7 @@ export function useGoals() {
 
     const editGoal = async (updatedGoal: Partial<IGoal>) => {
         try {
+            showToast('Editando meta...', 'warning');
             const response = await fetch(`/api/goals/${updatedGoal._id}`, {
                 method: 'PUT',
                 headers: {
@@ -90,6 +92,7 @@ export function useGoals() {
 
     const deleteGoal = async (goalId: string) => {
         try {
+            showToast('Excluindo meta...', 'warning');
             const response = await fetch(`/api/goals/${goalId}`, {
                 method: 'DELETE',
             })

@@ -1,7 +1,6 @@
 "use client"
 
-import type React from "react"
-import { createContext, useContext, useState, useEffect } from "react"
+import React, { createContext, useContext, useState, useEffect } from "react"
 
 type Theme = "light" | "dark"
 
@@ -13,21 +12,15 @@ type ThemeContextType = {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [theme, setTheme] = useState<Theme>(() => {
-        if (typeof window !== "undefined") {
-            return (localStorage.getItem("theme") as Theme) || "light"
-        }
-        return "light"
-    })
+    const [theme, setTheme] = useState<Theme>("light"); // Inicializa como "light"
 
-    // ✅ Força a atualização do tema logo após a montagem
+    // ⚡ Atualiza o tema com os dados do localStorage após a montagem
     useEffect(() => {
-        if (theme === "dark") {
-            document.documentElement.classList.add("dark")
-        } else {
-            document.documentElement.classList.remove("dark")
+        const storedTheme = localStorage.getItem("theme") as Theme;
+        if (storedTheme) {
+            setTheme(storedTheme);
         }
-    }, [])
+    }, []);
 
     useEffect(() => {
         localStorage.setItem("theme", theme)
