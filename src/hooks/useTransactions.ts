@@ -5,7 +5,7 @@ import {AuthErrorModal} from "@/components/ui/atoms/swalAuth";
 export function useTransactions() {
   const [transactions, setTransactions] = useState<ITransaction[]>([]);
   const [allTransactions, setAllTransactions] = useState<ITransaction[]>([]);
-  const [monthlyTransactions, setMonthlyTransactions] = useState<ITransaction[]>([]);
+  // const [monthlyTransactions, setMonthlyTransactions] = useState<ITransaction[]>([]);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' | 'auth' } | null>(null)
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -78,20 +78,20 @@ export function useTransactions() {
     }
   }, []);
 
-  const getMonthlyTransactions = useCallback(async () => {
-    try {
-      const response = await fetch(`/api/transactions/month?month=${selectedMonth}`);
-      if (response.ok) {
-        const data = await response.json();
-        setMonthlyTransactions(data.transactions);
-      } else {
-        showToast('Erro ao carregar transações do mês.', 'error');
-      }
-    } catch (error) {
-      console.error('Erro ao buscar transações do mês:', error);
-      showToast('Ocorreu um erro ao carregar transações do mês.', 'error');
-    }
-  }, [selectedMonth]);
+  // const getMonthlyTransactions = useCallback(async () => {
+  //   try {
+  //     const response = await fetch(`/api/transactions/month?month=${selectedMonth}`);
+  //     if (response.ok) {
+  //       const data = await response.json();
+  //       setMonthlyTransactions(data.transactions);
+  //     } else {
+  //       showToast('Erro ao carregar transações do mês.', 'error');
+  //     }
+  //   } catch (error) {
+  //     console.error('Erro ao buscar transações do mês:', error);
+  //     showToast('Ocorreu um erro ao carregar transações do mês.', 'error');
+  //   }
+  // }, [selectedMonth]);
 
   useEffect(() => {
     if (!isAllTransactions) {
@@ -226,7 +226,12 @@ export function useTransactions() {
     if (currentPage > 1) {
       const newPage = currentPage - 1;
       setCurrentPage(newPage);
-      isAllTransactions ? getAllTransactionsPage(newPage) : getTransactions(newPage);
+
+      if (isAllTransactions) {
+        getAllTransactionsPage(newPage);
+      } else {
+        getTransactions(newPage);
+      }
     }
   };
 
@@ -234,7 +239,12 @@ export function useTransactions() {
     if (currentPage < totalPages) {
       const newPage = currentPage + 1;
       setCurrentPage(newPage);
-      isAllTransactions ? getAllTransactionsPage(newPage) : getTransactions(newPage);
+
+      if (isAllTransactions) {
+        getAllTransactionsPage(newPage);
+      } else {
+        getTransactions(newPage);
+      }
     }
   };
 
@@ -257,7 +267,7 @@ export function useTransactions() {
     isAllTransactions,
     setIsAllTransactions,
     getTransactions,
-    monthlyTransactions,
+    //monthlyTransactions,
     addTransaction,
     editTransaction,
     deleteTransaction,
