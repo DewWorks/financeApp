@@ -33,9 +33,14 @@ const COLORS = ["#0088FE", "#ff6666", "#FFBB28", "#FF8042", "#8884D8"]
 export default function DashboardFinanceiro() {
   const router = useRouter()
   const [user, setUser] = useState<IUser | null>(null)
+
   const {
     transactions,
+      allTransactions,
     getAllTransactions,
+    getAllTransactionsPage,
+    isAllTransactions,
+    setIsAllTransactions,
     getTransactions,
     monthlyTransactions,
     addTransaction,
@@ -44,6 +49,7 @@ export default function DashboardFinanceiro() {
     toast,
     setToast,
     currentPage,
+    setCurrentPage,
     totalPages,
     handlePreviousPage,
     handleNextPage,
@@ -51,9 +57,15 @@ export default function DashboardFinanceiro() {
     selectedMonth
   } = useTransactions()
   const { goals } = useGoals()
-  
-  const totalIncome = transactions.filter((t) => t.type === "income").reduce((sum, t) => sum + t.amount, 0)
-  const totalExpense = transactions.filter((t) => t.type === "expense").reduce((sum, t) => sum + t.amount, 0)
+
+  const dataToUse = isAllTransactions ? allTransactions : transactions;
+  const totalIncome = Array.isArray(dataToUse)
+      ? dataToUse.filter((t) => t.type === "income").reduce((sum, t) => sum + t.amount, 0)
+      : 0;
+
+  const totalExpense = Array.isArray(dataToUse)
+      ? dataToUse.filter((t) => t.type === "expense").reduce((sum, t) => sum + t.amount, 0)
+      : 0;
   const balance = totalIncome - totalExpense
 
   function ThemeToggle() {
@@ -65,6 +77,9 @@ export default function DashboardFinanceiro() {
         </Button>
     )
   }
+
+  console.log("aqui transactions: ", transactions)
+  console.log("quantidade de páginas: ", totalPages, " estou na página: ", currentPage)
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -97,24 +112,30 @@ export default function DashboardFinanceiro() {
     { name: "Despesas", value: totalExpense },
   ]
 
-  const barChartData = monthlyTransactions.slice(0, 5).map((t) => ({
-    name: t.description,
-    valor: t.amount,
-    tipo: t.type === "income" ? "Receita" : "Despesa",
-    tag: t.tag,
-  }))
+  const barChartData = Array.isArray(dataToUse)
+      ? dataToUse.slice(0, 5).map((t) => ({
+        name: t.description || "Sem descrição",
+        valor: t.amount || 0,
+        tipo: t.type === "income" ? "Receita" : "Despesa",
+        tag: t.tag || "Sem tag",
+      }))
+      : [];
 
-  const lineChartData = monthlyTransactions.slice(0, 10).map((t) => ({
-    data: t.date,
-    valor: t.type === "income" ? t.amount : -t.amount,
-    tag: t.tag,
-  }))
+  const lineChartData = Array.isArray(dataToUse)
+      ? dataToUse.slice(0, 10).map((t) => ({
+        data: t.date || "Sem data",
+        valor: t.type === "income" ? t.amount || 0 : -(t.amount || 0),
+        tag: t.tag || "Sem tag",
+      }))
+      : [];
 
-  const areaChartData = monthlyTransactions.slice(0, 15).map((t) => ({
-    data: t.date,
-    receita: t.type === "income" ? t.amount : 0,
-    despesa: t.type === "expense" ? t.amount : 0,
-  }))
+  const areaChartData = Array.isArray(dataToUse)
+      ? dataToUse.slice(0, 15).map((t) => ({
+        data: t.date || "Sem data",
+        receita: t.type === "income" ? t.amount || 0 : 0,
+        despesa: t.type === "expense" ? t.amount || 0 : 0,
+      }))
+      : [];
 
   const [runTutorial, setRunTutorial] = useState(false)
 
@@ -278,6 +299,19 @@ export default function DashboardFinanceiro() {
     await deleteTransaction(transactionId)
   }
 
+  const handleToggleTransactions = async () => {
+    if (isAllTransactions) {
+      // 🔹 Se já estiver mostrando todas, volta para a versão paginada do mês atual
+      await getTransactions();
+    } else {
+      // 🔹 Se estiver mostrando a versão paginada do mês, busca todas
+      await getAllTransactions(); // Carregar todas para gráficos
+      await getAllTransactionsPage(1); // Buscar paginadas
+    }
+
+    setIsAllTransactions(!isAllTransactions); // Alternar estado
+  };
+
   useEffect(() => {
     const token = localStorage.getItem("auth_token")
     if (!token) {
@@ -369,7 +403,7 @@ export default function DashboardFinanceiro() {
               <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2" id="add-transactions">
                 <AddIncomeDialog onAddIncome={handleAddIncome} />
                 <AddExpenseDialog onAddExpense={handleAddExpense} />
-                {user && <ReportButton user={user} transactions={transactions} goals={goals} />}
+                {user && <ReportButton user={user} transactions={dataToUse} goals={goals} />}
               </div>
             </motion.div>
 
@@ -404,7 +438,7 @@ export default function DashboardFinanceiro() {
                 transition={{ duration: 0.5, delay: 0.4 }}
                 className="mb-8"
             >
-              <FinancialGoals transactions={transactions}/>
+              <FinancialGoals transactions={dataToUse}/>
             </motion.div>
 
             <motion.div
@@ -420,15 +454,22 @@ export default function DashboardFinanceiro() {
                   <div className="flex flex-col sm:flex-row gap-2 justify-center sm:justify-start">
                     <Button
                         variant="default"
-                        className="transition-all bg-blue-600 text-white m-2"
-                        onClick={getAllTransactions}
+                        className={`transition-all m-2 ${
+                            isAllTransactions ? "bg-red-600 text-white" : "bg-blue-600 text-white"
+                        }`}
+                        onClick={handleToggleTransactions}
                     >
-                      <Search className="mr-2 h-4 w-4" />
-                      Buscar Todas
-                    </Button>
-                    <Button variant="outline" className="transition-all bg-red-600 text-white m-2" onClick={getTransactions}>
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Limpar Filtros
+                      {isAllTransactions ? (
+                          <>
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                            Limpar filtros
+                          </>
+                      ) : (
+                          <>
+                            <Search className="mr-2 h-4 w-4" />
+                            Buscar Todas
+                          </>
+                      )}
                     </Button>
                   </div>
                 </div>
@@ -438,7 +479,6 @@ export default function DashboardFinanceiro() {
                         {/* Botão de Página Anterior */}
                         <Button
                             onClick={handlePreviousPage}
-                            disabled={currentPage === 1}
                             className="p-2 rounded-lg border dark:border-gray-600 bg-blue-600 text-white disabled:opacity-50"
                         >
                           <ChevronLeft className="h-5 w-5" />
@@ -452,7 +492,6 @@ export default function DashboardFinanceiro() {
                         {/* Botão de Próxima Página */}
                         <Button
                             onClick={handleNextPage}
-                            disabled={currentPage === totalPages}
                             className="p-2 rounded-lg border dark:border-gray-600 disabled:opacity-50 bg-blue-600 text-white"
                         >
                           <ChevronRight className="h-5 w-5" />
@@ -462,11 +501,15 @@ export default function DashboardFinanceiro() {
                   <div className="flex justify-center space-x-2 my-4 overflow-x-auto">
                     <SliderMonthSelector onSelectMonth={filterTransactionsByMonth} />
                   </div>
+                  {transactions.length > 0 ? (
                   <TransactionsTable
-                      transactions={selectedMonth ? transactions : monthlyTransactions}
+                      transactions={selectedMonth ? transactions : transactions}
                       onEditTransaction={handleEditTransaction}
                       onDeleteTransaction={handleDeleteTransaction}
                   />
+                  ) : (
+                      <Toast message={"Carregando transações"} type={"warning"} onClose={() => setToast(null)} />
+                  )}
                   {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
                 </CardContent>
               </Card>
