@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
 import { ITransaction } from '@/interfaces/ITransaction'
-import {AuthErrorModal} from "@/components/ui/atoms/swalAuth";
 
 export function useTransactions() {
   const [transactions, setTransactions] = useState<ITransaction[]>([]);
@@ -109,30 +108,30 @@ export function useTransactions() {
     }
   }, [isAllTransactions]);
 
-  const fetchTransactions = useCallback(async () => {
-    try {
-      const response = await fetch('/api/admin/transactions');
-      if (response.ok) {
-        const data = await response.json();
-        if (Array.isArray(data.transactions)) {
-          setTransactions(data.transactions);
-        } else {
-          console.error('Data fetched is not an array:', data);
-          setTransactions([]);
-        }
-      } else if (response.status === 401) {
-        setToast({ message: 'Erro de autenticação', type: 'auth' });
-        showToast('Erro de autenticação', 'auth');
-      } else {
-        console.error('Failed to fetch transactions');
-        showToast('Falha ao carregar transações. Por favor, tente novamente.', 'error');
-      }
-    } catch (error) {
-      console.error('Error fetching transactions:', error);
-      setTransactions([]);
-      showToast('Ocorreu um erro ao carregar as transações. Por favor, tente novamente.', 'error');
-    }
-  }, [AuthErrorModal]);
+  // const fetchTransactions = useCallback(async () => {
+  //   try {
+  //     const response = await fetch('/api/admin/transactions');
+  //     if (response.ok) {
+  //       const data = await response.json();
+  //       if (Array.isArray(data.transactions)) {
+  //         setTransactions(data.transactions);
+  //       } else {
+  //         console.error('Data fetched is not an array:', data);
+  //         setTransactions([]);
+  //       }
+  //     } else if (response.status === 401) {
+  //       setToast({ message: 'Erro de autenticação', type: 'auth' });
+  //       showToast('Erro de autenticação', 'auth');
+  //     } else {
+  //       console.error('Failed to fetch transactions');
+  //       showToast('Falha ao carregar transações. Por favor, tente novamente.', 'error');
+  //     }
+  //   } catch (error) {
+  //     console.error('Error fetching transactions:', error);
+  //     setTransactions([]);
+  //     showToast('Ocorreu um erro ao carregar as transações. Por favor, tente novamente.', 'error');
+  //   }
+  // }, [AuthErrorModal]);
 
   const addTransaction = async (transaction: Partial<ITransaction>) => {
     try {
