@@ -76,9 +76,6 @@ export default function DashboardFinanceiro() {
     )
   }
 
-  console.log("aqui transactions: ", transactions)
-  console.log("quantidade de páginas: ", totalPages, " estou na página: ", currentPage)
-
   useEffect(() => {
     const fetchUser = async () => {
       const userId = localStorage.getItem("user-id")
