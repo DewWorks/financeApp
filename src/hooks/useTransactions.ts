@@ -38,12 +38,14 @@ export function useTransactions() {
 
   const getTransactions = useCallback(async (page = 1) => {
     try {
+      showToast("Buscando transações paginadas.", "warning");
       const response = await fetch(`/api/transactions?page=${page}&limit=10&month=${selectedMonth}`);
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data.transactions)) {
           setTransactions(data.transactions);
           setTotalPages(data.totalPages || 1);
+          showToast("Transações buscadas!", "success");
         } else {
           console.error("Erro: resposta inesperada", data);
           showToast("Erro ao carregar transações.", "error");
@@ -59,15 +61,17 @@ export function useTransactions() {
 
   const getAllTransactionsPage = useCallback(async (page = 1) => {
     try {
+      showToast("Buscando transações paginadas.", "warning");
       const response = await fetch(`/api/transactions/all/page?page=${page}&limit=10`);
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data.transactions)) {
           setTransactions(data.transactions);
           setTotalPages(data.totalPages || 1);
+          showToast("Transações buscadas!", "success");
         } else {
           console.error("Erro: resposta inesperada", data);
-          showToast("Erro ao carregar transações paginadas.", "error");
+          showToast("Erro ao carregar transações paginadas.", "success");
         }
       } else {
         showToast("Falha ao carregar transações paginadas.", "error");
@@ -132,6 +136,7 @@ export function useTransactions() {
 
   const addTransaction = async (transaction: Partial<ITransaction>) => {
     try {
+      showToast("Inserindo transação...", "warning");
       const response = await fetch('/api/transactions', {
         method: 'POST',
         headers: {
@@ -140,7 +145,7 @@ export function useTransactions() {
         body: JSON.stringify(transaction)
       })
       if (response.ok) {
-        await fetchTransactions()
+        await getTransactions()
         showToast('Transação adicionada com sucesso!', 'success');
       } else if (response.status === 401) {
         showToast('Erro de autenticação', 'auth');
@@ -157,6 +162,7 @@ export function useTransactions() {
 
   const editTransaction = async (updatedTransaction: Partial<ITransaction>) => {
     try {
+      showToast("Editando transação...", "warning");
       const response = await fetch(`/api/transactions/${updatedTransaction._id}`, {
         method: 'PUT',
         headers: {
@@ -166,7 +172,7 @@ export function useTransactions() {
       })
 
       if (response.ok) {
-        await fetchTransactions()
+        await getTransactions()
         showToast('Transação atualizada com sucesso!', 'success');
       } else if (response.status === 401) {
         showToast('Erro de autenticação', 'auth');
@@ -183,11 +189,12 @@ export function useTransactions() {
 
   const deleteTransaction = async (transactionId: string) => {
     try {
+      showToast("Excluindo transação...", "warning");
       const response = await fetch(`/api/transactions/${transactionId}`, {
         method: 'DELETE',
       })
       if (response.ok) {
-        await fetchTransactions()
+        await getTransactions()
         showToast('A transação foi excluída com sucesso.', 'success');
       } else if (response.status === 401) {
         showToast('Erro de autenticação', 'auth');
@@ -204,6 +211,7 @@ export function useTransactions() {
 
   const getTransaction = async (transactionId: string): Promise<ITransaction | null> => {
     try {
+      showToast("Buscando transação...", "warning");
       const response = await fetch(`/api/transactions/${transactionId}`)
       if (response.ok) {
         return await response.json()
