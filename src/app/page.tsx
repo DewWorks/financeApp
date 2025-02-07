@@ -541,7 +541,7 @@ export default function DashboardFinanceiro() {
               </CardHeader>
               <CardContent>
                 {selectedChartType === "pie" && <DistributionChart transactions={transactions} colors={COLORS} />}
-                {selectedChartType === "bar" && <RecentTransactionsChart transactions={transactions} />}
+                {selectedChartType === "bar" && <RecentTransactionsChart transactions={transactions} colors={COLORS} />}
                 {selectedChartType === "line" && <CashFlowChart onFetchAllTransactions={handleToggleTransactions} transactions={transactions} colors={["#8884d8", "#ff3366"]} />}
                 {selectedChartType === "area" && <IncomeVsExpensesChart onFetchAllTransactions={handleToggleTransactions} areaChartData={areaChartData} />}
               </CardContent>

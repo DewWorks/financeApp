@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/atoms/popover";
 import { Info } from "lucide-react";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell } from "recharts";
 import { Button } from "@/components/ui/atoms/button";
 import { ITransaction } from "@/interfaces/ITransaction";
 
@@ -15,11 +15,12 @@ interface TransactionChartData {
 
 interface RecentTransactionsChartProps {
     transactions: ITransaction[];
+    colors: string[];
 }
 
 type FilterType = "ultimas" | "categoria" | "tipo";
 
-export function RecentTransactionsChart({ transactions }: RecentTransactionsChartProps) {
+export function RecentTransactionsChart({ transactions, colors }: RecentTransactionsChartProps) {
     const [filter, setFilter] = useState<FilterType>("ultimas");
 
     const filteredData: TransactionChartData[] = useMemo(() => {
@@ -114,7 +115,11 @@ export function RecentTransactionsChart({ transactions }: RecentTransactionsChar
                                 }}
                             />
                             <Legend formatter={(value) => <span className="text-gray-900 dark:text-gray-100">{value}</span>} />
-                            <Bar dataKey="amount" fill="#8884d8" name="Valor" />
+                            <Bar dataKey="amount" name="Valor">
+                                {filteredData.map((_, index) => (
+                                    <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                                ))}
+                        </Bar>
                         </BarChart>
                     </ResponsiveContainer>
                 </CardContent>
