@@ -109,14 +109,14 @@ export default function DashboardFinanceiro() {
   //   { name: "Despesas", value: totalExpense },
   // ]
 
-  const barChartData = Array.isArray(dataToUse)
-      ? dataToUse.slice(0, 5).map((t) => ({
-        name: t.description || "Sem descrição",
-        valor: t.amount || 0,
-        tipo: t.type === "income" ? "Receita" : "Despesa",
-        tag: t.tag || "Sem tag",
-      }))
-      : [];
+  // const barChartData = Array.isArray(dataToUse)
+  //     ? dataToUse.slice(0, 5).map((t) => ({
+  //       name: t.description || "Sem descrição",
+  //       valor: t.amount || 0,
+  //       tipo: t.type === "income" ? "Receita" : "Despesa",
+  //       tag: t.tag || "Sem tag",
+  //     }))
+  //     : [];
 
   // const lineChartData = Array.isArray(dataToUse)
   //     ? dataToUse.slice(0, 10).map((t) => ({
@@ -541,7 +541,7 @@ export default function DashboardFinanceiro() {
               </CardHeader>
               <CardContent>
                 {selectedChartType === "pie" && <DistributionChart transactions={transactions} colors={COLORS} />}
-                {selectedChartType === "bar" && <RecentTransactionsChart barChartData={barChartData} />}
+                {selectedChartType === "bar" && <RecentTransactionsChart transactions={transactions} />}
                 {selectedChartType === "line" && <CashFlowChart onFetchAllTransactions={handleToggleTransactions} transactions={transactions} colors={["#8884d8", "#ff3366"]} />}
                 {selectedChartType === "area" && <IncomeVsExpensesChart onFetchAllTransactions={handleToggleTransactions} areaChartData={areaChartData} />}
               </CardContent>
