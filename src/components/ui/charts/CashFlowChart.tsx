@@ -14,6 +14,7 @@ import {
     CartesianGrid,
     Tooltip,
     Legend,
+    TooltipProps,
 } from "recharts"
 import { formatDate, formatShortDate, formatCurrency } from "@/lib/utils"
 import { Swiper, SwiperSlide } from "swiper/react"
@@ -26,6 +27,7 @@ import type { ITransaction } from "@/interfaces/ITransaction"
 interface CashFlowChartProps {
     transactions: ITransaction[]
     colors: string[]
+    onFetchAllTransactions: () => void;
 }
 
 type ChartType = "saldoAcumulado" | "fluxoMensal" | "comparativoAnual"
@@ -44,7 +46,7 @@ const chartDescriptions: Record<ChartType, string> = {
     comparativoAnual: "Compara o saldo acumulado mês a mês entre o ano atual e o ano anterior, facilitando a análise do progresso financeiro ano a ano.",
 }
 
-export function CashFlowChart({ transactions, colors }: CashFlowChartProps) {
+export function CashFlowChart({ transactions, colors, onFetchAllTransactions }: CashFlowChartProps) {
     const [isMobile, setIsMobile] = useState(false)
     const [selectedChartType, setSelectedChartType] = useState<ChartType>("saldoAcumulado")
 
@@ -56,6 +58,13 @@ export function CashFlowChart({ transactions, colors }: CashFlowChartProps) {
         window.addEventListener("resize", checkIsMobile)
         return () => window.removeEventListener("resize", checkIsMobile)
     }, [])
+
+    const handleChartTypeChange = async (type: ChartType) => {
+        setSelectedChartType(type);
+        if (type === "comparativoAnual") {
+            onFetchAllTransactions();
+        }
+    };
 
     const processedData = useMemo(() => {
         const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
@@ -152,45 +161,50 @@ export function CashFlowChart({ transactions, colors }: CashFlowChartProps) {
         }
     }
 
-    const renderTooltipSaldoAcumulado = ({ active, payload, label }: any) => {
-        if (active && payload && payload.length) {
+    const renderTooltipSaldoAcumulado = ({ active, payload, label }: TooltipProps<number, string>) => {
+        if (active && payload && payload.length > 0) {
+            const saldo = payload[0].value ?? 0; // Garante que sempre tenha um número
             return (
                 <div className="bg-white p-2 border rounded shadow">
-                    <p className="font-bold">{formatDate(label)}</p>
-                    <p>Saldo: {formatCurrency(payload[0].value)}</p>
+                    <p className="font-bold">{formatDate(String(label))}</p>
+                    <p>Saldo: {formatCurrency(saldo)}</p>
                 </div>
-            )
+            );
         }
-        return null
-    }
+        return null;
+    };
 
-    const renderTooltipFluxoMensal = ({ active, payload, label }: any) => {
-        if (active && payload && payload.length) {
+    const renderTooltipFluxoMensal = ({ active, payload, label }: TooltipProps<number, string>) => {
+        if (active && payload && payload.length >= 2) {
+            const receita = payload[0].value ?? 0;
+            const despesa = payload[1].value ?? 0;
             return (
                 <div className="bg-white p-2 border rounded shadow">
-                    <p className="font-bold">{label}</p>
-                    <p>Receitas: {formatCurrency(payload[0].value)}</p>
-                    <p>Despesas: {formatCurrency(payload[1].value)}</p>
-                    <p>Saldo: {formatCurrency(payload[0].value - payload[1].value)}</p>
+                    <p className="font-bold">{String(label)}</p>
+                    <p>Receitas: {formatCurrency(receita)}</p>
+                    <p>Despesas: {formatCurrency(despesa)}</p>
+                    <p>Saldo: {formatCurrency(receita - despesa)}</p>
                 </div>
-            )
+            );
         }
-        return null
-    }
+        return null;
+    };
 
-    const renderTooltipComparativoAnual = ({ active, payload, label }: any) => {
-        if (active && payload && payload.length) {
+    const renderTooltipComparativoAnual = ({ active, payload, label }: TooltipProps<number, string>) => {
+        if (active && payload && payload.length >= 2) {
+            const anoAtual = payload[0].value ?? 0;
+            const anoAnterior = payload[1].value ?? 0;
             return (
                 <div className="bg-white p-2 border rounded shadow">
-                    <p className="font-bold">{label}</p>
-                    <p>Ano Atual: {formatCurrency(payload[0].value)}</p>
-                    <p>Ano Anterior: {formatCurrency(payload[1].value)}</p>
-                    <p>Diferença: {formatCurrency(payload[0].value - payload[1].value)}</p>
+                    <p className="font-bold">{String(label)}</p>
+                    <p>Ano Atual: {formatCurrency(anoAtual)}</p>
+                    <p>Ano Anterior: {formatCurrency(anoAnterior)}</p>
+                    <p>Diferença: {formatCurrency(anoAtual - anoAnterior)}</p>
                 </div>
-            )
+            );
         }
-        return null
-    }
+        return null;
+    };
 
     const renderSummary = () => {
         switch (selectedChartType) {
@@ -246,8 +260,19 @@ export function CashFlowChart({ transactions, colors }: CashFlowChartProps) {
             transition={{ duration: 0.5, delay: 0.8 }}
         >
             <Card className="bg-white shadow-lg mb-8 dark:bg-gray-800">
-                <CardHeader className="flex flex-col items-center justify-between sm:flex-row">
-                    <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    <CardHeader className="w-full flex flex-row items-center justify-between">
+                        <CardTitle className="self-start text-lg font-semibold text-gray-900 dark:text-gray-100">Gráfico de Progressão</CardTitle>
+                        <Popover>
+                            <PopoverTrigger>
+                                <Info className="h-5 w-5 text-gray-500" />
+                            </PopoverTrigger>
+                            <PopoverContent className="bg-white dark:bg-gray-800 dark:text-gray-100">
+                                {chartDescriptions[selectedChartType]}
+                            </PopoverContent>
+                        </Popover>
+                    </CardHeader>
+                <CardHeader className="w-full flex flex-col items-center md:justify-around sm:flex-row">
+                <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                         {chartTitles[selectedChartType]}
                     </CardTitle>
                     <div className="flex items-center space-x-2">
@@ -257,19 +282,11 @@ export function CashFlowChart({ transactions, colors }: CashFlowChartProps) {
                                 key={type}
                                 variant={selectedChartType === type ? "default" : "outline"}
                                 size="sm"
-                                onClick={() => setSelectedChartType(type)}
+                                onClick={() => handleChartTypeChange(type)}
                             >
                                 {chartTitles[type]}
                             </Button>
                         ))}
-                        <Popover>
-                            <PopoverTrigger>
-                                <Info className="h-5 w-5 text-gray-500" />
-                            </PopoverTrigger>
-                            <PopoverContent className="bg-white">
-                                {chartDescriptions[selectedChartType]}
-                            </PopoverContent>
-                        </Popover>
                     </div>
                 </CardHeader>
                 <CardContent>

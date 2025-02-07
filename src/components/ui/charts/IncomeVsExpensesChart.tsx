@@ -16,6 +16,7 @@ import {
     CartesianGrid,
     Tooltip,
     Legend,
+    TooltipProps,
 } from "recharts"
 import { formatDate, formatShortDate, formatCurrency } from "@/lib/utils"
 import { Swiper, SwiperSlide } from "swiper/react"
@@ -31,7 +32,8 @@ interface TransactionData {
 }
 
 interface FlexibleIncomeExpensesChartProps {
-    areaChartData: TransactionData[]
+    areaChartData: TransactionData[];
+    onFetchAllTransactions: () => void;
 }
 
 type ChartType = "acumulado" | "mensal" | "anual"
@@ -50,7 +52,7 @@ const chartDescriptions: Record<ChartType, string> = {
     anual: "Compara receitas e despesas entre o ano atual e o ano anterior.",
 }
 
-export function IncomeVsExpensesChart({ areaChartData }: FlexibleIncomeExpensesChartProps) {
+export function IncomeVsExpensesChart({ areaChartData, onFetchAllTransactions }: FlexibleIncomeExpensesChartProps) {
     const [isMobile, setIsMobile] = useState(false)
     const [selectedChartType, setSelectedChartType] = useState<ChartType>("acumulado")
 
@@ -62,6 +64,13 @@ export function IncomeVsExpensesChart({ areaChartData }: FlexibleIncomeExpensesC
         window.addEventListener("resize", checkIsMobile)
         return () => window.removeEventListener("resize", checkIsMobile)
     }, [])
+
+    const handleChartTypeChange = async (type: ChartType) => {
+        setSelectedChartType(type);
+        if (type === "anual") {
+            onFetchAllTransactions();
+        }
+    };
 
     const processedData = useMemo(() => {
         const sortedData = [...areaChartData].sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime())
@@ -168,46 +177,53 @@ export function IncomeVsExpensesChart({ areaChartData }: FlexibleIncomeExpensesC
         }
     }
 
-    const renderTooltipAcumulado = ({ active, payload, label }: any) => {
+    const renderTooltipAcumulado = ({ active, payload, label }: TooltipProps<number, string>) => {
         if (active && payload && payload.length) {
+            const saldoAcumulado = payload[0].value ?? 0; 
             return (
                 <div className="bg-white p-2 border rounded shadow">
-                    <p className="font-bold">{formatDate(label)}</p>
-                    <p>Saldo Acumulado: {formatCurrency(payload[0].value)}</p>
+                    <p className="font-bold">{formatDate(String(label))}</p>
+                    <p>Saldo Acumulado: {formatCurrency(saldoAcumulado)}</p>
                 </div>
-            )
+            );
         }
-        return null
-    }
+        return null;
+    };
 
-    const renderTooltipMensal = ({ active, payload, label }: any) => {
-        if (active && payload && payload.length) {
+    const renderTooltipMensal = ({ active, payload, label }: TooltipProps<number, string>) => {
+        if (active && payload && payload.length >= 2) {
+            const receita = payload[0].value ?? 0;
+            const despesa = payload[1].value ?? 0;
             return (
                 <div className="bg-white p-2 border rounded shadow">
-                    <p className="font-bold">{label}</p>
-                    <p>Receita: {formatCurrency(payload[0].value)}</p>
-                    <p>Despesa: {formatCurrency(payload[1].value)}</p>
-                    <p>Saldo: {formatCurrency(payload[0].value - payload[1].value)}</p>
+                    <p className="font-bold">{String(label)}</p>
+                    <p>Receita: {formatCurrency(receita)}</p>
+                    <p>Despesa: {formatCurrency(despesa)}</p>
+                    <p>Saldo: {formatCurrency(receita - despesa)}</p>
                 </div>
-            )
+            );
         }
-        return null
-    }
+        return null;
+    };
 
-    const renderTooltipAnual = ({ active, payload, label }: any) => {
-        if (active && payload && payload.length) {
+    const renderTooltipAnual = ({ active, payload, label }: TooltipProps<number, string>) => {
+        if (active && payload && payload.length >= 4) {
+            const receitaAtual = payload[0].value ?? 0;
+            const despesaAtual = payload[1].value ?? 0;
+            const receitaAnterior = payload[2].value ?? 0;
+            const despesaAnterior = payload[3].value ?? 0;
             return (
                 <div className="bg-white p-2 border rounded shadow">
-                    <p className="font-bold">{label}</p>
-                    <p>Receita (Atual): {formatCurrency(payload[0].value)}</p>
-                    <p>Despesa (Atual): {formatCurrency(payload[1].value)}</p>
-                    <p>Receita (Anterior): {formatCurrency(payload[2].value)}</p>
-                    <p>Despesa (Anterior): {formatCurrency(payload[3].value)}</p>
+                    <p className="font-bold">{String(label)}</p>
+                    <p>Receita (Atual): {formatCurrency(receitaAtual)}</p>
+                    <p>Despesa (Atual): {formatCurrency(despesaAtual)}</p>
+                    <p>Receita (Anterior): {formatCurrency(receitaAnterior)}</p>
+                    <p>Despesa (Anterior): {formatCurrency(despesaAnterior)}</p>
                 </div>
-            )
+            );
         }
-        return null
-    }
+        return null;
+    };
 
     const renderSummary = () => {
         switch (selectedChartType) {
@@ -264,10 +280,22 @@ export function IncomeVsExpensesChart({ areaChartData }: FlexibleIncomeExpensesC
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 1 }}>
             <Card className="bg-white shadow-lg mb-8 dark:bg-gray-800">
-                <CardHeader className="flex flex-col items-center justify-between sm:flex-row">
+                <CardHeader className="w-full flex flex-row items-center justify-between">
+                    <CardTitle className="self-start text-lg font-semibold text-gray-900 dark:text-gray-100">Gráfico de Área Evolução</CardTitle>
+                    <Popover>
+                        <PopoverTrigger>
+                            <Info className="h-5 w-5 text-gray-500" />
+                        </PopoverTrigger>
+                        <PopoverContent className="bg-white dark:bg-gray-800 dark:text-gray-100">
+                            {chartDescriptions[selectedChartType]}
+                        </PopoverContent>
+                    </Popover>
+                </CardHeader>
+                <CardHeader className="w-full flex flex-col items-center md:justify-around sm:flex-row">
                     <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                         {chartTitles[selectedChartType]}
                     </CardTitle>
+
                     <div className="flex items-center space-x-2">
                         {chartTypes.map((type) => (
                             <Button
@@ -275,19 +303,11 @@ export function IncomeVsExpensesChart({ areaChartData }: FlexibleIncomeExpensesC
                                 key={type}
                                 variant={selectedChartType === type ? "default" : "outline"}
                                 size="sm"
-                                onClick={() => setSelectedChartType(type)}
+                                onClick={() => handleChartTypeChange(type)}
                             >
                                 {chartTitles[type]}
                             </Button>
                         ))}
-                        <Popover>
-                            <PopoverTrigger>
-                                <Info className="h-5 w-5 text-gray-500" />
-                            </PopoverTrigger>
-                            <PopoverContent className="bg-white dark:bg-gray-800 dark:text-gray-100">
-                                {chartDescriptions[selectedChartType]}
-                            </PopoverContent>
-                        </Popover>
                     </div>
                 </CardHeader>
                 <CardContent>

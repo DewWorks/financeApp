@@ -104,10 +104,10 @@ export default function DashboardFinanceiro() {
     fetchUser()
   }, [])
 
-  const pieChartData = [
-    { name: "Receitas", value: totalIncome },
-    { name: "Despesas", value: totalExpense },
-  ]
+  // const pieChartData = [
+  //   { name: "Receitas", value: totalIncome },
+  //   { name: "Despesas", value: totalExpense },
+  // ]
 
   const barChartData = Array.isArray(dataToUse)
       ? dataToUse.slice(0, 5).map((t) => ({
@@ -118,13 +118,13 @@ export default function DashboardFinanceiro() {
       }))
       : [];
 
-  const lineChartData = Array.isArray(dataToUse)
-      ? dataToUse.slice(0, 10).map((t) => ({
-        data: t.date || "Sem data",
-        valor: t.type === "income" ? t.amount || 0 : -(t.amount || 0),
-        tag: t.tag || "Sem tag",
-      }))
-      : [];
+  // const lineChartData = Array.isArray(dataToUse)
+  //     ? dataToUse.slice(0, 10).map((t) => ({
+  //       data: t.date || "Sem data",
+  //       valor: t.type === "income" ? t.amount || 0 : -(t.amount || 0),
+  //       tag: t.tag || "Sem tag",
+  //     }))
+  //     : [];
 
   const areaChartData = Array.isArray(dataToUse)
       ? dataToUse.slice(0, 15).map((t) => ({
@@ -542,8 +542,8 @@ export default function DashboardFinanceiro() {
               <CardContent>
                 {selectedChartType === "pie" && <DistributionChart transactions={transactions} colors={COLORS} />}
                 {selectedChartType === "bar" && <RecentTransactionsChart barChartData={barChartData} />}
-                {selectedChartType === "line" && <CashFlowChart transactions={transactions} colors={["#8884d8", "#ff3366"]} />}
-                {selectedChartType === "area" && <IncomeVsExpensesChart areaChartData={areaChartData} />}
+                {selectedChartType === "line" && <CashFlowChart onFetchAllTransactions={handleToggleTransactions} transactions={transactions} colors={["#8884d8", "#ff3366"]} />}
+                {selectedChartType === "area" && <IncomeVsExpensesChart onFetchAllTransactions={handleToggleTransactions} areaChartData={areaChartData} />}
               </CardContent>
             </Card>
           </main>

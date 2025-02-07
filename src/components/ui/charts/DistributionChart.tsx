@@ -74,7 +74,7 @@ export function DistributionChart({ transactions, colors }: DistributionChartPro
                     <PopoverTrigger>
                         <Info className="h-5 w-5 text-gray-500" />
                     </PopoverTrigger>
-                    <PopoverContent className="bg-white">{info}</PopoverContent>
+                    <PopoverContent className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">{info}</PopoverContent>
                 </Popover>
             </CardHeader>
             <CardContent>
