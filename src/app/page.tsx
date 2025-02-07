@@ -3,7 +3,7 @@
 import { useTransactions } from "@/hooks/useTransactions"
 import { driver } from "driver.js"
 import "driver.js/dist/driver.css"
-import { Card, CardContent, CardTitle } from "@/components/ui/atoms/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/card"
 import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, User, Moon, Sun, ChevronLeft, ChevronRight, Search, RefreshCw } from "lucide-react"
 import { AddIncomeDialog } from "@/components/ui/organisms/AddIncomeDialog"
 import { AddExpenseDialog } from "@/components/ui/organisms/AddExpenseDialog"
@@ -27,6 +27,7 @@ import { ThemeProvider, useTheme } from "@/components/ui/organisms/ThemeContext"
 import { ReportButton } from '@/components/ui/molecules/ReportButton'
 import { useGoals } from "@/hooks/useGoals"
 import SliderMonthSelector from "@/components/ui/molecules/SliderMonth"
+import { ChartTypeSelector } from "@/components/ui/charts/ChartTypeSelection"
 
 const COLORS = ["#0088FE", "#ff6666", "#FFBB28", "#FF8042", "#8884D8"]
 
@@ -56,6 +57,7 @@ export default function DashboardFinanceiro() {
   } = useTransactions()
   const { goals } = useGoals()
 
+  const [selectedChartType, setSelectedChartType] = useState("pie")
   const dataToUse = isAllTransactions ? allTransactions : transactions;
   const totalIncome = Array.isArray(dataToUse)
       ? dataToUse.filter((t) => t.type === "income").reduce((sum, t) => sum + t.amount, 0)
@@ -509,13 +511,41 @@ export default function DashboardFinanceiro() {
                 </CardContent>
               </Card>
             </motion.div>
-            <div className="grid grid-cols-1 gap-6 mb-8 lg:grid-cols-2" id="transactions-chart">
-              <DistributionChart pieChartData={pieChartData} colors={COLORS} />
-              <RecentTransactionsChart barChartData={barChartData} />
-            </div>
-
-            <CashFlowChart lineChartData={lineChartData} />
-            <IncomeVsExpensesChart areaChartData={areaChartData} />
+            <Card className="bg-white dark:bg-gray-800 shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex w-full justify-between items-center text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  Distribuição Financeira
+                  <div className="gap-2 justify-center sm:justify-start">
+                    <Button
+                        variant="default"
+                        className={`transition-all m-2 ${
+                            isAllTransactions ? "bg-red-600 text-white" : "bg-blue-600 text-white"
+                        }`}
+                        onClick={handleToggleTransactions}
+                    >
+                      {isAllTransactions ? (
+                          <>
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                            Limpar filtros
+                          </>
+                      ) : (
+                          <>
+                            <Search className="mr-2 h-4 w-4" />
+                            Buscar Todas
+                          </>
+                      )}
+                    </Button>
+                  </div>
+                </CardTitle>
+                <ChartTypeSelector selectedType={selectedChartType} onSelectType={setSelectedChartType} />
+              </CardHeader>
+              <CardContent>
+                {selectedChartType === "pie" && <DistributionChart transactions={transactions} colors={COLORS} />}
+                {selectedChartType === "bar" && <RecentTransactionsChart barChartData={barChartData} />}
+                {selectedChartType === "line" && <CashFlowChart transactions={transactions} colors={["#8884d8", "#ff3366"]} />}
+                {selectedChartType === "area" && <IncomeVsExpensesChart areaChartData={areaChartData} />}
+              </CardContent>
+            </Card>
           </main>
         </div>
       </ThemeProvider>
