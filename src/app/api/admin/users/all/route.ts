@@ -1,6 +1,5 @@
 import { getMongoClient } from "@/db/connectionDb"
 import { NextResponse } from "next/server"
-import { getUserIdFromToken } from "@/app/functions/getUserId"
 
 export async function GET() {
     try {
