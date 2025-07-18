@@ -28,6 +28,7 @@ import { ReportButton } from '@/components/ui/molecules/ReportButton'
 import { useGoals } from "@/hooks/useGoals"
 import SliderMonthSelector from "@/components/ui/molecules/SliderMonth"
 import { ChartTypeSelector } from "@/components/ui/charts/ChartTypeSelection"
+import { WhatsAppButton } from "@/components/ui/molecules/whatsapp-button"
 
 const COLORS = ["#0088FE", "#ff6666", "#FFBB28", "#FF8042", "#8884D8"]
 
@@ -396,6 +397,7 @@ export default function DashboardFinanceiro() {
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Dashboard Financeiro</h1>
                 <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Visão geral das suas finanças pessoais</p>
+              <WhatsAppButton/>
               </div>
               <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2" id="add-transactions">
                 <AddIncomeDialog onAddIncome={handleAddIncome} />

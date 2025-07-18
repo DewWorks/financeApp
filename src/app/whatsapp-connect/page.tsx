@@ -82,7 +82,7 @@ export default function WhatsAppConnectPage() {
                     confirmButtonText: "Continuar",
                     timer: 3000,
                 }).then(() => {
-                    router.push("/dashboard")
+                    router.push("/")
                 })
             }
         } catch (error: any) {
@@ -124,6 +124,7 @@ export default function WhatsAppConnectPage() {
                         <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-md font-medium">NOVO</span>
                     </div>
                     <p className="text-gray-600 mt-2">Controle seus gastos conversando naturalmente pelo WhatsApp</p>
+                    <p className="text-blue-600 underline font-medium mt-2">Em breve...</p>
                 </CardHeader>
 
                 <CardContent className="space-y-6">
