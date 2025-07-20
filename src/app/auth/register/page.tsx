@@ -12,6 +12,7 @@ import Swal from 'sweetalert2'
 export default function RegisterPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [cel, setCel] = useState('')
   const [password, setPassword] = useState('')
   const router = useRouter()
 
@@ -21,7 +22,7 @@ export default function RegisterPage() {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, cel }),
       });
 
       if (response.ok) {
@@ -98,6 +99,24 @@ export default function RegisterPage() {
                 required
               />
             </div>
+            <div className="space-y-2">
+              <Label className='text-xl' htmlFor="cel">
+                Número de Whatsapp
+                <span className="ml-2 text-sm text-white bg-blue-600 px-2 py-0.5 rounded">
+      WhatsApp + FinancePro
+    </span>
+              </Label>
+              <Input
+                  id="cel"
+                  type="tel"
+                  value={cel}
+                  onChange={(e) => setCel(e.target.value)}
+                  className='border-2 border-slate-600'
+                  placeholder='(63) 91234-5678'
+                  required
+              />
+            </div>
+
             <div className="space-y-2">
               <Label className='text-xl' htmlFor="password">Senha</Label>
               <Input

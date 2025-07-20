@@ -4,7 +4,7 @@ import { getMongoClient } from '@/db/connectionDb';
 
 export async function POST(request: Request) {
   try {
-    const { name, email, password } = await request.json()
+    const { name, email, cel, password } = await request.json()
     const client = await getMongoClient();
 
     const db = client.db("financeApp");
@@ -22,6 +22,7 @@ export async function POST(request: Request) {
     const result = await db.collection('users').insertOne({
       name,
       email,
+      cel,
       password: hashedPassword,
       tutorialGuide: false,
       executeQuery: false
