@@ -41,8 +41,9 @@ export default function ForgotPasswordPage() {
                 })
                 setCurrentStep("code")
             }
-        } catch (error: any) {
-            const errorMessage = error.response?.data?.error || "Erro ao enviar código."
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { error?: string } } };
+            const errorMessage = err.response?.data?.error || "Erro ao enviar código.";
             Swal.fire({
                 icon: "error",
                 title: "Erro!",
@@ -71,8 +72,9 @@ export default function ForgotPasswordPage() {
                 })
                 setCurrentStep("password")
             }
-        } catch (error: any) {
-            const errorMessage = error.response?.data?.error || "Código inválido ou expirado."
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { error?: string } } };
+            const errorMessage = err.response?.data?.error || "Código inválido ou expirado.";
             Swal.fire({
                 icon: "error",
                 title: "Erro!",
@@ -123,8 +125,9 @@ export default function ForgotPasswordPage() {
                     router.push("/auth/login")
                 })
             }
-        } catch (error: any) {
-            const errorMessage = error.response?.data?.error || "Erro ao redefinir senha."
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { error?: string } } };
+            const errorMessage = err.response?.data?.error || "Erro ao redefinir senha.";
             Swal.fire({
                 icon: "error",
                 title: "Erro!",

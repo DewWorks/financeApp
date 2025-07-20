@@ -1,4 +1,4 @@
-import { sendTestEmail } from "@/app/functions/sendEmailTest";
+import { sendTestEmail } from "@/app/functions/emails/sendEmailTest";
 import { NextResponse } from "next/server";
 
 export async function GET() {

@@ -85,8 +85,9 @@ export default function WhatsAppConnectPage() {
                     router.push("/")
                 })
             }
-        } catch (error: any) {
-            const errorMessage = error.response?.data?.error || "Erro ao conectar WhatsApp."
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { error?: string } } };
+            const errorMessage = err.response?.data?.error || "Erro ao conectar o Whatsapp!";
             Swal.fire({
                 icon: "error",
                 title: "Erro!",
