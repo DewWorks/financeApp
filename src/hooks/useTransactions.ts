@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { ITransaction } from '@/interfaces/ITransaction'
+import { useRouter } from 'next/navigation';
 
 export function useTransactions() {
   const [transactions, setTransactions] = useState<ITransaction[]>([]);
@@ -10,7 +11,8 @@ export function useTransactions() {
   const [totalPages, setTotalPages] = useState(1);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [isAllTransactions, setIsAllTransactions] = useState<boolean>(false);
-  
+  const router = useRouter();
+
   const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'auth') => {
     setToast({ message, type })
   }
@@ -39,6 +41,11 @@ export function useTransactions() {
     try {
       showToast("Buscando transações paginadas.", "warning");
       const response = await fetch(`/api/transactions?page=${page}&limit=10&month=${selectedMonth}`);
+      if (response.status === 401) {
+        showToast("Sessão expirada. Redirecionando para login...", "warning");
+        router.push("/auth/login");
+        return;
+      }
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data.transactions)) {
@@ -48,13 +55,16 @@ export function useTransactions() {
         } else {
           console.error("Erro: resposta inesperada", data);
           showToast("Erro ao carregar transações.", "error");
+          router.push("/auth/login");
         }
       } else {
         showToast("Falha ao carregar transações.", "error");
+        router.push("/auth/login");
       }
     } catch (error) {
       console.error("Erro ao buscar transações:", error);
       showToast("Erro ao carregar transações.", "error");
+      router.push("/auth/login");
     }
   }, [selectedMonth]);
 

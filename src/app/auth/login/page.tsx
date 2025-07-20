@@ -59,6 +59,10 @@ export default function LoginPage() {
     router.push('/auth/register')
   }
 
+  const handleForgotPassword = () => {
+    router.push('/auth/forgot-password')
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <Card className="w-full max-w-md">
@@ -93,6 +97,7 @@ export default function LoginPage() {
               />
             </div>
             <Button type="submit" className="w-full text-xl bg-blue-600 text-white">Entrar</Button>
+            <h3 onClick={handleForgotPassword} className="cursor-pointer text-md text-blue-600 text-center underline">Esqueceu a senha?</h3>
             <h2 className="text-xl text-black text-center">Não possui uma conta?</h2>
             <Button onClick={routerRegister} className="w-full text-xl bg-blue-600 text-white">Cadastrar-se</Button>
           </form>
