@@ -1,13 +1,67 @@
-import { Wallet } from "lucide-react"
+"use client"
 
-export function Title() {
+interface TitleProps {
+    className?: string
+    iconColor?: string
+    textColor?: string
+    size?: "sm" | "md" | "lg" | "xl"
+    showText?: boolean
+}
+
+export function Title({
+                          className = "",
+                          iconColor = "#3B82F6", // azul padrão
+                          textColor = "#1F2937", // cinza escuro padrão
+                          size = "md",
+                          showText = true,
+                      }: TitleProps) {
+    const sizeClasses = {
+        sm: "w-6 h-6",
+        md: "w-8 h-8",
+        lg: "w-12 h-12",
+        xl: "w-16 h-16",
+    }
+
+    const textSizeClasses = {
+        sm: "text-lg",
+        md: "text-xl",
+        lg: "text-2xl",
+        xl: "text-3xl",
+    }
+
     return (
-        <div className="flex items-center justify-center">
-            <Wallet className="lg:h-12 lg:w-12 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400 transition-colors duration-200" />
-            <span className="m-4 lg:text-5xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 transition-colors duration-200">
-        FinancePro
-      </span>
+        <div className={`flex items-center gap-2 ${className}`}>
+            {/* Ícone SVG do FinancePro */}
+            <svg className={sizeClasses[size]} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="2" y="4" width="20" height="16" rx="3" fill={iconColor} opacity="0.1" />
+                <rect x="2" y="4" width="20" height="16" rx="3" stroke={iconColor} strokeWidth="2" />
+                <path d="M7 12h10M7 8h6" stroke={iconColor} strokeWidth="2" strokeLinecap="round" />
+                <circle cx="17" cy="16" r="2" fill={iconColor} />
+            </svg>
+
+            {/* Texto */}
+            {showText && (
+                <span className={`font-bold ${textSizeClasses[size]}`} style={{ color: textColor }}>
+          FinancePro
+        </span>
+            )}
         </div>
     )
 }
 
+// Versões pré-definidas para facilitar o uso
+export function TitleWhite(props: Omit<TitleProps, "iconColor" | "textColor">) {
+    return <Title {...props} iconColor="#FFFFFF" textColor="#FFFFFF" />
+}
+
+export function TitleGreen(props: Omit<TitleProps, "iconColor" | "textColor">) {
+    return <Title {...props} iconColor="#10B981" textColor="#065F46" />
+}
+
+export function TitleBlue(props: Omit<TitleProps, "iconColor" | "textColor">) {
+    return <Title {...props} iconColor="#3B82F6" textColor="#1E40AF" />
+}
+
+export function TitleGray(props: Omit<TitleProps, "iconColor" | "textColor">) {
+    return <Title {...props} iconColor="#6B7280" textColor="#374151" />
+}
