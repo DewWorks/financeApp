@@ -29,6 +29,7 @@ import { useGoals } from "@/hooks/useGoals"
 import SliderMonthSelector from "@/components/ui/molecules/SliderMonth"
 import { ChartTypeSelector } from "@/components/ui/charts/ChartTypeSelection"
 import { WhatsAppButton } from "@/components/ui/molecules/whatsapp-button"
+import { Tooltip } from "@/components/ui/atoms/tooltip"
 
 const COLORS = ["#0088FE", "#ff6666", "#FFBB28", "#FF8042", "#8884D8"]
 
@@ -253,8 +254,21 @@ export default function DashboardFinanceiro() {
   }
 
   const handleLogout = () => {
-    localStorage.removeItem("token")
-    router.push("/auth/login")
+    Swal.fire({
+      title: "Tem certeza que deseja sair?",
+      text: "Você precisará fazer login novamente para acessar sua conta.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Sim, sair",
+      cancelButtonText: "Cancelar",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        localStorage.removeItem("token")
+        router.push("/auth/login")
+      }
+    })
   }
 
   const updateLocalTutorial = () => {
@@ -310,6 +324,9 @@ export default function DashboardFinanceiro() {
     setIsAllTransactions(!isAllTransactions); // Alternar estado
   };
 
+  const handleProfile = () => {
+    router.push('/profile')
+  }
   useEffect(() => {
     const token = localStorage.getItem("auth_token")
     if (!token) {
@@ -350,28 +367,41 @@ export default function DashboardFinanceiro() {
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                     >
-                      <motion.div
-                          className="text-gray-700 dark:text-gray-300 font-semibold select-none cursor-default"
-                          initial={{ rotate: -10 }}
-                          animate={{ rotate: 0 }}
-                          transition={{ duration: 0.3 }}
-                      >
-                        <User className="h-6 w-6 text-blue-600 cursor-default" />
-                      </motion.div>
-                      <motion.span
-                          className="text-gray-700 dark:text-gray-300 font-semibold cursor-default"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ duration: 0.5, delay: 0.2 }}
-                      >
-                        {user.name}
-                      </motion.span>
-                      <Button onClick={handleLogout} variant="ghost" className="text-gray-700 dark:text-gray-300">
-                        <LogOut className="h-5 w-5 mr-2 text-red-500" />
-                        Sair
-                      </Button>
+                      <div className="flex items-center gap-4">
+                        {/* Perfil */}
+                        <Tooltip title="Ver perfil" arrow>
+                          <motion.div
+                              className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors hover:bg-blue-100 cursor-pointer"
+                              initial={{ rotate: -10 }}
+                              animate={{ rotate: 0 }}
+                              transition={{ duration: 0.3 }}
+                              onClick={handleProfile}
+                          >
+                            <User className="h-6 w-6 text-blue-600" />
+                            <motion.span
+                                className="text-gray-700 dark:text-gray-300 font-semibold"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.5, delay: 0.2 }}
+                            >
+                              {user.name}
+                            </motion.span>
+                          </motion.div>
+                        </Tooltip>
+
+                        {/* Sair */}
+                        <Tooltip title="Sair da conta" arrow>
+                          <button
+                              onClick={handleLogout}
+                              className="flex bg-transparent items-center gap-2 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-lg transition-colors"
+                          >
+                            <LogOut className="h-5 w-5" />
+                            Sair
+                          </button>
+                        </Tooltip>
+                      </div>
                     </motion.div>
-                ) : (
+                      ) : (
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}

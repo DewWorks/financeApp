@@ -81,7 +81,7 @@ export function WhatsAppButton({ className = "" }: WhatsAppButtonProps) {
                                     animate={{ x: 0, rotate: 0 }}
                                     transition={{ delay: 0.5, duration: 1.5, ease: "easeOut" }}
                                 >
-                                    <MessageCircle className="w-40 h-40 text-white drop-shadow-2xl" />
+                                    <MessageCircle className="w-20 h-20 text-white drop-shadow-2xl" />
                                 </motion.div>
 
                                 {/* Símbolo de conexão */}
@@ -101,7 +101,7 @@ export function WhatsAppButton({ className = "" }: WhatsAppButtonProps) {
                                     transition={{ delay: 0.5, duration: 1.5, ease: "easeOut" }}
                                     className="scale-[3]"
                                 >
-                                    <Title textColor={"#fff"} />
+                                    <Title textColor={"#fff"} size={'lg'}/>
                                 </motion.div>
                             </div>
                         </motion.div>
