@@ -104,7 +104,7 @@ export async function POST(request: Request) {
         }
 
         // Buscar ou criar usuário
-        const { user, isNewUser, userId, temporaryPassword } = await findOrCreateUser(phoneNumber)
+        const { user, isNewUser, userId, temporaryPassword, verificationCode } = await findOrCreateUser(phoneNumber)
 
         const client = await getMongoClient()
         const db = client.db("financeApp")
@@ -146,7 +146,9 @@ export async function POST(request: Request) {
                         phoneNumber: phoneNumber,
                         message: `🎉 Bem-vindo ao FinancePro!\n\n✅ Sua transação foi registrada:\n💰 ${transaction.type === "income" ? "Receita" : "Despesa"}: R$ ${transaction.amount.toFixed(2)}\n📝 ${transaction.description}\n\n🔐`,
                     },
-                    temporaryPassword, // Para logs/debug (remover em produção)
+                    temporaryPassword,
+                    verificationCode // Para logs/debug (remover em produção)
+
                 },
                 { status: 201 },
             )
