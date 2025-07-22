@@ -5,8 +5,8 @@ import React from "react"
 import type { ReactElement } from "react"
 
 import { useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import axios from "axios"
+import { useRouter } from "next/navigation"
+import axios, { AxiosError } from "axios"
 import { Button } from "@/components/ui/atoms/button"
 import { Input } from "@/components/ui/atoms/input"
 import { Label } from "@/components/ui/atoms/label"
@@ -26,16 +26,6 @@ export default function VerifyAccountPage(): ReactElement {
     const [loading, setLoading] = useState(false)
 
     const router = useRouter()
-    const searchParams = useSearchParams()
-
-    // Pegar código da URL se disponível
-    const codeFromUrl = searchParams.get("code")
-
-    React.useEffect(() => {
-        if (codeFromUrl) {
-            setVerificationCode(codeFromUrl)
-        }
-    }, [codeFromUrl])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -109,17 +99,15 @@ export default function VerifyAccountPage(): ReactElement {
                     router.push("/auth/login")
                 })
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             let errorMessage = "Erro ao verificar conta."
 
-            if (error.response?.status === 404) {
+            if ((error as AxiosError)?.response?.status === 404) {
                 errorMessage = "Código de verificação não encontrado."
-            } else if (error.response?.status === 401) {
+            } else if ((error as AxiosError)?.response?.status === 401) {
                 errorMessage = "Código de verificação inválido."
-            } else if (error.response?.status === 410) {
+            } else if ((error as AxiosError)?.response?.status === 410) {
                 errorMessage = "Código de verificação expirado. Solicite um novo código."
-            } else if (error.response?.data?.error) {
-                errorMessage = error.response.data.error
             }
 
             Swal.fire({

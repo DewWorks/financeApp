@@ -23,7 +23,6 @@ export default function LoginPage() {
   const handleEmailOrPhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setEmailOrPhone(value)
-    const regex = /^\(?\d{2}\)?\s?\d{4,5}-?\d{4}$/;
 
     // Detectar tipo de input
     if (value.includes("@")) {

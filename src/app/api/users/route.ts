@@ -58,8 +58,6 @@ export async function PATCH(request: Request) {
     const userId = await getUserIdFromToken();
     const { cel } = await request.json();
 
-    console.log("UserId log: ", userId)
-    console.log("Celular log: ", cel)
     if (!cel || typeof cel !== 'string') {
         return NextResponse.json({ error: 'Número de celular inválido' }, { status: 400 });
     }
