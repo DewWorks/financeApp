@@ -8,13 +8,23 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
 export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json()
+    const { email, cel, password } = await request.json()
+
+      if (!password || (!email && !cel)) {
+          return NextResponse.json({ error: 'Email ou celular e senha são obrigatórios.' }, { status: 400 });
+      }
     const client = await getMongoClient();
 
     const db = client.db("financeApp");
 
     // Find user
-    const user = await db.collection('users').findOne({ email })
+      const normalizedPhone = cel?.replace(/\D/g, '');
+
+      // Busca usuário por email ou número de celular
+      const user = await db.collection('users').findOne(
+          email ? { email } : { cel: { $in: [normalizedPhone] } }
+      );
+
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 400 })
     }
