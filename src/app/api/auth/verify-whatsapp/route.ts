@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getMongoClient } from "@/db/connectionDb";
 import bcrypt from "bcryptjs";
+import { IUser } from "@/interfaces/IUser";
 
 export async function POST(request: Request) {
     try {
@@ -33,12 +34,13 @@ export async function POST(request: Request) {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const update: any = {
+        const update: Partial<IUser> = {
             password: hashedPassword,
-            isTemporary: false,
-            passwordGenerated: false,
             updatedAt: now,
-            "verification.verified": true,
+            verification: {
+                ...user.verification,
+                verified: true
+            }
         };
 
         if (email) {

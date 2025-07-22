@@ -10,7 +10,9 @@ export interface IUser {
     cpf?: string;
     tutorialGuide?: boolean;
     executeQuery?: boolean;
-    verification?: IUserVerification
+    verification?: IUserVerification;
+    updatedAt?: Date;
+    createdAt: Date;
 }
 
 export interface IUserVerification {

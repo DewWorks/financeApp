@@ -15,7 +15,7 @@ export async function GET(request: Request) {
         try {
             adminId = new ObjectId(id);
         } catch (err) {
-            return NextResponse.json({ error: "Invalid ID format" }, { status: 400 });
+            return NextResponse.json({ error: err }, { status: 400 });
         }
 
         const client = await getMongoClient();
