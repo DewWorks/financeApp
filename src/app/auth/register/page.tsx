@@ -131,7 +131,7 @@ export default function RegisterPage() {
             </div>
             <Button type="submit" className="w-full text-xl bg-blue-600 text-white">Cadastrar</Button>
             <h2 className="text-xl text-black text-center">Já tem um conta?</h2>
-            <Button onClick={routerLogin} className="w-full text-xl bg-blue-600 text-white">Fazer login</Button>
+            <Button onClick={routerLogin} className="w-full text-xl bg-green-600 text-white">Fazer login</Button>
           </form>
         </CardContent>
       </Card>
