@@ -9,15 +9,17 @@ type SendEmailParams = {
     htmlContent: string;
 };
 
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: 'devworks.company.io@gmail.com',
+        pass: 'xtao vfig oedl shvv',
+    },
+});
+
 export async function sendEmail({ to, subject, htmlContent }: SendEmailParams): Promise<{ success: boolean; message: string }> {
     try {
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: 'devworks.company.io@gmail.com',
-                pass: 'xtao vfig oedl shvv', // senha de app
-            },
-        });
+        console.time("sendEmail");
 
         const finalHtml = `
       <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4;">
@@ -37,6 +39,8 @@ export async function sendEmail({ to, subject, htmlContent }: SendEmailParams): 
             subject,
             html: finalHtml,
         });
+
+        console.timeEnd("sendEmail");
 
         console.log(`E-mail enviado para: ${to}`);
         return { success: true, message: `E-mail enviado para: ${to}` };
