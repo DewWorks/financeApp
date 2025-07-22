@@ -2,20 +2,24 @@ import { NextResponse } from "next/server";
 import { getMongoClient } from "@/db/connectionDb";
 import bcrypt from "bcryptjs";
 import { IUser } from "@/interfaces/IUser";
+import { sendEmail } from "@/app/functions/emails/sendEmail";
 
 export async function POST(request: Request) {
     try {
-        const { password, verificationCode, email } = await request.json();
+        const { password, verificationCode, email, cel } = await request.json();
 
-        if (!password || !verificationCode) {
+        if (!password || !verificationCode || !cel) {
             return NextResponse.json({ error: "Missing fields" }, { status: 400 });
         }
 
         const client = await getMongoClient();
         const db = client.db("financeApp");
 
-        // Buscar usuário por verification.code
-        const user = await db.collection("users").findOne({ "verification.code": verificationCode });
+        const normalizedPhone = cel.replace(/\D/g, "");
+        const user = await db.collection("users").findOne({
+            "verification.code": verificationCode,
+            cel: { $in: [normalizedPhone] }
+        });
 
         if (!user) {
             return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -47,17 +51,44 @@ export async function POST(request: Request) {
             update.email = email;
         }
 
+        const updateUserVerify: Partial<IUser> = {
+            password: hashedPassword,
+            updatedAt: now,
+            verification: {
+                verified: true,
+            },
+            ...(email && { email }),
+        };
+
         await db.collection("users").updateOne(
             { _id: user._id },
             {
-                $set: update,
-                $unset: {
-                    "verification.code": "",
-                    "verification.expiresAt": "",
-                },
+                $set: updateUserVerify
             }
         );
 
+        // Enviar e-mail de boas-vindas
+        await sendEmail({
+            to: email || user.email,
+            subject: "Bem-vindo ao FinancePro!",
+            htmlContent: `
+    <h2 style="color: #0085FF;">Cadastro confirmado com sucesso!</h2>
+    <p style="font-size: 16px;">
+      Olá, tudo certo? Seu cadastro no <strong>FinancePro</strong> foi confirmado com sucesso.
+    </p>
+    <p style="font-size: 16px;">
+      A partir de agora você pode organizar suas finanças com facilidade, acompanhar seus gastos e planejar seus ganhos.
+    </p>
+    <br/>
+    <a href="https://finance-pro-mu.vercel.app" 
+      style="display: inline-block; padding: 12px 24px; background-color: #0085FF; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">
+      Acessar FinancePro
+    </a>
+    <br/><br/>
+    <p style="font-size: 14px; color: #888;">Equipe FinancePro</p>
+  `
+        });
+        
         return NextResponse.json({ message: "User verified and updated successfully" }, { status: 200 });
     } catch (error) {
         console.error("Verification error:", error);
