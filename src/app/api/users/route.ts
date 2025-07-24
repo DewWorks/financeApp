@@ -4,6 +4,7 @@ import { ObjectId } from 'mongodb'
 import jwt from 'jsonwebtoken'
 import { cookies } from 'next/headers'
 import { sendEmail } from '@/app/functions/emails/sendEmail';
+import { IUser } from '@/interfaces/IUser';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
@@ -187,7 +188,7 @@ export async function PUT(request: Request) {
         }
 
         // Atualizar usuário
-        const updateData: any = {
+        const updateData: Partial<IUser> = {
             name: name.trim(),
             email: email.trim(),
             updatedAt: new Date(),

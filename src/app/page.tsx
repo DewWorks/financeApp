@@ -4,7 +4,7 @@ import { useTransactions } from "@/hooks/useTransactions"
 import { driver } from "driver.js"
 import "driver.js/dist/driver.css"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/card"
-import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, User, Moon, Sun, ChevronLeft, ChevronRight, Search, RefreshCw } from 'lucide-react'
+import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, User, ChevronLeft, ChevronRight, Search, RefreshCw } from 'lucide-react'
 import { AddIncomeDialog } from "@/components/ui/organisms/AddIncomeDialog"
 import { AddExpenseDialog } from "@/components/ui/organisms/AddExpenseDialog"
 import type { ITransaction } from "@/interfaces/ITransaction"
@@ -23,9 +23,7 @@ import { FinancialGoals } from "@/components/ui/organisms/FinancialGoals"
 import { useEffect, useState } from "react"
 import Swal from "sweetalert2"
 import type { IUser } from "@/interfaces/IUser"
-import { ThemeProvider, useTheme } from "@/components/ui/organisms/ThemeContext"
-import { ReportButton } from '@/components/ui/molecules/ReportButton'
-import { useGoals } from "@/hooks/useGoals"
+import { ThemeProvider } from "@/components/ui/organisms/ThemeContext"
 import SliderMonthSelector from "@/components/ui/molecules/SliderMonth"
 import { ChartTypeSelector } from "@/components/ui/charts/ChartTypeSelection"
 import { WhatsAppButton } from "@/components/ui/molecules/whatsapp-button"
@@ -39,7 +37,7 @@ const COLORS = ["#0088FE", "#ff6666", "#FFBB28", "#FF8042", "#8884D8"]
 export default function DashboardFinanceiro() {
   const router = useRouter()
   const [user, setUser] = useState<IUser | null>(null)
-  const { currentProfileId, currentProfileName, switchProfile } = useCurrentProfile()
+  const { currentProfileId, currentProfileName } = useCurrentProfile()
 
   const {
     transactions,
@@ -61,8 +59,7 @@ export default function DashboardFinanceiro() {
     filterTransactionsByMonth,
     selectedMonth
   } = useTransactions()
-
-  const { goals } = useGoals()
+  
   const [selectedChartType, setSelectedChartType] = useState("pie")
 
   const dataToUse = isAllTransactions ? allTransactions : transactions;
@@ -74,14 +71,14 @@ export default function DashboardFinanceiro() {
       : 0;
   const balance = totalIncome - totalExpense
 
-  function ThemeToggle() {
-    const { theme, toggleTheme } = useTheme()
-    return (
-        <Button onClick={toggleTheme} variant="ghost" className="p-2">
-          {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-        </Button>
-    )
-  }
+  // function ThemeToggle() {
+  //   const { theme, toggleTheme } = useTheme()
+  //   return (
+  //       <Button onClick={toggleTheme} variant="ghost" className="p-2">
+  //         {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+  //       </Button>
+  //   )
+  // }
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -316,6 +313,7 @@ export default function DashboardFinanceiro() {
   const handleProfileSwitch = (profileId: string | null) => {
     // O ProfileSwitcher já gerencia o localStorage e reload
     // Aqui podemos adicionar lógica adicional se necessário
+    console.log({profileId})
   }
 
   useEffect(() => {

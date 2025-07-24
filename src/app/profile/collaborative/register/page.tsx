@@ -52,8 +52,9 @@ export default function CreateProfilePage() {
                     router.push("/")
                 })
             }
-        } catch (error: any) {
-            const errorMessage = error.response?.data?.error || "Erro ao criar conta colaborativa."
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { error?: string } } };
+            const errorMessage = err.response?.data?.error || "Erro ao criar conta colaborativa.";
             Swal.fire({
                 icon: "error",
                 title: "Erro!",

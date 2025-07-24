@@ -63,8 +63,9 @@ export default function ProfilePage() {
                 setEditEmail(userData.email)
                 setEditPhone(userData.cel?.[0] || "")
             }
-        } catch (error: any) {
-            const errorMessage = error.response?.data?.error || "Erro ao carregar perfil."
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { error?: string } } };
+            const errorMessage = err.response?.data?.error || "Erro ao carregar perfil.";
             Swal.fire({
                 icon: "error",
                 title: "Erro!",
@@ -103,8 +104,9 @@ export default function ProfilePage() {
                 setIsEditing(false)
                 fetchUserProfile()
             }
-        } catch (error: any) {
-            const errorMessage = error.response?.data?.error || "Erro ao atualizar perfil."
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { error?: string } } };
+            const errorMessage = err.response?.data?.error || "Erro ao atualizar perfil.";
             Swal.fire({
                 icon: "error",
                 title: "Erro!",
@@ -160,8 +162,9 @@ export default function ProfilePage() {
                 setNewPassword("")
                 setConfirmPassword("")
             }
-        } catch (error: any) {
-            const errorMessage = error.response?.data?.error || "Erro ao alterar senha."
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { error?: string } } };
+            const errorMessage = err.response?.data?.error || "Erro ao alterar senha.";
             Swal.fire({
                 icon: "error",
                 title: "Erro!",

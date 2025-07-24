@@ -4,6 +4,7 @@ import { ObjectId } from "mongodb"
 import jwt from "jsonwebtoken"
 import { cookies } from "next/headers"
 import { sendEmail } from "@/app/functions/emails/sendEmail"
+import { IMember, IProfile } from "@/interfaces/IProfile"
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key"
 
@@ -20,7 +21,7 @@ async function getUserIdFromToken() {
 export async function POST(request: Request, { params }: { params: { profileId: string } }) {
     try {
         const userId = await getUserIdFromToken()
-        const { email, phone, permission = "COLABORATOR" } = await request.json()
+        const { email, permission = "COLABORATOR" } = await request.json()
         const profileId = new ObjectId(params.profileId)
 
         const client = await getMongoClient()
@@ -44,8 +45,8 @@ export async function POST(request: Request, { params }: { params: { profileId: 
         }
 
         // Verificar se já é membro
-        const isAlreadyMember = profile.members.some(
-            (member: any) => member.userId.toString() === targetUser._id.toString(),
+        const isAlreadyMember: IMember = profile.members.some(
+            (member: IMember) => member.userId.toString() === targetUser._id.toString(),
         )
 
         if (isAlreadyMember) {
@@ -64,13 +65,14 @@ export async function POST(request: Request, { params }: { params: { profileId: 
             status: "ACTIVE" as "ACTIVE" | "PENDING" | "SUSPENDED",
         }
 
+        const profiles = db.collection<IProfile>("profiles")
         // Adicionar membro usando $push com tipo correto
-        await db.collection("profiles").updateOne(
+        await profiles.updateOne(
             { _id: profileId },
             {
                 $push: {
                     members: newMember,
-                } as any, // Usar any para contornar o erro de tipo do MongoDB
+                }, // Usar any para contornar o erro de tipo do MongoDB
                 $set: { updatedAt: new Date() },
             },
         )
