@@ -168,7 +168,7 @@ export async function POST(request: Request) {
                     // Mensagem de confirmação para usuário existente
                     whatsappMessage: {
                         phoneNumber: phoneNumber,
-                        message: `✅ Transação registrada com sucesso!\n\n💰 ${transaction.type === "income" ? "Receita" : "Despesa"}: R$ ${transaction.amount.toFixed(2)}\n📝 ${transaction.description}\n🏷️ Categoria: ${transaction.tag || "Outros"}\n\n📊 Acesse seu dashboard: ${process.env.NEXTAUTH_URL}`,
+                        message: `✅ Transação registrada com sucesso!\n\n💰 ${transaction.type === "income" ? "Receita" : "Despesa"}: R$ ${transaction.amount.toFixed(2)}\n📝 ${transaction.description}\n🏷️ Categoria: ${transaction.tag || "Outros"}\n\n`,
                     },
                 },
                 { status: 201 },
