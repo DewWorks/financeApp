@@ -363,26 +363,23 @@ export default function DashboardFinanceiro() {
                   {user && (
                       <>
                         {/* User Info - apenas ícone no mobile */}
-                        <Tooltip title={`${user.name}`} arrow>
-                          <motion.button
+                        <Tooltip title={'Perfil'} arrow>
+                          <Button
                               className="p-2 rounded-lg transition-colors hover:bg-blue-100 dark:hover:bg-gray-700"
-                              initial={{ rotate: -10 }}
-                              animate={{ rotate: 0 }}
-                              transition={{ duration: 0.3 }}
                               onClick={handleProfile}
                           >
                             <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                          </motion.button>
+                          </Button>
                         </Tooltip>
 
                         {/* Logout */}
                         <Tooltip title="Sair" arrow>
-                          <button
+                          <Button
                               onClick={handleLogout}
                               className="p-2 rounded-lg transition-colors hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400"
                           >
                             <LogOut className="h-5 w-5" />
-                          </button>
+                          </Button>
                         </Tooltip>
                       </>
                   )}
@@ -401,12 +398,12 @@ export default function DashboardFinanceiro() {
                   )}
 
                   {/* Theme Toggle */}
-                  <Tooltip title="Trocar tema" arrow>
-                    <Button onClick={() => {}} variant="ghost" size="sm" className="p-2">
-                      <Moon className="h-5 w-5 dark:hidden" />
-                      <Sun className="h-5 w-5 hidden dark:block" />
-                    </Button>
-                  </Tooltip>
+                  {/*<Tooltip title="Trocar tema" arrow>*/}
+                  {/*  <Button onClick={() => {}} variant="ghost" size="sm" className="p-2">*/}
+                  {/*    <Moon className="h-5 w-5 dark:hidden" />*/}
+                  {/*    <Sun className="h-5 w-5 hidden dark:block" />*/}
+                  {/*  </Button>*/}
+                  {/*</Tooltip>*/}
                 </div>
               </div>
             </div>
@@ -439,7 +436,7 @@ export default function DashboardFinanceiro() {
               >
                 <AddIncomeDialog onAddIncome={handleAddIncome} />
                 <AddExpenseDialog onAddExpense={handleAddExpense} />
-                {user && <ReportButton user={user} transactions={dataToUse} goals={goals} />}
+                {/*{user && <ReportButton user={user} transactions={dataToUse} goals={goals} />}*/}
               </div>
             </motion.div>
 
