@@ -23,12 +23,12 @@ import {
     DollarSign,
     TrendingUp,
     TrendingDown,
-    BarChart3,
     Settings,
     UserPlus,
     Activity,
 } from "lucide-react"
 import Swal from "sweetalert2"
+import { ITransaction } from "@/interfaces/ITransaction"
 
 interface ProfileMember {
     userId: string
@@ -63,8 +63,8 @@ interface ProfileStats {
         balance: number
         transactionCount: number
     }
-    recentTransactions: any[]
-    topCategories: any[]
+    recentTransactions: ITransaction[]
+    topCategories: string[]
 }
 
 export default function CollaborativeDetailsPage() {
@@ -115,8 +115,9 @@ export default function CollaborativeDetailsPage() {
                 setEditName(profileData.name)
                 setEditDescription(profileData.description || "")
             }
-        } catch (error: any) {
-            const errorMessage = error.response?.data?.error || "Erro ao carregar perfil colaborativo."
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { error?: string } } };
+            const errorMessage = err.response?.data?.error || "Erro ao carregar perfil colaborativo.";
             Swal.fire({
                 icon: "error",
                 title: "Erro!",
@@ -194,8 +195,9 @@ export default function CollaborativeDetailsPage() {
                 // Refresh data
                 fetchProfileData()
             }
-        } catch (error: any) {
-            const errorMessage = error.response?.data?.error || "Erro ao adicionar membro."
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { error?: string } } };
+            const errorMessage = err.response?.data?.error || "Erro ao adicionar membro.";
             Swal.fire({
                 icon: "error",
                 title: "Erro!",
@@ -212,6 +214,8 @@ export default function CollaborativeDetailsPage() {
 
             const response = await axios.put(`/api/profiles/${profile?._id}/members/${memberId}`, {
                 permission: newPermission,
+                profileId: profile?._id,
+                memberId
             })
 
             if (response.status === 200) {
@@ -238,9 +242,9 @@ export default function CollaborativeDetailsPage() {
                 fetchProfileData()
                 setEditingMember(null)
             }
-        } catch (error: any) {
-            console.error("Update member error:", error)
-            const errorMessage = error.response?.data?.error || "Erro ao atualizar membro."
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { error?: string } } };
+            const errorMessage = err.response?.data?.error || "Erro ao atualizar membro.";
             Swal.fire({
                 icon: "error",
                 title: "Erro!",
@@ -297,9 +301,9 @@ export default function CollaborativeDetailsPage() {
 
                     fetchProfileData()
                 }
-            } catch (error: any) {
-                console.error("Remove member error:", error)
-                const errorMessage = error.response?.data?.error || "Erro ao remover membro."
+            } catch (error: unknown) {
+                const err = error as { response?: { data?: { error?: string } } };
+                const errorMessage = err.response?.data?.error || "Erro ao remover membro.";
                 Swal.fire({
                     icon: "error",
                     title: "Erro!",
@@ -339,8 +343,9 @@ export default function CollaborativeDetailsPage() {
                 // Atualizar localStorage se necessário
                 localStorage.setItem("current-profile-name", editName.trim())
             }
-        } catch (error: any) {
-            const errorMessage = error.response?.data?.error || "Erro ao atualizar conta."
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { error?: string } } };
+            const errorMessage = err.response?.data?.error || "Erro ao atualizar conta.";
             Swal.fire({
                 icon: "error",
                 title: "Erro!",
@@ -572,7 +577,9 @@ export default function CollaborativeDetailsPage() {
                                                 <select
                                                     id="permission"
                                                     value={newMemberPermission}
-                                                    onChange={(e) => setNewMemberPermission(e.target.value as any)}
+                                                    onChange={(e) =>
+                                                        setNewMemberPermission(e.target.value as "ADMIN" | "COLABORATOR" | "VIEWER")
+                                                    }
                                                     className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                                 >
                                                     <option value="VIEWER">Visualizador - Apenas visualizar</option>
@@ -585,7 +592,7 @@ export default function CollaborativeDetailsPage() {
                                                 <Button
                                                     type="submit"
                                                     disabled={formLoading}
-                                                    className="bg-green-600 hover:bg-green-700"
+                                                    className="text-white bg-blue-600 hover:bg-blue-700"
                                                     size="sm"
                                                 >
                                                     {formLoading ? "Adicionando..." : "Adicionar"}
@@ -713,29 +720,29 @@ export default function CollaborativeDetailsPage() {
                         )}
 
                         {/* Top Categories */}
-                        {stats?.topCategories && stats.topCategories.length > 0 && (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-lg flex items-center gap-2">
-                                        <BarChart3 className="w-5 h-5" />
-                                        Top Categorias
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="space-y-3">
-                                        {stats.topCategories.map((category, index) => (
-                                            <div key={index} className="flex items-center justify-between text-sm">
-                                                <div>
-                                                    <p className="font-medium">{category._id}</p>
-                                                    <p className="text-gray-500 text-xs">{category.count} transações</p>
-                                                </div>
-                                                <span className="font-medium text-red-600">{formatCurrency(category.total)}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        )}
+                        {/*{stats?.topCategories && stats.topCategories.length > 0 && (*/}
+                        {/*    <Card>*/}
+                        {/*        <CardHeader>*/}
+                        {/*            <CardTitle className="text-lg flex items-center gap-2">*/}
+                        {/*                <BarChart3 className="w-5 h-5" />*/}
+                        {/*                Top Categorias*/}
+                        {/*            </CardTitle>*/}
+                        {/*        </CardHeader>*/}
+                        {/*        <CardContent>*/}
+                        {/*            <div className="space-y-3">*/}
+                        {/*                {stats.topCategories.map((category, index) => (*/}
+                        {/*                    <div key={index} className="flex items-center justify-between text-sm">*/}
+                        {/*                        <div>*/}
+                        {/*                            <p className="font-medium">{category._id}</p>*/}
+                        {/*                            <p className="text-gray-500 text-xs">{category.count} transações</p>*/}
+                        {/*                        </div>*/}
+                        {/*                        <span className="font-medium text-red-600">{formatCurrency(category.total)}</span>*/}
+                        {/*                    </div>*/}
+                        {/*                ))}*/}
+                        {/*            </div>*/}
+                        {/*        </CardContent>*/}
+                        {/*    </Card>*/}
+                        {/*)}*/}
                     </div>
                 </div>
 
@@ -756,7 +763,7 @@ export default function CollaborativeDetailsPage() {
                                             onChange={(e) =>
                                                 setEditingMember({
                                                     ...editingMember,
-                                                    permission: e.target.value as any,
+                                                    permission: e.target.value as "ADMIN" | "COLABORATOR" | "VIEWER",
                                                 })
                                             }
                                             className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
