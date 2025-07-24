@@ -4,7 +4,7 @@ import { useTransactions } from "@/hooks/useTransactions"
 import { driver } from "driver.js"
 import "driver.js/dist/driver.css"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/card"
-import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, User, Moon, Sun, ChevronLeft, ChevronRight, Search, RefreshCw } from "lucide-react"
+import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, User, Moon, Sun, ChevronLeft, ChevronRight, Search, RefreshCw } from 'lucide-react'
 import { AddIncomeDialog } from "@/components/ui/organisms/AddIncomeDialog"
 import { AddExpenseDialog } from "@/components/ui/organisms/AddExpenseDialog"
 import type { ITransaction } from "@/interfaces/ITransaction"
@@ -30,16 +30,20 @@ import SliderMonthSelector from "@/components/ui/molecules/SliderMonth"
 import { ChartTypeSelector } from "@/components/ui/charts/ChartTypeSelection"
 import { WhatsAppButton } from "@/components/ui/molecules/whatsapp-button"
 import { Tooltip } from "@/components/ui/atoms/tooltip"
+import { ProfileSwitcher } from "@/components/ui/molecules/ProfileSwitcher"
+import { useCurrentProfile } from "@/hooks/useCurrentProfile"
+import * as mongoose from "mongoose";
 
 const COLORS = ["#0088FE", "#ff6666", "#FFBB28", "#FF8042", "#8884D8"]
 
 export default function DashboardFinanceiro() {
   const router = useRouter()
   const [user, setUser] = useState<IUser | null>(null)
+  const { currentProfileId, currentProfileName, switchProfile } = useCurrentProfile()
 
   const {
     transactions,
-      allTransactions,
+    allTransactions,
     getAllTransactions,
     getAllTransactionsPage,
     isAllTransactions,
@@ -57,14 +61,14 @@ export default function DashboardFinanceiro() {
     filterTransactionsByMonth,
     selectedMonth
   } = useTransactions()
-  const { goals } = useGoals()
 
+  const { goals } = useGoals()
   const [selectedChartType, setSelectedChartType] = useState("pie")
+
   const dataToUse = isAllTransactions ? allTransactions : transactions;
   const totalIncome = Array.isArray(dataToUse)
       ? dataToUse.filter((t) => t.type === "income").reduce((sum, t) => sum + t.amount, 0)
       : 0;
-
   const totalExpense = Array.isArray(dataToUse)
       ? dataToUse.filter((t) => t.type === "expense").reduce((sum, t) => sum + t.amount, 0)
       : 0;
@@ -72,10 +76,9 @@ export default function DashboardFinanceiro() {
 
   function ThemeToggle() {
     const { theme, toggleTheme } = useTheme()
-
     return (
-        <Button onClick={toggleTheme} variant="ghost" className="my-4 dark:text-white light:text-black">
-          {theme === "light" ? <Moon className="h-5 w-5 sm:h-4 sm:h-4" /> : <Sun className="h-5 w-5" />}
+        <Button onClick={toggleTheme} variant="ghost" className="p-2">
+          {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
         </Button>
     )
   }
@@ -83,18 +86,15 @@ export default function DashboardFinanceiro() {
   useEffect(() => {
     const fetchUser = async () => {
       const userId = localStorage.getItem("user-id")
-
       if (!userId) {
         setUser(null)
         return
       }
-
       try {
         const response = await fetch(`/api/admin/users/${userId}`)
         if (!response.ok) {
           throw new Error("Usuário não encontrado")
         }
-
         const userData = await response.json()
         setUser(userData)
       } catch (error) {
@@ -102,31 +102,15 @@ export default function DashboardFinanceiro() {
         setUser(null)
       }
     }
-
     fetchUser()
   }, [])
 
-  // const pieChartData = [
-  //   { name: "Receitas", value: totalIncome },
-  //   { name: "Despesas", value: totalExpense },
-  // ]
-
-  // const barChartData = Array.isArray(dataToUse)
-  //     ? dataToUse.slice(0, 5).map((t) => ({
-  //       name: t.description || "Sem descrição",
-  //       valor: t.amount || 0,
-  //       tipo: t.type === "income" ? "Receita" : "Despesa",
-  //       tag: t.tag || "Sem tag",
-  //     }))
-  //     : [];
-
-  // const lineChartData = Array.isArray(dataToUse)
-  //     ? dataToUse.slice(0, 10).map((t) => ({
-  //       data: t.date || "Sem data",
-  //       valor: t.type === "income" ? t.amount || 0 : -(t.amount || 0),
-  //       tag: t.tag || "Sem tag",
-  //     }))
-  //     : [];
+  // Atualizar transações quando o profile mudar
+  useEffect(() => {
+    if (currentProfileId !== undefined) {
+      getTransactions()
+    }
+  }, [currentProfileId])
 
   const areaChartData = Array.isArray(dataToUse)
       ? dataToUse.slice(0, 15).map((t) => ({
@@ -161,13 +145,13 @@ export default function DashboardFinanceiro() {
   // Função para iniciar o tutorial
   const startTutorial = () => {
     const driverObj = driver({
-      showProgress: true, // Mostra progresso "Step X of Y"
-      allowClose: true, // Permite fechar o tutorial
-      overlayOpacity: 0.6, // Deixa o fundo um pouco mais escuro
-      allowKeyboardControl: true, // Permite navegar com o teclado
-      doneBtnText: "Finalizar", // Texto do botão de finalizar
-      nextBtnText: "Próximo", // Texto do botão de próximo
-      prevBtnText: "Voltar", // Texto do botão de voltar
+      showProgress: true,
+      allowClose: true,
+      overlayOpacity: 0.6,
+      allowKeyboardControl: true,
+      doneBtnText: "Finalizar",
+      nextBtnText: "Próximo",
+      prevBtnText: "Voltar",
       onDestroyStarted: () => {
         localStorage.setItem("tutorial-guide", "true")
       },
@@ -183,18 +167,24 @@ export default function DashboardFinanceiro() {
         },
       },
       {
+        element: "#profile-switcher",
+        popover: {
+          title: "👥 Contas e Perfis",
+          description: "Aqui você pode trocar entre sua conta pessoal e contas colaborativas. Crie contas compartilhadas para gerenciar finanças em grupo!",
+        },
+      },
+      {
         element: "#transactions-values",
         popover: {
           title: "💰 Resumo Financeiro",
-          description: "Aqui você pode ver o saldo total e o resumo das finanças.",
-          onCloseClick: () => driverObj.destroy(),
+          description: "Aqui você pode ver o saldo total e o resumo das finanças da conta atual.",
         },
       },
       {
         element: "#add-transactions",
         popover: {
           title: "➕ Adicionar Transações",
-          description: "Clique aqui para adicionar suas transações.",
+          description: "Clique aqui para adicionar suas transações à conta atual.",
         },
       },
       {
@@ -208,19 +198,18 @@ export default function DashboardFinanceiro() {
         element: "#transactions-table",
         popover: {
           title: "📊 Histórico de Transações",
-          description: "Aqui estão todas as suas transações financeiras.",
+          description: "Aqui estão todas as transações da conta atual.",
         },
       },
       {
         element: "#transactions-chart",
         popover: {
           title: "📈 Gráficos Financeiros",
-          description: "Esses gráficos mostram a sua situação financeira em detalhes.",
+          description: "Esses gráficos mostram a situação financeira da conta atual em detalhes.",
           onCloseClick: () => driverObj.destroy(),
           onNextClick: async () => {
-            driverObj.destroy() // Finaliza o tutorial
-            window.scrollTo({ top: 0, behavior: "smooth" }) // Retorna ao topo
-
+            driverObj.destroy()
+            window.scrollTo({ top: 0, behavior: "smooth" })
             const userId = getUserIdLocal()
             try {
               await fetch("/api/admin/users/tutorialFinished", {
@@ -235,21 +224,18 @@ export default function DashboardFinanceiro() {
             }
             setRunTutorial(false)
             updateLocalTutorial()
-
-            // Exibe alerta de sucesso
             Swal.fire({
               title: "🎉 Tutorial Concluído!",
               text: "Parabéns! Agora você pode começar no FinancePro!💸",
               icon: "success",
               confirmButtonText: "Começar já!",
-              timer: 5000, // Fecha automaticamente após 5 segundos
+              timer: 5000,
               showConfirmButton: true,
             })
           },
         },
       },
     ])
-
     driverObj.drive()
   }
 
@@ -266,6 +252,8 @@ export default function DashboardFinanceiro() {
     }).then((result) => {
       if (result.isConfirmed) {
         localStorage.removeItem("token")
+        localStorage.removeItem("current-profile-id")
+        localStorage.removeItem("current-profile-name")
         router.push("/auth/login")
       }
     })
@@ -275,33 +263,33 @@ export default function DashboardFinanceiro() {
     localStorage.setItem("tutorial-guide", "true")
   }
 
-  const handleAddIncome = (description: string, amount: number, tag: string, date: string, isRecurring: boolean,
-                           recurrenceCount: number) => {
-    const newTransaction: Partial<ITransaction> = {
-      type: "income",
-      description,
-      amount,
-      date,
-      tag,
-      isRecurring,
-      recurrenceCount
+    const handleAddIncome = (description: string, amount: number, tag: string, date: string, isRecurring: boolean, recurrenceCount: number) => {
+      const newTransaction: Partial<ITransaction> = {
+        type: "income",
+        description,
+        amount,
+        date,
+        tag,
+        isRecurring,
+        recurrenceCount,
+        profileId: currentProfileId ? new mongoose.Types.ObjectId(currentProfileId) : undefined
+      }
+      addTransaction(newTransaction)
     }
-    addTransaction(newTransaction)
-  }
 
-  const handleAddExpense = (description: string, amount: number, tag: string, date: string, isRecurring: boolean,
-                            recurrenceCount: number,) => {
-    const newTransaction: Partial<ITransaction> = {
-      type: "expense",
-      description,
-      amount,
-      date,
-      tag,
-      isRecurring,
-      recurrenceCount
+    const handleAddExpense = (description: string, amount: number, tag: string, date: string, isRecurring: boolean, recurrenceCount: number) => {
+      const newTransaction: Partial<ITransaction> = {
+        type: "expense",
+        description,
+        amount,
+        date,
+        tag,
+        isRecurring,
+        recurrenceCount,
+        profileId: currentProfileId ? new mongoose.Types.ObjectId(currentProfileId) : undefined
+      }
+      addTransaction(newTransaction)
     }
-    addTransaction(newTransaction)
-  }
 
   const handleEditTransaction = async (updatedTransaction: Partial<ITransaction>) => {
     await editTransaction(updatedTransaction)
@@ -313,20 +301,23 @@ export default function DashboardFinanceiro() {
 
   const handleToggleTransactions = async () => {
     if (isAllTransactions) {
-      // 🔹 Se já estiver mostrando todas, volta para a versão paginada do mês atual
       await getTransactions();
     } else {
-      // 🔹 Se estiver mostrando a versão paginada do mês, busca todas
-      await getAllTransactions(); // Carregar todas para gráficos
-      await getAllTransactionsPage(1); // Buscar paginadas
+      await getAllTransactions();
+      await getAllTransactionsPage(1);
     }
-
-    setIsAllTransactions(!isAllTransactions); // Alternar estado
+    setIsAllTransactions(!isAllTransactions);
   };
 
   const handleProfile = () => {
     router.push('/profile')
   }
+
+  const handleProfileSwitch = (profileId: string | null) => {
+    // O ProfileSwitcher já gerencia o localStorage e reload
+    // Aqui podemos adicionar lógica adicional se necessário
+  }
+
   useEffect(() => {
     const token = localStorage.getItem("auth_token")
     if (!token) {
@@ -355,93 +346,110 @@ export default function DashboardFinanceiro() {
       <ThemeProvider>
         <div className="min-h-screen light:bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
           <nav className="bg-white dark:bg-gray-800 shadow-md transition-colors duration-200">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex justify-between h-16">
-                <Title />
-                <ThemeToggle />
-              </div>
-              <div className="flex items-center">
-                {user ? (
-                    <motion.div
-                        className="flex items-center space-x-3 px-3 py-2 rounded-lg shadow-sm cursor-pointer"
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                    >
-                      <div className="flex items-center gap-4">
-                        {/* Perfil */}
-                        <Tooltip title="Ver perfil" arrow>
-                          <motion.div
-                              className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors hover:bg-blue-100 cursor-pointer"
+            <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+              <div className="flex justify-between items-center h-16">
+                {/* Logo */}
+                <div className="hidden sm:flex-shrink-0 sm:block">
+                  <Title size="md" />
+                </div>
+
+                {/* Profile Switcher - Centro no mobile */}
+                <div className="flex-1 flex justify-center sm:justify-end sm:ml-8" id="profile-switcher">
+                  <ProfileSwitcher onProfileSwitch={handleProfileSwitch} />
+                </div>
+
+                {/* Área direita - User Info, Logout, Theme */}
+                <div className="flex items-center space-x-2">
+                  {user && (
+                      <>
+                        {/* User Info - apenas ícone no mobile */}
+                        <Tooltip title={`${user.name}`} arrow>
+                          <motion.button
+                              className="p-2 rounded-lg transition-colors hover:bg-blue-100 dark:hover:bg-gray-700"
                               initial={{ rotate: -10 }}
                               animate={{ rotate: 0 }}
                               transition={{ duration: 0.3 }}
                               onClick={handleProfile}
                           >
-                            <User className="h-6 w-6 text-blue-600" />
-                            <motion.span
-                                className="text-gray-700 dark:text-gray-300 font-semibold"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ duration: 0.5, delay: 0.2 }}
-                            >
-                              {user.name}
-                            </motion.span>
-                          </motion.div>
+                            <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                          </motion.button>
                         </Tooltip>
 
-                        {/* Sair */}
-                        <Tooltip title="Sair da conta" arrow>
+                        {/* Logout */}
+                        <Tooltip title="Sair" arrow>
                           <button
                               onClick={handleLogout}
-                              className="flex bg-transparent items-center gap-2 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-lg transition-colors"
+                              className="p-2 rounded-lg transition-colors hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400"
                           >
                             <LogOut className="h-5 w-5" />
-                            Sair
                           </button>
                         </Tooltip>
-                      </div>
-                    </motion.div>
-                      ) : (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.3 }}
-                    >
-                      <Button onClick={() => (window.location.href = "/auth/login")} variant="ghost">
-                        <LogIn className="h-5 w-5 mr-2 text-green-600" />
-                        Entrar
-                      </Button>
-                    </motion.div>
-                )}
+                      </>
+                  )}
+
+                  {!user && (
+                      <motion.div
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ duration: 0.3 }}
+                      >
+                        <Button onClick={() => (window.location.href = "/auth/login")} variant="ghost" size="sm">
+                          <LogIn className="h-5 w-5 mr-2 text-green-600" />
+                          <span className="hidden sm:inline">Entrar</span>
+                        </Button>
+                      </motion.div>
+                  )}
+
+                  {/* Theme Toggle */}
+                  <Tooltip title="Trocar tema" arrow>
+                    <Button onClick={() => {}} variant="ghost" size="sm" className="p-2">
+                      <Moon className="h-5 w-5 dark:hidden" />
+                      <Sun className="h-5 w-5 hidden dark:block" />
+                    </Button>
+                  </Tooltip>
+                </div>
               </div>
             </div>
           </nav>
 
-          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="flex justify-between items-center mb-8"
+                className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 sm:mb-8 space-y-4 sm:space-y-0"
             >
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Dashboard Financeiro</h1>
-                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Visão geral das suas finanças pessoais</p>
-              <WhatsAppButton/>
+              <div className="flex-1">
+                <div className="block sm:hidden">
+                  <Title size="md" />
+                </div>
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">
+                  Dashboard Financeiro
+                </h1>
+                <p className="mt-1 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                  {currentProfileId ? `Conta: ${currentProfileName}` : "Conta Pessoal"}
+                </p>
+                <div className="mt-2 sm:mt-0">
+                  <WhatsAppButton />
+                </div>
               </div>
-              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2" id="add-transactions">
+              <div
+                  className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto"
+                  id="add-transactions"
+              >
                 <AddIncomeDialog onAddIncome={handleAddIncome} />
                 <AddExpenseDialog onAddExpense={handleAddExpense} />
                 {user && <ReportButton user={user} transactions={dataToUse} goals={goals} />}
               </div>
             </motion.div>
 
+            {/* Summary Cards - responsivo */}
             <motion.div
                 id="transactions-values"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="grid grid-cols-1 gap-6 mb-8 sm:grid-cols-2 lg:grid-cols-3"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8"
             >
               <SummaryCard title="Saldo Total" value={balance} icon={DollarSign} description="Atualizado agora" />
               <SummaryCard
@@ -460,82 +468,85 @@ export default function DashboardFinanceiro() {
               />
             </motion.div>
 
+            {/* Goals */}
             <motion.div
                 id="transactions-goals"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.4 }}
-                className="mb-8"
+                className="mb-6 sm:mb-8"
             >
-              <FinancialGoals transactions={dataToUse}/>
+              <FinancialGoals transactions={dataToUse} />
             </motion.div>
 
+            {/* Transactions Table */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.6 }}
             >
-              <Card className="bg-white dark:bg-gray-800 shadow-lg mb-8 transition-colors duration-200">
-                <div className="w-full flex justify-between">
-                <CardTitle id="transactions-table" className="text-lg font-semibold text-gray-900 dark:text-gray-100 p-4">
-                  Tabela de Transações
-                </CardTitle>
+              <Card className="bg-white dark:bg-gray-800 shadow-lg mb-6 sm:mb-8 transition-colors duration-200">
+                <div className="w-full flex flex-col sm:flex-row sm:justify-between sm:items-center p-3 sm:p-0">
+                  <CardTitle
+                      id="transactions-table"
+                      className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 sm:p-4 mb-2 sm:mb-0"
+                  >
+                    Tabela de Transações
+                  </CardTitle>
                   <div className="flex flex-col sm:flex-row gap-2 justify-center sm:justify-start">
                     <Button
                         variant="default"
-                        className={`transition-all m-2 ${
+                        size="sm"
+                        className={`transition-all sm:m-2 ${
                             isAllTransactions ? "bg-red-600 text-white" : "bg-blue-600 text-white"
                         }`}
                         onClick={handleToggleTransactions}
                     >
                       {isAllTransactions ? (
                           <>
-                            <RefreshCw className="mr-2 h-4 w-4" />
-                            Limpar filtros
+                            <RefreshCw className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                            <span className="text-xs sm:text-sm">Limpar</span>
                           </>
                       ) : (
                           <>
-                            <Search className="mr-2 h-4 w-4" />
-                            Buscar Todas
+                            <Search className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                            <span className="text-xs sm:text-sm">Buscar Todas</span>
                           </>
                       )}
                     </Button>
                   </div>
                 </div>
-                <CardContent>
-                  {/* Paginação */}
-                      <div className="flex justify-center items-center mt-4 space-x-4">
-                        {/* Botão de Página Anterior */}
-                        <Button
-                            onClick={handlePreviousPage}
-                            className="p-2 rounded-lg border dark:border-gray-600 bg-blue-600 text-white disabled:opacity-50"
-                        >
-                          <ChevronLeft className="h-5 w-5" />
-                        </Button>
-
-                        {/* Indicador de Página Atual */}
-                        <span className="text-md font-semibold dark:text-white">
-                    Página {currentPage} de {totalPages}
-                </span>
-
-                        {/* Botão de Próxima Página */}
-                        <Button
-                            onClick={handleNextPage}
-                            className="p-2 rounded-lg border dark:border-gray-600 disabled:opacity-50 bg-blue-600 text-white"
-                        >
-                          <ChevronRight className="h-5 w-5" />
-                        </Button>
-                      </div>
+                <CardContent className="p-3 sm:p-6">
+                  {/* Paginação - compacta no mobile */}
+                  <div className="flex justify-center items-center mt-2 sm:mt-4 space-x-2 sm:space-x-4">
+                    <Button
+                        onClick={handlePreviousPage}
+                        size="sm"
+                        className="p-1 sm:p-2 rounded-lg border dark:border-gray-600 bg-blue-600 text-white disabled:opacity-50"
+                    >
+                      <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+                    </Button>
+                    <span className="text-xs sm:text-md font-semibold dark:text-white px-2">
+                    {currentPage}/{totalPages}
+                  </span>
+                    <Button
+                        onClick={handleNextPage}
+                        size="sm"
+                        className="p-1 sm:p-2 rounded-lg border dark:border-gray-600 disabled:opacity-50 bg-blue-600 text-white"
+                    >
+                      <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
+                    </Button>
+                  </div>
                   {/* Filtro por mês */}
-                  <div className="flex justify-center space-x-2 my-4 overflow-x-auto">
+                  <div className="flex justify-center space-x-1 sm:space-x-2 my-3 sm:my-4 overflow-x-auto">
                     <SliderMonthSelector onSelectMonth={filterTransactionsByMonth} />
                   </div>
                   {transactions.length > 0 ? (
-                  <TransactionsTable
-                      transactions={selectedMonth ? transactions : transactions}
-                      onEditTransaction={handleEditTransaction}
-                      onDeleteTransaction={handleDeleteTransaction}
-                  />
+                      <TransactionsTable
+                          transactions={selectedMonth ? transactions : transactions}
+                          onEditTransaction={handleEditTransaction}
+                          onDeleteTransaction={handleDeleteTransaction}
+                      />
                   ) : (
                       <Toast message={"Carregando transações"} type={"warning"} onClose={() => setToast(null)} />
                   )}
@@ -543,27 +554,30 @@ export default function DashboardFinanceiro() {
                 </CardContent>
               </Card>
             </motion.div>
-            <Card className="bg-white dark:bg-gray-800 shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex w-full justify-between items-center text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  Distribuição Financeira
+
+            {/* Charts */}
+            <Card className="bg-white dark:bg-gray-800 shadow-lg" id="transactions-chart">
+              <CardHeader className="p-3 sm:p-6">
+                <CardTitle className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 space-y-2 sm:space-y-0">
+                  <span>Distribuição Financeira</span>
                   <div className="gap-2 justify-center sm:justify-start">
                     <Button
                         variant="default"
-                        className={`transition-all m-2 ${
+                        size="sm"
+                        className={`transition-all ${
                             isAllTransactions ? "bg-red-600 text-white" : "bg-blue-600 text-white"
                         }`}
                         onClick={handleToggleTransactions}
                     >
                       {isAllTransactions ? (
                           <>
-                            <RefreshCw className="mr-2 h-4 w-4" />
-                            Limpar filtros
+                            <RefreshCw className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                            <span className="text-xs sm:text-sm">Limpar</span>
                           </>
                       ) : (
                           <>
-                            <Search className="mr-2 h-4 w-4" />
-                            Buscar Todas
+                            <Search className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                            <span className="text-xs sm:text-sm">Buscar Todas</span>
                           </>
                       )}
                     </Button>
@@ -571,11 +585,22 @@ export default function DashboardFinanceiro() {
                 </CardTitle>
                 <ChartTypeSelector selectedType={selectedChartType} onSelectType={setSelectedChartType} />
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-3 sm:p-6">
                 {selectedChartType === "pie" && <DistributionChart transactions={transactions} colors={COLORS} />}
                 {selectedChartType === "bar" && <RecentTransactionsChart transactions={transactions} colors={COLORS} />}
-                {selectedChartType === "line" && <CashFlowChart onFetchAllTransactions={handleToggleTransactions} transactions={transactions} colors={["#8884d8", "#ff3366"]} />}
-                {selectedChartType === "area" && <IncomeVsExpensesChart onFetchAllTransactions={handleToggleTransactions} areaChartData={areaChartData} />}
+                {selectedChartType === "line" && (
+                    <CashFlowChart
+                        onFetchAllTransactions={handleToggleTransactions}
+                        transactions={transactions}
+                        colors={["#8884d8", "#ff3366"]}
+                    />
+                )}
+                {selectedChartType === "area" && (
+                    <IncomeVsExpensesChart
+                        onFetchAllTransactions={handleToggleTransactions}
+                        areaChartData={areaChartData}
+                    />
+                )}
               </CardContent>
             </Card>
           </main>
