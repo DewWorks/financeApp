@@ -72,9 +72,11 @@ export function ProfileSwitcher({ onProfileSwitch }: ProfileSwitcherProps) {
             // Update localStorage
             if (profile) {
                 localStorage.setItem("current-profile-id", profile._id)
+                localStorage.setItem("profile-account", 'true')
                 localStorage.setItem("current-profile-name", profile.name)
             } else {
                 console.log("Switching to personal account")
+                localStorage.setItem("profile-account", 'false')
             }
 
             // Notify parent component for immediate UI updates
