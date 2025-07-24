@@ -16,10 +16,11 @@ async function getUserIdFromToken() {
 }
 
 // PUT - Atualizar perfil
-export async function PUT(request: Request, { params }: { params: { profileId: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ profileId: string }> }) {
     try {
         const userId = await getUserIdFromToken()
-        const profileId = new ObjectId(params.profileId)
+        const resolvedParams = await params;
+        const profileId = new ObjectId(resolvedParams.profileId)
         const { name, description } = await request.json()
 
         if (!name?.trim()) {
@@ -60,10 +61,11 @@ export async function PUT(request: Request, { params }: { params: { profileId: s
 }
 
 // DELETE - Excluir perfil
-export async function DELETE(request: Request, { params }: { params: { profileId: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ profileId: string }> }) {
     try {
         const userId = await getUserIdFromToken()
-        const profileId = new ObjectId(params.profileId)
+        const resolvedParams = await params;
+        const profileId = new ObjectId(resolvedParams.profileId)
 
         const client = await getMongoClient()
         const db = client.db("financeApp")

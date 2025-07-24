@@ -15,10 +15,11 @@ async function getUserIdFromToken() {
     return new ObjectId(decoded.userId)
 }
 
-export async function GET(request: Request, { params }: { params: { profileId: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ profileId: string }> }) {
     try {
         const userId = await getUserIdFromToken()
-        const profileId = new ObjectId(params.profileId)
+        const resolvedParams = await params;
+        const profileId = new ObjectId(resolvedParams.profileId)
 
         const client = await getMongoClient()
         const db = client.db("financeApp")

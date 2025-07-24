@@ -18,11 +18,12 @@ async function getUserIdFromToken() {
 }
 
 // POST - Adicionar membro ao profile
-export async function POST(request: Request, { params }: { params: { profileId: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ profileId: string }> }) {
     try {
         const userId = await getUserIdFromToken()
+        const resolvedParams = await params;
         const { email, permission = "COLABORATOR" } = await request.json()
-        const profileId = new ObjectId(params.profileId)
+        const profileId = new ObjectId(resolvedParams.profileId)
 
         const client = await getMongoClient()
         const db = client.db("financeApp")

@@ -38,7 +38,7 @@ export async function GET() {
         const isUserAdmin = userMember?.permission === "ADMIN" || profile.createdBy.toString() === userId.toString()
 
         // Extrair os userIds dos membros
-        const userIds = profile.members.map((member: any) => new ObjectId(member.userId))
+        const userIds = profile.members.map((member: IMember) => new ObjectId(member.userId))
 
         // Buscar usuários correspondentes
         const users = await db
@@ -50,7 +50,7 @@ export async function GET() {
         const userMap = new Map(users.map((u) => [u._id.toString(), u]))
 
         // Montar membros com dados adicionais
-        const membersWithDetails = profile.members.map((member: any) => {
+        const membersWithDetails = profile.members.map((member: IMember) => {
             const user = userMap.get(member.userId.toString())
             return {
                 ...member,

@@ -33,8 +33,6 @@ export default function ProfilePage() {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
     const router = useRouter()
-    const currentProfileId = localStorage.getItem("current-profile-id")
-    const isInCollaborativeProfile = currentProfileId && currentProfileId !== "null"
 
     useEffect(() => {
         fetchUserProfile()
