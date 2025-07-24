@@ -4,6 +4,7 @@ import { ObjectId } from "mongodb"
 import jwt from "jsonwebtoken"
 import { cookies } from "next/headers"
 import { sendEmail } from "@/app/functions/emails/sendEmail"
+import {IMember, IProfile } from "@/interfaces/IProfile"
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key"
 
@@ -17,15 +18,17 @@ async function getUserIdFromToken() {
 }
 
 // PUT - Atualizar membro
-export async function PUT(request: Request, { params }: { params: { profileId: string; memberId: string } }) {
+export async function PUT(request: Request) {
     try {
         const userId = await getUserIdFromToken()
-        const { permission } = await request.json()
-        const profileId = new ObjectId(params.profileId)
-        const memberId = new ObjectId(params.memberId)
+        const { permission, profileId, memberId } = await request.json()
 
-        console.log("PUT Request - Profile ID:", params.profileId)
-        console.log("PUT Request - Member ID:", params.memberId)
+        const profileObjectId = new ObjectId(String(profileId))
+        const memberObjectId = new ObjectId(String(memberId))
+        const userObjectId = new ObjectId(String(userId))
+
+        console.log("PUT Request - Profile ID:", profileId)
+        console.log("PUT Request - Member ID:", memberId)
         console.log("PUT Request - New Permission:", permission)
 
         const client = await getMongoClient()
@@ -33,24 +36,26 @@ export async function PUT(request: Request, { params }: { params: { profileId: s
 
         // Verificar se o usuário tem permissão de ADMIN
         const profile = await db.collection("profiles").findOne({
-            _id: profileId,
-            "members.userId": userId,
+            _id: profileObjectId,
+            "members.userId": userObjectId,
             "members.permission": "ADMIN",
         })
 
+        console.log("Profile found:", profile)
+        
         if (!profile) {
             return NextResponse.json({ error: "Permission denied" }, { status: 403 })
         }
 
         // Buscar dados do membro que está sendo atualizado
-        const memberToUpdate = profile.members.find((member: any) => member.userId.toString() === memberId.toString())
+        const memberToUpdate: IMember = profile.members.find((member: IMember) => member.userId.toString() === memberId.toString())
 
         if (!memberToUpdate) {
             return NextResponse.json({ error: "Member not found" }, { status: 404 })
         }
 
         // Buscar dados do usuário que está sendo atualizado
-        const targetUser = await db.collection("users").findOne({ _id: memberId })
+        const targetUser = await db.collection("users").findOne({ _id: memberObjectId })
 
         if (!targetUser) {
             return NextResponse.json({ error: "User not found" }, { status: 404 })
@@ -61,7 +66,7 @@ export async function PUT(request: Request, { params }: { params: { profileId: s
 
         // Atualizar permissão do membro
         const updateResult = await db.collection("profiles").updateOne(
-            { _id: profileId, "members.userId": memberId },
+            { _id: profileObjectId, "members.userId": memberObjectId },
             {
                 $set: {
                     "members.$.permission": permission,
@@ -151,11 +156,10 @@ export async function PUT(request: Request, { params }: { params: { profileId: s
 }
 
 // DELETE - Remover membro
-export async function DELETE(request: Request, { params }: { params: { profileId: string; memberId: string } }) {
+export async function DELETE(request: Request) {
     try {
         const userId = await getUserIdFromToken()
-        const profileId = new ObjectId(params.profileId)
-        const memberId = new ObjectId(params.memberId)
+        const { profileId, memberId } = await request.json();
 
         const client = await getMongoClient()
         const db = client.db("financeApp")
@@ -177,12 +181,13 @@ export async function DELETE(request: Request, { params }: { params: { profileId
         }
 
         // Remover membro
-        await db.collection("profiles").updateOne(
+        const profiles = db.collection<IProfile>("profiles")
+        await profiles.updateOne(
             { _id: profileId },
             {
                 $pull: { members: { userId: memberId } },
                 $set: { updatedAt: new Date() },
-            },
+            }
         )
 
         return NextResponse.json({ message: "Member removed successfully" })

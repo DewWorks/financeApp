@@ -20,10 +20,10 @@ export async function GET() {
     try {
         const userId = await getUserIdFromToken()
 
-
         const client = await getMongoClient()
         const db = client.db("financeApp")
 
+        // Buscar o perfil
         const profile = await db.collection("profiles").findOne({
             "members.userId": userId,
             isActive: true,
@@ -37,8 +37,33 @@ export async function GET() {
         const userMember: IMember = profile.members.find((m: IMember) => m.userId.toString() === userId.toString())
         const isUserAdmin = userMember?.permission === "ADMIN" || profile.createdBy.toString() === userId.toString()
 
+        // Extrair os userIds dos membros
+        const userIds = profile.members.map((member: any) => new ObjectId(member.userId))
+
+        // Buscar usuários correspondentes
+        const users = await db
+            .collection("users")
+            .find({ _id: { $in: userIds } })
+            .toArray()
+
+        // Criar um mapa para acesso rápido
+        const userMap = new Map(users.map((u) => [u._id.toString(), u]))
+
+        // Montar membros com dados adicionais
+        const membersWithDetails = profile.members.map((member: any) => {
+            const user = userMap.get(member.userId.toString())
+            return {
+                ...member,
+                userName: user?.name || "",
+                userEmail: user?.email || "",
+                userPhone: user?.cel?.[0] || "",
+            }
+        })
+
+        // Retornar o perfil com os membros enriquecidos
         return NextResponse.json({
             ...profile,
+            members: membersWithDetails,
             isUserAdmin,
         })
     } catch (error) {
@@ -46,3 +71,4 @@ export async function GET() {
         return NextResponse.json({ error: "Internal server error" }, { status: 500 })
     }
 }
+

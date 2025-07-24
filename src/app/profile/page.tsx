@@ -233,7 +233,6 @@ export default function ProfilePage() {
 
                 {/* Quick Actions */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    {isInCollaborativeProfile && (
                         <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={goToCollaborative}>
                             <CardContent className="p-4">
                                 <div className="flex items-center gap-3">
@@ -245,7 +244,6 @@ export default function ProfilePage() {
                                 </div>
                             </CardContent>
                         </Card>
-                    )}
                 </div>
 
                 {/* Profile Information */}
