@@ -354,7 +354,7 @@ export default function DashboardFinanceiro() {
                 </div>
 
                 {/* Profile Switcher - Centro no mobile */}
-                <div className="flex-1 flex justify-center sm:justify-end sm:ml-8" id="profile-switcher">
+                <div className="flex-1 flex justify-center sm:justify-start sm:ml-8" id="profile-switcher">
                   <ProfileSwitcher onProfileSwitch={handleProfileSwitch} />
                 </div>
 

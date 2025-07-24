@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 
 export function useCurrentProfile() {
     const [currentProfileId, setCurrentProfileId] = useState<string | null>(null)
@@ -15,7 +15,7 @@ export function useCurrentProfile() {
         setCurrentProfileName(profileName || "Conta Pessoal")
     }, [])
 
-    const switchProfile = (profileId: string | null, profileName?: string) => {
+    const switchProfile = useCallback((profileId: string | null, profileName?: string) => {
         setCurrentProfileId(profileId)
 
         if (profileId) {
@@ -29,7 +29,7 @@ export function useCurrentProfile() {
             localStorage.removeItem("current-profile-name")
             setCurrentProfileName("Conta Pessoal")
         }
-    }
+    }, [])
 
     return {
         currentProfileId,
