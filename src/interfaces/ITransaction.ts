@@ -3,6 +3,7 @@ import { ObjectId } from "mongodb"
 export interface ITransaction {
   _id: ObjectId
   userId: ObjectId
+  profileId?: ObjectId,
   type: 'income' | 'expense'
   description: string
   amount: number
