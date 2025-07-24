@@ -28,8 +28,12 @@ export default function SliderMonthSelector({ onSelectMonth }: SliderMonthSelect
     const sliderRef = useRef<HTMLInputElement>(null)
 
     useEffect(() => {
-        onSelectMonth(selectedMonth)
-    }, [selectedMonth, onSelectMonth])
+        const delay = setTimeout(() => {
+            onSelectMonth(selectedMonth)
+        }, 600) // 600ms após o último movimento
+
+        return () => clearTimeout(delay)
+    }, [selectedMonth])
 
     const handleSliderChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setSelectedMonth(Number(event.target.value))

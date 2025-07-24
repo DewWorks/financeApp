@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import {useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/atoms/button"
 import { Input } from "@/components/ui/atoms/input"
@@ -18,6 +18,13 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [inputType, setInputType] = useState<"email" | "phone" | "unknown">("unknown")
   const router = useRouter()
+
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token")
+    if (token) {
+      router.push("/")
+    }
+  }, [])
 
   // Detectar se é email ou telefone conforme o usuário digita
   const handleEmailOrPhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
