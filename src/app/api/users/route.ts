@@ -4,6 +4,7 @@ import { ObjectId } from 'mongodb'
 import jwt from 'jsonwebtoken'
 import { cookies } from 'next/headers'
 import { sendEmail } from '@/app/functions/emails/sendEmail';
+import { IUser } from '@/interfaces/IUser';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
@@ -160,5 +161,52 @@ export async function PATCH(request: Request) {
             });
         }
         return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
+    }
+}
+
+export async function PUT(request: Request) {
+    try {
+        const userId = await getUserIdFromToken();
+
+        const { name, email, cel } = await request.json()
+
+        if (!name?.trim() || !email?.trim()) {
+            return NextResponse.json({ error: "Name and email are required" }, { status: 400 })
+        }
+
+        const client = await getMongoClient()
+        const db = client.db("financeApp")
+
+        // Verificar se o email já está em uso por outro usuário
+        const existingUser = await db.collection("users").findOne({
+            email: email.trim(),
+            _id: { $ne: userId },
+        })
+
+        if (existingUser) {
+            return NextResponse.json({ error: "Email already in use" }, { status: 400 })
+        }
+
+        // Atualizar usuário
+        const updateData: Partial<IUser> = {
+            name: name.trim(),
+            email: email.trim(),
+            updatedAt: new Date(),
+        }
+
+        if (cel && Array.isArray(cel)) {
+            updateData.cel = cel.filter((phone) => phone.trim())
+        }
+
+        const result = await db.collection("users").updateOne({ _id: userId }, { $set: updateData })
+
+        if (result.matchedCount === 0) {
+            return NextResponse.json({ error: "User not found" }, { status: 404 })
+        }
+
+        return NextResponse.json({ message: "User updated successfully" })
+    } catch (error) {
+        console.error("Update user error:", error)
+        return NextResponse.json({ error: "Internal server error" }, { status: 500 })
     }
 }

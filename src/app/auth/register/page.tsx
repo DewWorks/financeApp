@@ -243,7 +243,7 @@ export default function RegisterPage() {
                       <div>
                         <h4 className="font-semibold text-green-800">IA Automática</h4>
                         <p className="text-sm text-green-700">
-                          "Gastei 30 reais no Uber" → Registra automaticamente como transporte
+                          Gastei 30 reais no Uber → Registra automaticamente como transporte
                         </p>
                       </div>
                     </div>
@@ -260,7 +260,7 @@ export default function RegisterPage() {
                       <BarChart3 className="w-6 h-6 text-purple-600 mt-0.5" />
                       <div>
                         <h4 className="font-semibold text-purple-800">Relatórios Instantâneos</h4>
-                        <p className="text-sm text-purple-700">"Quanto gastei essa semana?" → Resposta na hora</p>
+                        <p className="text-sm text-purple-700">Quanto gastei essa semana? → Resposta na hora</p>
                       </div>
                     </div>
 
