@@ -20,7 +20,8 @@ export default function LoginPage() {
   const router = useRouter()
 
   useEffect(() => {
-    const token = localStorage.getItem("auth_token")
+    const cookies = document.cookie
+    const token = cookies.includes("auth_token=")
     if (token) {
       router.push("/")
     }
