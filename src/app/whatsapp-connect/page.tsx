@@ -168,11 +168,13 @@ export default function WhatsAppConnectPage() {
                         timer: 3000,
                     })
                 }
-            } catch (error) {
+            } catch (error: unknown) {
+                const err = error as { response?: { data?: { error?: string } } };
+                const errorMessage = err.response?.data?.error || "Erro ao desconectar WhatsApp.";
                 Swal.fire({
                     icon: "error",
                     title: "Erro!",
-                    text: "Erro ao desconectar WhatsApp.",
+                    text: errorMessage || "Erro ao desconectar WhatsApp.",
                 })
             } finally {
                 setLoading(false)
