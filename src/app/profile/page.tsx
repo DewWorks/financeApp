@@ -61,6 +61,21 @@ export default function ProfilePage() {
                 setEditEmail(userData.email)
                 setEditPhone(userData.cel?.[0] || "")
             }
+            // Verifica se o usuário tem conta colaborativa
+            const profileRes = await axios.get(`/api/profiles`)
+            if (profileRes.status === 200) {
+                const profile = profileRes.data
+
+                if (profile.collaborative) {
+                    localStorage.setItem("current-profile-id", profile.profileId)
+                    localStorage.setItem("profile-account", "true")
+                    localStorage.setItem("current-profile-name", profile.profileName)
+                } else {
+                    localStorage.setItem("current-profile-id", userId)
+                    localStorage.setItem("profile-account", "false")
+                    localStorage.setItem("current-profile-name", response.data.name)
+                }
+            }
         } catch (error: unknown) {
             const err = error as { response?: { data?: { error?: string } } };
             const errorMessage = err.response?.data?.error || "Erro ao carregar perfil.";
