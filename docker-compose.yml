@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # Base de Dados do FinanceApp (Preservando config do usuario)
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGODB_DATABASE: financeApp
+      MONGODB_USER: joaoito-mongo-compass
+      MONGODB_PASSWORD: kdUga2SSRKofRK7t
+
+  # Evolution API (WhatsApp Gateway)
+  evolution_api:
+    image: atendai/evolution-api:v2.1.2
+    container_name: evolution_api
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - SERVER_URL=http://localhost:8080
+      - DOCKER_ENV=true
+      - AUTHENTICATION_API_KEY=finance-app-secret-key
+      - DATABASE_ENABLED=true
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_CONNECTION_URI=postgresql://postgres:postgres@postgres:5432/evolution
+      - REDIS_ENABLED=true
+      - REDIS_URI=redis://redis:6379/1
+      - RABBITMQ_ENABLED=false
+    depends_on:
+      - postgres
+      - redis
+
+  # n8n (Automação Service)
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: n8n
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=America/Sao_Paulo
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+  # Dependências da Evolution API
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=evolution
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  mongo_data:
+  n8n_data:
+  postgres_data:
+  redis_data:
