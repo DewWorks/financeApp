@@ -35,6 +35,25 @@ import * as mongoose from "mongoose";
 
 const COLORS = ["#0088FE", "#ff6666", "#FFBB28", "#FF8042", "#8884D8"]
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 300, damping: 24 }
+  }
+}
+
 export default function DashboardFinanceiro() {
   const router = useRouter()
   const [user, setUser] = useState<IUser | null>(null)
@@ -343,7 +362,12 @@ export default function DashboardFinanceiro() {
 
   return (
     <ThemeProvider>
-      <div className="min-h-screen light:bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
+      <motion.div
+        className="min-h-screen light:bg-gray-100 dark:bg-gray-900 transition-colors duration-200"
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+      >
         <nav className="bg-white dark:bg-gray-800 shadow-md transition-colors duration-200">
           <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
             <div className="flex justify-between items-center h-16">
@@ -395,14 +419,6 @@ export default function DashboardFinanceiro() {
                     </Button>
                   </motion.div>
                 )}
-
-                {/* Theme Toggle */}
-                {/*<Tooltip title="Trocar tema" arrow>*/}
-                {/*  <Button onClick={() => {}} variant="ghost" size="sm" className="p-2">*/}
-                {/*    <Moon className="h-5 w-5 dark:hidden" />*/}
-                {/*    <Sun className="h-5 w-5 hidden dark:block" />*/}
-                {/*  </Button>*/}
-                {/*</Tooltip>*/}
               </div>
             </div>
           </div>
@@ -410,9 +426,7 @@ export default function DashboardFinanceiro() {
 
         <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            variants={itemVariants}
             className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 sm:mb-8 space-y-4 sm:space-y-0"
           >
             <div className="flex-1">
@@ -435,7 +449,6 @@ export default function DashboardFinanceiro() {
             >
               <AddIncomeDialog onAddIncome={handleAddIncome} />
               <AddExpenseDialog onAddExpense={handleAddExpense} />
-              {/*{user && <ReportButton user={user} transactions={dataToUse} goals={goals} />}*/}
             </div>
 
           </motion.div>
@@ -443,9 +456,7 @@ export default function DashboardFinanceiro() {
           {/* Summary Cards - responsivo */}
           <motion.div
             id="transactions-values"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
+            variants={itemVariants}
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8"
           >
             <SummaryCard title="Saldo Total" value={balance} icon={DollarSign} description="Atualizado agora" />
@@ -468,9 +479,7 @@ export default function DashboardFinanceiro() {
           {/* Goals */}
           <motion.div
             id="transactions-goals"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
+            variants={itemVariants}
             className="mb-6 sm:mb-8"
           >
             <FinancialGoals transactions={dataToUse} />
@@ -478,9 +487,7 @@ export default function DashboardFinanceiro() {
 
           {/* Transactions Table */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.6 }}
+            variants={itemVariants}
           >
             <Card className="bg-white dark:bg-gray-800 shadow-lg mb-6 sm:mb-8 transition-colors duration-200">
               <div className="w-full flex flex-col sm:flex-row sm:justify-between sm:items-center p-3 sm:p-0">
@@ -552,6 +559,9 @@ export default function DashboardFinanceiro() {
           </motion.div>
 
           {/* Charts */}
+          <motion.div
+            variants={itemVariants}
+          >
           <Card className="bg-white dark:bg-gray-800 shadow-lg" id="transactions-chart">
             <CardHeader className="p-3 sm:p-6">
               <CardTitle className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 space-y-2 sm:space-y-0">
@@ -598,14 +608,14 @@ export default function DashboardFinanceiro() {
               )}
             </CardContent>
           </Card>
+          </motion.div>
         </main>
-
 
         <MobileTransactionFab
           onAddIncome={handleAddIncome}
           onAddExpense={handleAddExpense}
         />
-      </div >
-    </ThemeProvider >
+      </motion.div>
+    </ThemeProvider>
   )
 }
