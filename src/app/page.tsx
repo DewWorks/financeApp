@@ -93,15 +93,6 @@ export default function DashboardFinanceiro() {
     : 0;
   const balance = totalIncome - totalExpense
 
-  // function ThemeToggle() {
-  //   const { theme, toggleTheme } = useTheme()
-  //   return (
-  //       <Button onClick={toggleTheme} variant="ghost" className="p-2">
-  //         {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-  //       </Button>
-  //   )
-  // }
-
   useEffect(() => {
     const fetchUser = async () => {
       const userId = localStorage.getItem("user-id")
@@ -563,11 +554,11 @@ export default function DashboardFinanceiro() {
                   <SliderMonthSelector onSelectMonth={filterTransactionsByMonth} />
                 </div>
 
-                  <TransactionsTable
-                    transactions={selectedMonth ? transactions : transactions}
-                    onEditTransaction={handleEditTransaction}
-                    onDeleteTransaction={handleDeleteTransaction}
-                  />
+                <TransactionsTable
+                  transactions={selectedMonth ? transactions : transactions}
+                  onEditTransaction={handleEditTransaction}
+                  onDeleteTransaction={handleDeleteTransaction}
+                />
 
                 {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
               </CardContent>
@@ -578,52 +569,52 @@ export default function DashboardFinanceiro() {
           <motion.div
             variants={itemVariants}
           >
-          <Card className="bg-white dark:bg-gray-800 shadow-lg" id="transactions-chart">
-            <CardHeader className="p-3 sm:p-6">
-              <CardTitle className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 space-y-2 sm:space-y-0">
-                <span>Distribuição Financeira</span>
-                <div className="gap-2 justify-center sm:justify-start">
-                  <Button
-                    variant="default"
-                    size="sm"
-                    className={`transition-all ${isAllTransactions ? "bg-red-600 text-white" : "bg-blue-600 text-white"
-                      }`}
-                    onClick={handleToggleTransactions}
-                  >
-                    {isAllTransactions ? (
-                      <>
-                        <RefreshCw className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                        <span className="text-xs sm:text-sm">Limpar</span>
-                      </>
-                    ) : (
-                      <>
-                        <Search className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                        <span className="text-xs sm:text-sm">Buscar Todas</span>
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </CardTitle>
-              <ChartTypeSelector selectedType={selectedChartType} onSelectType={setSelectedChartType} />
-            </CardHeader>
-            <CardContent className="p-3 sm:p-6">
-              {selectedChartType === "pie" && <DistributionChart transactions={transactions} colors={COLORS} />}
-              {selectedChartType === "bar" && <RecentTransactionsChart transactions={transactions} colors={COLORS} />}
-              {selectedChartType === "line" && (
-                <CashFlowChart
-                  onFetchAllTransactions={handleToggleTransactions}
-                  transactions={transactions}
-                  colors={["#8884d8", "#ff3366"]}
-                />
-              )}
-              {selectedChartType === "area" && (
-                <IncomeVsExpensesChart
-                  onFetchAllTransactions={handleToggleTransactions}
-                  areaChartData={areaChartData}
-                />
-              )}
-            </CardContent>
-          </Card>
+            <Card className="bg-white dark:bg-gray-800 shadow-lg" id="transactions-chart">
+              <CardHeader className="p-3 sm:p-6">
+                <CardTitle className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 space-y-2 sm:space-y-0">
+                  <span>Distribuição Financeira</span>
+                  <div className="gap-2 justify-center sm:justify-start">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className={`transition-all ${isAllTransactions ? "bg-red-600 text-white" : "bg-blue-600 text-white"
+                        }`}
+                      onClick={handleToggleTransactions}
+                    >
+                      {isAllTransactions ? (
+                        <>
+                          <RefreshCw className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                          <span className="text-xs sm:text-sm">Limpar</span>
+                        </>
+                      ) : (
+                        <>
+                          <Search className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                          <span className="text-xs sm:text-sm">Buscar Todas</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardTitle>
+                <ChartTypeSelector selectedType={selectedChartType} onSelectType={setSelectedChartType} />
+              </CardHeader>
+              <CardContent className="p-3 sm:p-6">
+                {selectedChartType === "pie" && <DistributionChart transactions={transactions} colors={COLORS} />}
+                {selectedChartType === "bar" && <RecentTransactionsChart transactions={transactions} colors={COLORS} />}
+                {selectedChartType === "line" && (
+                  <CashFlowChart
+                    onFetchAllTransactions={handleToggleTransactions}
+                    transactions={transactions}
+                    colors={["#8884d8", "#ff3366"]}
+                  />
+                )}
+                {selectedChartType === "area" && (
+                  <IncomeVsExpensesChart
+                    onFetchAllTransactions={handleToggleTransactions}
+                    areaChartData={areaChartData}
+                  />
+                )}
+              </CardContent>
+            </Card>
           </motion.div>
         </main>
 
