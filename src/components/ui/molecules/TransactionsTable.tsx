@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AddExpenseDialog } from "../organisms/AddExpenseDialog"
 import { AddIncomeDialog } from "../organisms/AddIncomeDialog"
 import { TransactionListMobile } from "../organisms/TransactionListMobile"
+import { EmptyStateAction } from "../molecules/EmptyStateAction"
 
 interface TransactionsTableProps {
     transactions: ITransaction[]
@@ -55,21 +56,17 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
         }
     }
 
+    if (transactions.length === 0) {
+        return <EmptyStateAction />
+    }
+
     return (
         <>
             {/* Desktop view */}
             <div className="hidden md:block dark:bg-gray-800 ">
-                {/* Se houver transações, exibir a quantidade total */}
                 {transactions.length > 0 && (
                     <p className="text-center text-md text-gray-500 font-semibold dark:text-white mt-2">
                         Total de transações: {transactions.length}
-                    </p>
-                )}
-
-                {/* Se não houver transações, exibir a mensagem de aviso */}
-                {transactions.length === 0 && (
-                    <p className="text-center text-md text-red-500 font-semibold mt-2">
-                        Não há transações!
                     </p>
                 )}
                 <Table>

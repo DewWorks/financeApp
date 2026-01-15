@@ -11,6 +11,7 @@ export function useTransactions() {
   const [totalPages, setTotalPages] = useState(1);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [isAllTransactions, setIsAllTransactions] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true); // Initial loading state
   const router = useRouter();
 
   const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'auth') => {
@@ -19,6 +20,7 @@ export function useTransactions() {
 
   const getAllTransactions = useCallback(async () => {
     try {
+      setLoading(true);
       const response = await fetch('/api/transactions/all');
       if (response.ok) {
         const data = await response.json();
@@ -34,11 +36,14 @@ export function useTransactions() {
     } catch (error) {
       console.error('Erro ao buscar todas as transações:', error);
       showToast('Erro ao carregar todas as transações.', 'error');
+    } finally {
+      setLoading(false);
     }
   }, []);
 
   const getTransactions = useCallback(async (page = 1) => {
     try {
+      setLoading(true);
       showToast("Buscando transações paginadas.", "warning");
       const response = await fetch(`/api/transactions?page=${page}&limit=10&month=${selectedMonth}`);
       if (response.status === 401) {
@@ -65,11 +70,14 @@ export function useTransactions() {
       console.error("Erro ao buscar transações:", error);
       showToast("Erro ao carregar transações.", "error");
       router.push("/auth/login");
+    } finally {
+      setLoading(false);
     }
   }, [selectedMonth]);
 
   const getAllTransactionsPage = useCallback(async (page = 1) => {
     try {
+      setLoading(true);
       showToast("Buscando transações paginadas.", "warning");
       const response = await fetch(`/api/transactions/all/page?page=${page}&limit=10`);
       if (response.ok) {
@@ -88,6 +96,8 @@ export function useTransactions() {
     } catch (error) {
       console.error("Erro ao buscar transações paginadas:", error);
       showToast("Erro ao carregar transações paginadas.", "error");
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -298,6 +308,7 @@ export function useTransactions() {
     handleNextPage,
     filterTransactionsByMonth,
     selectedMonth,
+    loading, // Expose loading state
   }
 }
 

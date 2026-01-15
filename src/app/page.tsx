@@ -31,6 +31,7 @@ import { Tooltip } from "@/components/ui/atoms/tooltip"
 import { ProfileSwitcher } from "@/components/ui/molecules/ProfileSwitcher"
 import { useCurrentProfile } from "@/hooks/useCurrentProfile"
 import { MobileTransactionFab } from "@/components/ui/molecules/MobileTransactionFab"
+import { DashboardSkeleton } from "@/components/ui/atoms/DashboardSkeleton"
 import * as mongoose from "mongoose";
 
 const COLORS = ["#0088FE", "#ff6666", "#FFBB28", "#FF8042", "#8884D8"]
@@ -77,7 +78,8 @@ export default function DashboardFinanceiro() {
     handlePreviousPage,
     handleNextPage,
     filterTransactionsByMonth,
-    selectedMonth
+    selectedMonth,
+    loading
   } = useTransactions()
 
   const [selectedChartType, setSelectedChartType] = useState("pie")
@@ -360,6 +362,16 @@ export default function DashboardFinanceiro() {
     }
   }, [])
 
+  if (loading) {
+    return (
+      <ThemeProvider>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-8">
+          <DashboardSkeleton />
+        </div>
+      </ThemeProvider>
+    )
+  }
+
   return (
     <ThemeProvider>
       <motion.div
@@ -459,19 +471,25 @@ export default function DashboardFinanceiro() {
             variants={itemVariants}
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8"
           >
-            <SummaryCard title="Saldo Total" value={balance} icon={DollarSign} description="Atualizado agora" />
+            <SummaryCard
+              title="Saldo Total"
+              value={balance}
+              icon={DollarSign}
+              description="Atualizado agora"
+              variant="info"
+            />
             <SummaryCard
               title="Receitas"
               value={totalIncome}
               icon={ArrowUpIcon}
-              valueColor="text-green-600"
+              variant="success"
               description={`+${((totalIncome / (totalIncome + totalExpense)) * 100).toFixed(1)}% do total`}
             />
             <SummaryCard
               title="Despesas"
               value={totalExpense}
               icon={ArrowDownIcon}
-              valueColor="text-red-600"
+              variant="danger"
               description={`-${((totalExpense / (totalIncome + totalExpense)) * 100).toFixed(1)}% do total`}
             />
           </motion.div>
@@ -544,15 +562,13 @@ export default function DashboardFinanceiro() {
                 <div className="flex justify-center space-x-1 sm:space-x-2 my-3 sm:my-4 overflow-x-auto">
                   <SliderMonthSelector onSelectMonth={filterTransactionsByMonth} />
                 </div>
-                {transactions.length > 0 ? (
+
                   <TransactionsTable
                     transactions={selectedMonth ? transactions : transactions}
                     onEditTransaction={handleEditTransaction}
                     onDeleteTransaction={handleDeleteTransaction}
                   />
-                ) : (
-                  <Toast message={"Carregando transações"} type={"warning"} onClose={() => setToast(null)} />
-                )}
+
                 {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
               </CardContent>
             </Card>
