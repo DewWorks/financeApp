@@ -27,11 +27,12 @@ type IncomeFormData = z.infer<typeof incomeSchema>
 
 interface AddIncomeDialogProps {
   onAddIncome: (description: string, amount: number, tag: string, date: string, isRecurring: boolean,
-                recurrenceCount: number) => void
+    recurrenceCount: number) => void
   initialData?: ITransaction
+  trigger?: React.ReactNode
 }
 
-export function AddIncomeDialog({ onAddIncome, initialData }: AddIncomeDialogProps) {
+export function AddIncomeDialog({ onAddIncome, initialData, trigger }: AddIncomeDialogProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isRecurring, setIsRecurring] = useState(false)
 
@@ -56,10 +57,14 @@ export function AddIncomeDialog({ onAddIncome, initialData }: AddIncomeDialogPro
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="bg-green-500 text-white hover:bg-green-600">
-          <PlusIcon className="h-4 w-4 mr-2" />
-          Receita
-        </Button>
+        {trigger ? (
+          trigger
+        ) : (
+          <Button variant="outline" className="bg-green-500 text-white hover:bg-green-600">
+            <PlusIcon className="h-4 w-4 mr-2" />
+            Receita
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="bg-white sm:max-w-[425px] dark:bg-gray-800 dark:text-white">
         <DialogHeader>
@@ -158,39 +163,39 @@ export function AddIncomeDialog({ onAddIncome, initialData }: AddIncomeDialogPro
           <div className="space-y-2">
             <div className="flex items-center space-x-2 dark:text-white">
               <Controller name="isRecurring" control={control} render={({ field }) => (
-                  <button id="isRecurring" type="button" onClick={() => {
-                    const newValue = !field.value;
-                    field.onChange(newValue);
-                    setIsRecurring(newValue);
-                  }}>
-                    {field.value ? <CheckSquare className="w-5 h-5 text-red-500" /> : <Square className="w-5 h-5 text-gray-400" />}
-                  </button>
+                <button id="isRecurring" type="button" onClick={() => {
+                  const newValue = !field.value;
+                  field.onChange(newValue);
+                  setIsRecurring(newValue);
+                }}>
+                  {field.value ? <CheckSquare className="w-5 h-5 text-red-500" /> : <Square className="w-5 h-5 text-gray-400" />}
+                </button>
               )} />
               <Label className="cursor-pointer" htmlFor="isRecurring">Receita recorrente</Label>
             </div>
           </div>
-          {isRecurring &&(
-              <Controller
-                  name="recurrenceCount"
-                  control={control}
-                  render={({ field }) => (
-                      <Select
-                          onValueChange={(value) => field.onChange(Number(value))}
-                          defaultValue={field.value ? field.value.toString() : undefined}
-                      >
-                        <SelectTrigger className="max-h-10 overflow-y-auto dark:text-white">
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-32 overflow-y-auto">
-                          {[...Array(24).keys()].map((num) => (
-                              <SelectItem className="bg-white dark:bg-gray-800 dark:text-white" key={num + 1} value={(num + 1).toString()}>
-                                {num + 1} vezes
-                              </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                  )}
-              />
+          {isRecurring && (
+            <Controller
+              name="recurrenceCount"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  onValueChange={(value) => field.onChange(Number(value))}
+                  defaultValue={field.value ? field.value.toString() : undefined}
+                >
+                  <SelectTrigger className="max-h-10 overflow-y-auto dark:text-white">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-32 overflow-y-auto">
+                    {[...Array(24).keys()].map((num) => (
+                      <SelectItem className="bg-white dark:bg-gray-800 dark:text-white" key={num + 1} value={(num + 1).toString()}>
+                        {num + 1} vezes
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           )}
           <Button type="submit" className="bg-green-500 text-white w-full mt-6">
             Adicionar Receita

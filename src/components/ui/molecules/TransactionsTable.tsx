@@ -1,16 +1,13 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/atoms/table"
 import { Button } from "@/components/ui/atoms/button"
-import { AlertTriangle, Edit, Edit2, Trash2, Repeat, ArrowUpCircle, ArrowDownCircle, Tag, RepeatIcon, Calendar } from 'lucide-react'
+import { AlertTriangle, Edit, Edit2, Trash2, Repeat, ArrowUpCircle, ArrowDownCircle } from 'lucide-react'
 import { ITransaction } from "@/interfaces/ITransaction"
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/atoms/dialog"
 import { AddExpenseDialog } from "../organisms/AddExpenseDialog"
 import { AddIncomeDialog } from "../organisms/AddIncomeDialog"
-import { Swiper, SwiperSlide } from 'swiper/react';
-import 'swiper/css';
-import 'swiper/css/pagination';
-import { Pagination } from 'swiper/modules';
-import {Card, CardContent } from "../atoms/card"
+import { TransactionListMobile } from "../organisms/TransactionListMobile"
+import { EmptyStateAction } from "../molecules/EmptyStateAction"
 
 interface TransactionsTableProps {
     transactions: ITransaction[]
@@ -19,7 +16,7 @@ interface TransactionsTableProps {
 }
 
 function getRandomColor() {
-    return `#${Math.floor(Math.random()*16777215).toString(16)}`;
+    return `#${Math.floor(Math.random() * 16777215).toString(16)}`;
 }
 
 export function TransactionsTable({ transactions, onEditTransaction, onDeleteTransaction }: TransactionsTableProps) {
@@ -59,21 +56,17 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
         }
     }
 
+    if (transactions.length === 0) {
+        return <EmptyStateAction />
+    }
+
     return (
         <>
             {/* Desktop view */}
             <div className="hidden md:block dark:bg-gray-800 ">
-                {/* Se houver transações, exibir a quantidade total */}
                 {transactions.length > 0 && (
                     <p className="text-center text-md text-gray-500 font-semibold dark:text-white mt-2">
                         Total de transações: {transactions.length}
-                    </p>
-                )}
-
-                {/* Se não houver transações, exibir a mensagem de aviso */}
-                {transactions.length === 0 && (
-                    <p className="text-center text-md text-red-500 font-semibold mt-2">
-                        Não há transações!
                     </p>
                 )}
                 <Table>
@@ -91,16 +84,16 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
                         {transactions.map((transaction) => {
                             const tagColor = getRandomColor();
                             return (
-                                <TableRow key={transaction._id?.toString()} className={ transaction.type === 'income' ? 'bg-green-50' : 'bg-red-50'}>
+                                <TableRow key={transaction._id?.toString()} className={transaction.type === 'income' ? 'bg-green-50' : 'bg-red-50'}>
                                     <TableCell className="text-black dark:text-white dark:bg-gray-800">{new Date(transaction.date).toLocaleDateString()}</TableCell>
                                     <TableCell className="text-black dark:text-white dark:bg-gray-800">{transaction.description}</TableCell>
                                     <TableCell className={transaction.type === 'income' ? 'text-green-600 dark:bg-gray-800' : 'text-red-600 dark:bg-gray-800'}>
                                         R$ {transaction.amount !== undefined && transaction.amount !== null ? transaction.amount.toFixed(2) : 'N/A'}
                                         {transaction.isRecurring && transaction.recurrenceCount && (
                                             <span className={`ml-1 text-xs text-gray-500 dark:text-gray-400 flex items-center ${transaction.type === 'income' ? 'text-green-600 dark:bg-gray-800' : 'text-red-600 dark:bg-gray-800'}`}>
-            <Repeat className="h-3 w-3 mr-1" />
+                                                <Repeat className="h-3 w-3 mr-1" />
                                                 {transaction.recurrenceCount}x
-        </span>
+                                            </span>
                                         )}
                                     </TableCell>
                                     <TableCell className={transaction.type === 'income' ? 'text-green-600 font-bold dark:bg-gray-800' : 'text-red-600 font-bold dark:bg-gray-800'}>{transaction.type === "income" ? (
@@ -139,83 +132,11 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
 
             {/* Mobile view */}
             <div className="md:hidden space-y-4 dark:bg-gray-800">
-                <Swiper
-                    spaceBetween={10}
-                    slidesPerView={1}
-                    pagination={{ clickable: true }}
-                    modules={[Pagination]}
-                    className="pb-6"
-                >
-                    {transactions.map((transaction) => {
-                        const tagColor = getRandomColor();
-                        return (
-                            <SwiperSlide key={transaction._id?.toString()}>
-                                <Card className={`p-2 rounded-lg shadow dark:bg-gray-800 
-            ${transaction.type === 'income' ? 'bg-green-50 border border-green-500' : 'bg-red-50 border border-red-500'}`}>
-                                    <CardContent className="p-4">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <div className="flex items-center space-x-2">
-                                                {transaction.type === "income" ? (
-                                                    <ArrowUpCircle className="w-4 h-4 text-green-500" />
-                                                ) : (
-                                                    <ArrowDownCircle className="w-4 h-4 text-red-500" />
-                                                )}
-                                                <span className={`font-semibold text-sm ${transaction.type === "income" ? "text-green-500" : "text-red-500"}`}>
-              {transaction.type === "income" ? "Receita" : "Despesa"}
-            </span>
-                                            </div>
-                                            <div className="flex space-x-2">
-                                                <Button variant="outline" size="sm" onClick={() => handleEditClick(transaction)}>
-                                                    <Edit className="text-blue-600 h-4 w-4" />
-                                                </Button>
-                                                <Button variant="outline" size="sm" onClick={() => handleDeleteClick(transaction)}>
-                                                    <Trash2 className="text-red-500 h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center space-x-2 text-sm text-gray-600 mb-2">
-                                            <Calendar className="w-4 h-4" />
-                                            <span>{new Date(transaction.date).toLocaleDateString()}</span>
-                                        </div>
-                                        <h3 className="text-lg font-semibold text-gray-800 mb-2 dark:text-white">{transaction.description}</h3>
-                                        <div className="flex items-center space-x-2 text-sm text-gray-600 mb-2">
-                                            <Tag className="w-4 h-4" />
-                                            <span
-                                                className="px-2 py-1 rounded-full text-xs font-semibold"
-                                                style={{
-                                                    backgroundColor: `${tagColor}20`,
-                                                    color: tagColor,
-                                                    border: `1px solid ${tagColor}`
-                                                }}
-                                            >{transaction.tag}</span>
-                                        </div>
-
-                                        {transaction.isRecurring && (
-                                            <div className="flex items-center space-x-2 text-sm text-gray-600">
-                                                <RepeatIcon className="w-4 h-4" />
-                                                <span>Recorrente {transaction.recurrenceCount && `(${transaction.recurrenceCount}x)`}</span>
-                                            </div>
-                                        )}
-                                    </CardContent>
-                                </Card>
-                            </SwiperSlide>
-                        );
-                    })}
-                </Swiper>
-
-                {/* Se houver transações, exibir a quantidade total */}
-                {transactions.length > 0 && (
-                    <p className="text-center text-md text-gray-500 font-semibold dark:text-white mt-2">
-                        Total de transações: {transactions.length}
-                    </p>
-                )}
-
-                {/* Se não houver transações, exibir a mensagem de aviso */}
-                {transactions.length === 0 && (
-                    <p className="text-center text-md text-red-500 font-semibold mt-2">
-                        Não há transações!
-                    </p>
-                )}
+                <TransactionListMobile
+                    transactions={transactions}
+                    onEdit={handleEditClick}
+                    onDelete={handleDeleteClick}
+                />
             </div>
 
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
