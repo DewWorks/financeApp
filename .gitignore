@@ -46,5 +46,4 @@ payload.json
 package-lock.json
 docker-compose.yml
 docker-compose.ymL
-src/lib/auth-api.ts
 test-db.ts
