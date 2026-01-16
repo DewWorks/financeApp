@@ -104,9 +104,9 @@ export function ProfileSwitcher({ onProfileSwitch }: ProfileSwitcherProps) {
 
     if (loading) {
         return (
-            <div className="flex items-center gap-2 bg-gray-200 animate-pulse rounded-lg px-3 py-2 w-48">
-                <div className="w-4 h-4 bg-gray-300 rounded"></div>
-                <div className="w-24 h-4 bg-gray-300 rounded"></div>
+            <div className="flex items-center gap-2 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg px-3 py-2 w-48">
+                <div className="w-4 h-4 bg-gray-300 dark:bg-gray-600 rounded"></div>
+                <div className="w-24 h-4 bg-gray-300 dark:bg-gray-600 rounded"></div>
             </div>
         )
     }
@@ -117,7 +117,7 @@ export function ProfileSwitcher({ onProfileSwitch }: ProfileSwitcherProps) {
                 onClick={() => setIsOpen(!isOpen)}
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-2 bg-white hover:bg-gray-50 border-2 border-gray-200 px-3 py-2 h-9 max-w-[200px] min-w-0 overflow-hidden"
+                className="flex items-center gap-2 bg-background hover:bg-accent border-2 border-border px-3 py-2 h-9 max-w-[200px] min-w-0 overflow-hidden"
             >
                 <div className="flex items-center gap-2 min-w-0 overflow-hidden">
                     {currentProfile ? (
@@ -126,38 +126,37 @@ export function ProfileSwitcher({ onProfileSwitch }: ProfileSwitcherProps) {
                         <User className="w-4 h-4 text-green-500 flex-shrink-0" />
                     )}
                     <span
-                        className="truncate whitespace-nowrap text-sm font-medium overflow-hidden"
+                        className="truncate whitespace-nowrap text-sm font-medium overflow-hidden text-foreground"
                         title={getCurrentDisplayName()} // tooltip
                     >
-      {getCurrentDisplayName()}
-    </span>
+                        {getCurrentDisplayName()}
+                    </span>
                 </div>
-                <ChevronDown className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             </Button>
 
             {isOpen && (
-                <Card className="absolute bg-white top-12 left-0 w-80 z-50 shadow-xl border-2 animate-in slide-in-from-top-2 duration-200">
+                <Card className="absolute bg-white dark:bg-zinc-950 top-12 left-0 w-80 z-50 shadow-xl border-2 animate-in slide-in-from-top-2 duration-200">
                     <CardContent className="p-4">
                         <div className="mb-4">
-                            <h4 className="font-semibold text-gray-800 text-sm">Trocar Conta</h4>
+                            <h4 className="font-semibold text-foreground text-sm">Trocar Conta</h4>
                         </div>
 
                         {/* Conta Pessoal */}
                         <Button
                             variant="ghost"
-                            className={`w-full justify-between mb-3 h-auto p-3 rounded-lg transition-all duration-200 ${
-                                isCurrentProfile(null) ? "bg-green-50 border border-green-200 shadow-sm" : "hover:bg-gray-50"
-                            }`}
+                            className={`w-full justify-between mb-3 h-auto p-3 rounded-lg transition-all duration-200 ${isCurrentProfile(null) ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 shadow-sm" : "hover:bg-accent"
+                                }`}
                             onClick={() => switchToProfile(null)}
                             disabled={switching}
                         >
                             <div className="flex items-center gap-3">
-                                <div className={`p-2 rounded-full ${isCurrentProfile(null) ? "bg-green-100" : "bg-gray-100"}`}>
-                                    <User className={`w-4 h-4 ${isCurrentProfile(null) ? "text-green-600" : "text-gray-600"}`} />
+                                <div className={`p-2 rounded-full ${isCurrentProfile(null) ? "bg-green-100 dark:bg-green-900/40" : "bg-muted"}`}>
+                                    <User className={`w-4 h-4 ${isCurrentProfile(null) ? "text-green-600" : "text-gray-600 dark:text-gray-400"}`} />
                                 </div>
                                 <div className="flex flex-col items-start">
-                                    <span className="font-medium text-gray-900">Conta Pessoal</span>
-                                    <span className="text-xs text-gray-500">Suas transações individuais</span>
+                                    <span className="font-medium text-foreground">Conta Pessoal</span>
+                                    <span className="text-xs text-muted-foreground">Suas transações individuais</span>
                                 </div>
                             </div>
                             {isCurrentProfile(null) && <Check className="w-4 h-4 text-green-600" />}
@@ -166,30 +165,29 @@ export function ProfileSwitcher({ onProfileSwitch }: ProfileSwitcherProps) {
                         {/* Profiles Colaborativos */}
                         {profiles.length > 0 && (
                             <>
-                                <div className="border-t border-gray-200 my-4"></div>
-                                <h5 className="text-sm font-medium text-gray-600 mb-3">Contas Colaborativas</h5>
+                                <div className="border-t border-border my-4"></div>
+                                <h5 className="text-sm font-medium text-muted-foreground mb-3">Contas Colaborativas</h5>
                                 <div className="space-y-2">
                                     {profiles.map((profile) => (
                                         <Button
                                             key={profile._id}
                                             variant="ghost"
-                                            className={`w-full justify-between h-auto p-3 rounded-lg transition-all duration-200 ${
-                                                isCurrentProfile(profile) ? "bg-blue-50 border border-blue-200 shadow-sm" : "hover:bg-gray-50"
-                                            }`}
+                                            className={`w-full justify-between h-auto p-3 rounded-lg transition-all duration-200 ${isCurrentProfile(profile) ? "bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 shadow-sm" : "hover:bg-accent"
+                                                }`}
                                             onClick={() => switchToProfile(profile)}
                                             disabled={switching}
                                         >
                                             <div className="flex items-center gap-3">
                                                 <div
-                                                    className={`p-2 rounded-full ${isCurrentProfile(profile) ? "bg-blue-100" : "bg-gray-100"}`}
+                                                    className={`p-2 rounded-full ${isCurrentProfile(profile) ? "bg-blue-100 dark:bg-blue-900/40" : "bg-muted"}`}
                                                 >
                                                     <Users
-                                                        className={`w-4 h-4 ${isCurrentProfile(profile) ? "text-blue-600" : "text-gray-600"}`}
+                                                        className={`w-4 h-4 ${isCurrentProfile(profile) ? "text-blue-600" : "text-gray-600 dark:text-gray-400"}`}
                                                     />
                                                 </div>
                                                 <div className="flex flex-col items-start">
-                                                    <span className="font-medium text-gray-900">{profile.name}</span>
-                                                    <span className="text-xs text-gray-500">{profile.members.length} membro(s)</span>
+                                                    <span className="font-medium text-foreground">{profile.name}</span>
+                                                    <span className="text-xs text-muted-foreground">{profile.members.length} membro(s)</span>
                                                 </div>
                                             </div>
                                             {isCurrentProfile(profile) && <Check className="w-4 h-4 text-blue-600" />}
@@ -200,10 +198,10 @@ export function ProfileSwitcher({ onProfileSwitch }: ProfileSwitcherProps) {
                         )}
 
                         {/* Criar Nova Conta */}
-                        <div className="border-t border-gray-200 my-4"></div>
+                        <div className="border-t border-border my-4"></div>
                         <Button
                             variant="ghost"
-                            className="w-full justify-start text-blue-600 hover:bg-blue-50 p-3 rounded-lg transition-all duration-200"
+                            className="w-full justify-start text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 p-3 rounded-lg transition-all duration-200"
                             onClick={() => {
                                 setIsOpen(false)
                                 router.push("/profiles/create")
@@ -211,7 +209,7 @@ export function ProfileSwitcher({ onProfileSwitch }: ProfileSwitcherProps) {
                             disabled={switching}
                         >
                             <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-full bg-blue-100">
+                                <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900/40">
                                     <Plus className="w-4 h-4 text-blue-600" />
                                 </div>
                                 <span className="font-medium">Criar Conta Colaborativa</span>

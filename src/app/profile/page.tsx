@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/
 import { User, Mail, Phone, ArrowLeft, Edit, Save, X, Users, Shield, Eye, EyeOff } from "lucide-react"
 import Swal from "sweetalert2"
 import { IUser } from "@/interfaces/IUser"
+import { ThemeToggle } from "@/components/ui/atoms/ThemeToggle"
 
 export default function ProfilePage() {
     const [user, setUser] = useState<IUser | null>(null)
@@ -209,12 +210,12 @@ export default function ProfilePage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-100">
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-background">
                 <Card className="w-full max-w-md">
                     <CardContent className="flex items-center justify-center p-8">
                         <div className="text-center">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                            <p className="text-gray-600">Carregando perfil...</p>
+                            <p className="text-muted-foreground">Carregando perfil...</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -223,20 +224,25 @@ export default function ProfilePage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 py-8">
-            <div className="max-w-2xl mx-auto px-4">
+        <div className="min-h-screen bg-gray-50 dark:bg-background py-8">
+            <div className="max-w-2xl mx-auto px-4 relative">
+                {/* Theme Toggle Absolute */}
+                <div className="absolute top-0 right-4 md:right-0 -mt-2">
+                    <ThemeToggle />
+                </div>
+
                 {/* Header */}
-                <Card className="mb-6">
+                <Card className="mb-6 mt-8 md:mt-0">
                     <CardHeader>
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <User className="w-8 h-8 text-blue-500" />
                                 <div>
                                     <CardTitle className="text-2xl font-bold">Meu Perfil</CardTitle>
-                                    <p className="text-gray-600">Gerencie suas informações pessoais</p>
+                                    <p className="text-muted-foreground">Gerencie suas informações pessoais</p>
                                 </div>
                             </div>
-                            <Button onClick={goBack} variant="outline" className="flex items-center gap-2 bg-transparent">
+                            <Button onClick={goBack} variant="outline" className="flex items-center gap-2 bg-transparent hover:bg-accent">
                                 <ArrowLeft className="w-4 h-4" />
                                 Voltar
                             </Button>
@@ -246,17 +252,17 @@ export default function ProfilePage() {
 
                 {/* Quick Actions */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={goToCollaborative}>
-                            <CardContent className="p-4">
-                                <div className="flex items-center gap-3">
-                                    <Users className="w-6 h-6 text-blue-500" />
-                                    <div>
-                                        <h3 className="font-medium">Gerenciar Conta Colaborativa</h3>
-                                        <p className="text-sm text-gray-600">Membros, permissões e configurações</p>
-                                    </div>
+                    <Card className="cursor-pointer hover:shadow-md transition-shadow hover:bg-accent/50" onClick={goToCollaborative}>
+                        <CardContent className="p-4">
+                            <div className="flex items-center gap-3">
+                                <Users className="w-6 h-6 text-blue-500" />
+                                <div>
+                                    <h3 className="font-medium text-foreground">Gerenciar Conta Colaborativa</h3>
+                                    <p className="text-sm text-muted-foreground">Membros, permissões e configurações</p>
                                 </div>
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
 
                 {/* Profile Information */}
@@ -269,7 +275,7 @@ export default function ProfilePage() {
                                     onClick={() => setIsEditing(true)}
                                     variant="outline"
                                     size="sm"
-                                    className="flex items-center gap-2 hover:bg-yellow-600 hover:text-white"
+                                    className="flex items-center gap-2 hover:bg-yellow-100 hover:text-yellow-700 dark:hover:bg-yellow-900/30 dark:hover:text-yellow-400"
                                 >
                                     <Edit className="w-4 h-4" />
                                     Editar
@@ -277,15 +283,15 @@ export default function ProfilePage() {
                             )}
                         </div>
                         <Card
-                            className="cursor-pointer hover:shadow-md transition-shadow"
+                            className="cursor-pointer hover:shadow-md transition-shadow hover:bg-accent/50 mt-4"
                             onClick={() => setIsChangingPassword(true)}
                         >
                             <CardContent className="p-4">
                                 <div className="flex items-center gap-3">
                                     <Shield className="w-6 h-6 text-green-500" />
                                     <div>
-                                        <h3 className="font-medium">Alterar Senha</h3>
-                                        <p className="text-sm text-gray-600">Mantenha sua conta segura</p>
+                                        <h3 className="font-medium text-foreground">Alterar Senha</h3>
+                                        <p className="text-sm text-muted-foreground">Mantenha sua conta segura</p>
                                     </div>
                                 </div>
                             </CardContent>
@@ -297,7 +303,7 @@ export default function ProfilePage() {
                             <>
                                 {/* Nome */}
                                 <div className="space-y-2">
-                                    <Label className="flex items-center gap-2 text-gray-700">
+                                    <Label className="flex items-center gap-2 text-foreground">
                                         <User className="w-4 h-4 text-blue-600" />
                                         Nome
                                     </Label>
@@ -308,15 +314,15 @@ export default function ProfilePage() {
                                             placeholder="Seu nome completo"
                                         />
                                     ) : (
-                                        <div className="bg-gray-50 border-2 border-gray-200 rounded-lg p-3">
-                                            <p className="text-gray-800">{user.name}</p>
+                                        <div className="bg-muted border border-border rounded-lg p-3">
+                                            <p className="text-foreground">{user.name}</p>
                                         </div>
                                     )}
                                 </div>
 
                                 {/* Email */}
                                 <div className="space-y-2">
-                                    <Label className="flex items-center gap-2 text-gray-700">
+                                    <Label className="flex items-center gap-2 text-foreground">
                                         <Mail className="w-4 h-4 text-blue-600" />
                                         Email
                                     </Label>
@@ -328,15 +334,15 @@ export default function ProfilePage() {
                                             placeholder="seu@email.com"
                                         />
                                     ) : (
-                                        <div className="bg-gray-50 border-2 border-gray-200 rounded-lg p-3">
-                                            <p className="text-gray-800">{user.email}</p>
+                                        <div className="bg-muted border border-border rounded-lg p-3">
+                                            <p className="text-foreground">{user.email}</p>
                                         </div>
                                     )}
                                 </div>
 
                                 {/* Telefone */}
                                 <div className="space-y-2">
-                                    <Label className="flex items-center gap-2 text-gray-700">
+                                    <Label className="flex items-center gap-2 text-foreground">
                                         <Phone className="w-4 h-4 text-blue-600" />
                                         Telefone
                                     </Label>
@@ -349,20 +355,20 @@ export default function ProfilePage() {
                                             maxLength={15}
                                         />
                                     ) : (
-                                        <div className="bg-gray-50 border-2 border-gray-200 rounded-lg p-3">
+                                        <div className="bg-muted border border-border rounded-lg p-3">
                                             {user.cel && user.cel.length > 0 ? (
-                                                <p className="text-gray-800">{user.cel[0].replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3")}</p>
+                                                <p className="text-foreground">{user.cel[0].replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3")}</p>
                                             ) : (
-                                                <p className="text-gray-500">Não informado</p>
+                                                <p className="text-muted-foreground">Não informado</p>
                                             )}
                                         </div>
                                     )}
                                 </div>
 
                                 {/* Account Info */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
                                     <div>
-                                        <span className="font-medium">Membro desde:</span>
+                                        <span className="font-medium text-foreground">Membro desde:</span>
                                         <p>
                                             {user.createdAt
                                                 ? new Date(user.createdAt).toLocaleDateString()
@@ -372,14 +378,14 @@ export default function ProfilePage() {
                                         </p>
                                     </div>
                                     {user.updatedAt ? (
-                                    <div>
-                                        <span className="font-medium">Atualizado em:</span>
-                                        <p>
+                                        <div>
+                                            <span className="font-medium text-foreground">Atualizado em:</span>
+                                            <p>
 
-                                            {new Date(user.updatedAt).toLocaleDateString()}
-                                        </p>
-                                    </div>
-                                        ) : ''}
+                                                {new Date(user.updatedAt).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                    ) : ''}
                                 </div>
 
                                 {/* Edit Actions */}
@@ -393,7 +399,7 @@ export default function ProfilePage() {
                                                 setEditPhone(user.cel?.[0] || "")
                                             }}
                                             variant="outline"
-                                            className="flex items-center gap-2"
+                                            className="flex items-center gap-2 hover:bg-destructive/10 hover:text-destructive"
                                         >
                                             <X className="w-4 h-4" />
                                             Cancelar
@@ -414,8 +420,8 @@ export default function ProfilePage() {
 
                 {/* Change Password Modal */}
                 {isChangingPassword && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                        <Card className="w-full max-w-md bg-white">
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <Card className="w-full max-w-md bg-white dark:bg-card">
                             <CardHeader>
                                 <div className="flex items-center justify-between">
                                     <CardTitle className="flex items-center gap-2">
@@ -451,7 +457,7 @@ export default function ProfilePage() {
                                         <button
                                             type="button"
                                             onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
                                         >
                                             {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                         </button>
@@ -472,7 +478,7 @@ export default function ProfilePage() {
                                         <button
                                             type="button"
                                             onClick={() => setShowNewPassword(!showNewPassword)}
-                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
                                         >
                                             {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                         </button>
@@ -493,7 +499,7 @@ export default function ProfilePage() {
                                         <button
                                             type="button"
                                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
                                         >
                                             {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                         </button>
@@ -505,16 +511,16 @@ export default function ProfilePage() {
                                     <div className="space-y-1">
                                         <div className="flex gap-1">
                                             <div
-                                                className={`h-1 flex-1 rounded ${newPassword.length >= 6 ? "bg-green-500" : "bg-gray-300"}`}
+                                                className={`h-1 flex-1 rounded ${newPassword.length >= 6 ? "bg-green-500" : "bg-gray-300 dark:bg-gray-700"}`}
                                             />
                                             <div
-                                                className={`h-1 flex-1 rounded ${newPassword.length >= 8 && /[A-Z]/.test(newPassword) ? "bg-green-500" : "bg-gray-300"}`}
+                                                className={`h-1 flex-1 rounded ${newPassword.length >= 8 && /[A-Z]/.test(newPassword) ? "bg-green-500" : "bg-gray-300 dark:bg-gray-700"}`}
                                             />
                                             <div
-                                                className={`h-1 flex-1 rounded ${newPassword.length >= 8 && /[0-9]/.test(newPassword) && /[A-Z]/.test(newPassword) ? "bg-green-500" : "bg-gray-300"}`}
+                                                className={`h-1 flex-1 rounded ${newPassword.length >= 8 && /[0-9]/.test(newPassword) && /[A-Z]/.test(newPassword) ? "bg-green-500" : "bg-gray-300 dark:bg-gray-700"}`}
                                             />
                                         </div>
-                                        <p className="text-xs text-gray-500">
+                                        <p className="text-xs text-muted-foreground">
                                             {newPassword.length < 6
                                                 ? "Mínimo 6 caracteres"
                                                 : newPassword.length >= 8 && /[0-9]/.test(newPassword) && /[A-Z]/.test(newPassword)
