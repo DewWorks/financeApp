@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# User requested exclusions
+.env.local
+docker-compose.yml
+docker-compose.ymL
+test-db.ts
