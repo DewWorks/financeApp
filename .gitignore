@@ -42,8 +42,6 @@ next-env.d.ts
 
 # User requested exclusions
 .env.local
-payload.json
-package-lock.json
 docker-compose.yml
 docker-compose.ymL
 test-db.ts
