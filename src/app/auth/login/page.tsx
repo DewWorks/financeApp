@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/atoms/input"
 import { Label } from "@/components/ui/atoms/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/card"
 import { Title } from "@/components/ui/molecules/Title"
-import { Mail, Phone, Eye, EyeOff } from "lucide-react"
+import { Mail, Phone, Eye, EyeOff, Loader2 } from "lucide-react"
 import Swal from "sweetalert2"
 import { ThemeToggle } from "@/components/ui/atoms/ThemeToggle"
 
@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [inputType, setInputType] = useState<"email" | "phone" | "unknown">("unknown")
+  const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -68,6 +69,8 @@ export default function LoginPage() {
       return
     }
 
+    setIsLoading(true)
+
     try {
       // Detectar se é telefone ou email
       const isPhone =
@@ -82,14 +85,9 @@ export default function LoginPage() {
         }),
       })
 
-      if (response.ok) {
-        const data: {
-          token: string
-          tutorialGuide: boolean
-          executeQuery: boolean
-          userId: string
-        } = await response.json()
+      const data = await response.json()
 
+      if (response.ok) {
         localStorage.setItem("auth_token", data.token)
         localStorage.setItem("tutorial-guide", data.tutorialGuide.toString())
         localStorage.setItem("execute-query", data.executeQuery.toString())
@@ -105,11 +103,11 @@ export default function LoginPage() {
           router.push("/")
         })
       } else {
-        const errorData = await response.json()
+        console.error("Login API Error:", data)
         Swal.fire({
           icon: "error",
           title: "Erro!",
-          text: errorData.message || "Credenciais inválidas.",
+          text: data.error || data.message || "Erro ao processar login.",
         })
       }
     } catch (error) {
@@ -119,6 +117,8 @@ export default function LoginPage() {
         title: "Erro!",
         text: "Ocorreu um erro inesperado. Tente novamente mais tarde.",
       })
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -229,8 +229,19 @@ export default function LoginPage() {
             </div>
 
             {/* Botão de Login */}
-            <Button type="submit" className="w-full text-xl bg-blue-600 hover:bg-blue-700 text-white">
-              Entrar
+            <Button
+              type="submit"
+              className="w-full text-xl bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-70 disabled:cursor-not-allowed"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+                  Entrando...
+                </>
+              ) : (
+                "Entrar"
+              )}
             </Button>
 
             {/* Link Esqueceu Senha */}
