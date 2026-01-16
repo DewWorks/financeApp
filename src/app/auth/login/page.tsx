@@ -82,14 +82,9 @@ export default function LoginPage() {
         }),
       })
 
-      if (response.ok) {
-        const data: {
-          token: string
-          tutorialGuide: boolean
-          executeQuery: boolean
-          userId: string
-        } = await response.json()
+      const data = await response.json()
 
+      if (response.ok) {
         localStorage.setItem("auth_token", data.token)
         localStorage.setItem("tutorial-guide", data.tutorialGuide.toString())
         localStorage.setItem("execute-query", data.executeQuery.toString())
@@ -105,11 +100,11 @@ export default function LoginPage() {
           router.push("/")
         })
       } else {
-        const errorData = await response.json()
+        console.error("Login API Error:", data)
         Swal.fire({
           icon: "error",
           title: "Erro!",
-          text: errorData.message || "Credenciais inválidas.",
+          text: data.error || data.message || "Erro ao processar login.",
         })
       }
     } catch (error) {

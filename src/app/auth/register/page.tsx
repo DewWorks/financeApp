@@ -55,6 +55,8 @@ export default function RegisterPage() {
         body: JSON.stringify({ name, email, password, cel }),
       })
 
+      const data = await response.json()
+
       if (response.ok) {
         Swal.fire({
           icon: "success",
@@ -66,11 +68,11 @@ export default function RegisterPage() {
           router.push("/auth/login")
         })
       } else {
-        const errorData = await response.json()
+        console.error("Registration API Error:", data)
         Swal.fire({
           icon: "error",
           title: "Erro!",
-          text: errorData.message || "Erro ao realizar cadastro.",
+          text: data.error || data.message || "Erro ao realizar cadastro.",
         })
       }
     } catch (error: unknown) {
