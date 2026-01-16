@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/
 import { Title } from "@/components/ui/molecules/Title"
 import { MessageCircle, Bot, CheckCircle, Phone, Wifi } from "lucide-react"
 import Swal from "sweetalert2"
+import { ThemeToggle } from "@/components/ui/atoms/ThemeToggle"
 
 interface Message {
     id: number
@@ -197,12 +198,12 @@ export default function WhatsAppConnectPage() {
 
     if (userLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-100">
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-background">
                 <Card className="w-full max-w-md">
                     <CardContent className="flex items-center justify-center p-8">
                         <div className="text-center">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                            <p className="text-gray-600">Carregando informações...</p>
+                            <p className="text-muted-foreground">Carregando informações...</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -211,25 +212,28 @@ export default function WhatsAppConnectPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-            <Card className="w-full max-w-2xl">
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-background p-4 relative">
+            <div className="absolute top-4 right-4">
+                <ThemeToggle />
+            </div>
+            <Card className="w-full max-w-2xl bg-card">
                 <CardHeader className="text-center">
                     <div className="flex items-center justify-center gap-3 mb-2">
                         <MessageCircle className="w-8 h-8 text-green-500" />
                         <Title />
                     </div>
-                    <CardTitle className="text-2xl font-bold">WhatsApp + FinancePro</CardTitle>
+                    <CardTitle className="text-2xl font-bold text-foreground">WhatsApp + FinancePro</CardTitle>
                     <div className="flex items-center justify-center gap-2 mt-2">
-                        <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-md font-medium">BETA</span>
-                        <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-md font-medium">NOVO</span>
+                        <span className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 text-xs px-2 py-1 rounded-md font-medium">BETA</span>
+                        <span className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 text-xs px-2 py-1 rounded-md font-medium">NOVO</span>
                         {isConnected && (
                             <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-md font-medium flex items-center gap-1">
-                <Wifi className="w-3 h-3" />
-                CONECTADO
-              </span>
+                                <Wifi className="w-3 h-3" />
+                                CONECTADO
+                            </span>
                         )}
                     </div>
-                    <p className="text-gray-600 mt-2">
+                    <p className="text-muted-foreground mt-2">
                         {isConnected
                             ? `Olá ${user?.name}! Seu WhatsApp está conectado e pronto para usar.`
                             : "Controle seus gastos conversando naturalmente pelo WhatsApp"}
@@ -239,23 +243,23 @@ export default function WhatsAppConnectPage() {
                 <CardContent className="space-y-6">
                     {/* Status de Conexão */}
                     {isConnected && (
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
                             <div className="flex items-center gap-3">
                                 <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
                                     <CheckCircle className="w-6 h-6 text-white" />
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="font-semibold text-green-800">WhatsApp Conectado!</h3>
-                                    <p className="text-sm text-green-600">
+                                    <h3 className="font-semibold text-green-800 dark:text-green-400">WhatsApp Conectado!</h3>
+                                    <p className="text-sm text-green-600 dark:text-green-300">
                                         Número: <span className="font-medium">{cel}</span>
                                     </p>
-                                    <p className="text-xs text-green-600 mt-1">✅ Pronto para receber seus gastos via WhatsApp</p>
+                                    <p className="text-xs text-green-600 dark:text-green-300 mt-1">✅ Pronto para receber seus gastos via WhatsApp</p>
                                 </div>
                                 <Button
                                     onClick={handleDisconnect}
                                     variant="outline"
                                     size="sm"
-                                    className="text-red-600 border-red-300 hover:bg-red-50 bg-transparent"
+                                    className="text-red-600 border-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 bg-transparent"
                                 >
                                     Desconectar
                                 </Button>
@@ -266,7 +270,7 @@ export default function WhatsAppConnectPage() {
                     {/* Formulário */}
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="phone" className="text-base font-medium flex items-center gap-2">
+                            <Label htmlFor="phone" className="text-base font-medium flex items-center gap-2 text-foreground">
                                 <Phone className="w-4 h-4" />
                                 Número do WhatsApp
                                 {isConnected && <CheckCircle className="w-4 h-4 text-green-500" />}
@@ -277,11 +281,10 @@ export default function WhatsAppConnectPage() {
                                     type="tel"
                                     value={cel}
                                     onChange={handlePhoneChange}
-                                    className={`border-2 pr-10 ${
-                                        isConnected
-                                            ? "border-green-300 bg-green-50 focus:border-green-500"
-                                            : "border-slate-300 focus:border-blue-500"
-                                    }`}
+                                    className={`border-2 pr-10 ${isConnected
+                                        ? "border-green-300 bg-green-50 dark:bg-green-900/20 focus:border-green-500"
+                                        : "border-border focus:border-blue-500"
+                                        }`}
                                     placeholder="(11) 99999-9999"
                                     maxLength={15}
                                     required
@@ -293,7 +296,7 @@ export default function WhatsAppConnectPage() {
                                 )}
                             </div>
                             {isConnected && (
-                                <p className="text-sm text-green-600 flex items-center gap-1">
+                                <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
                                     <Wifi className="w-3 h-3" />
                                     Conectado
                                 </p>
@@ -305,59 +308,58 @@ export default function WhatsAppConnectPage() {
                                 type="button"
                                 onClick={() => (isConnected ? router.push("/") : setShowModal(true))}
                                 variant="outline"
-                                className="border-gray-300"
+                                className="border-border text-foreground hover:bg-accent"
                             >
                                 {isConnected ? "Voltar" : "Pular por Agora"}
                             </Button>
                             <Button
                                 type="submit"
-                                className={`${
-                                    isConnected ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"
-                                } text-white`}
+                                className={`${isConnected ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"
+                                    } text-white`}
                                 disabled={loading}
                             >
                                 {loading ? "Processando..." : isConnected ? "Atualizar WhatsApp" : "Conectar WhatsApp"}
                             </Button>
 
                             {showModal && (
-                                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                                    <div className="bg-white rounded-xl max-w-md w-full p-6 transform animate-scale-in">
+                                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                                    <div className="bg-white dark:bg-card border border-border rounded-xl max-w-md w-full p-6 transform animate-scale-in">
                                         <div className="text-center mb-6">
                                             <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
                                                 <MessageCircle className="w-8 h-8 text-white" />
                                             </div>
-                                            <h3 className="text-2xl font-bold text-gray-800 mb-2">Tem certeza?</h3>
-                                            <p className="text-gray-600">Você está perdendo benefícios incríveis!</p>
+                                            <h3 className="text-2xl font-bold text-foreground mb-2">Tem certeza?</h3>
+                                            <p className="text-muted-foreground">Você está perdendo benefícios incríveis!</p>
                                         </div>
 
                                         <div className="space-y-4 mb-6">
-                                            <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg transform hover:scale-105 transition-transform duration-200">
+                                            <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg transform hover:scale-105 transition-transform duration-200">
                                                 <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
                                                     <span className="text-white text-sm font-bold">⚡</span>
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-semibold text-green-800">Controle Instantâneo</h4>
-                                                    <p className="text-sm text-green-600">Lance gastos em segundos pelo WhatsApp</p>
+                                                    <h4 className="font-semibold text-green-800 dark:text-green-400">Controle Instantâneo</h4>
+                                                    <p className="text-sm text-green-600 dark:text-green-300">Lance gastos em segundos pelo WhatsApp</p>
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg transform hover:scale-105 transition-transform duration-200">
+                                            <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg transform hover:scale-105 transition-transform duration-200">
                                                 <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
                                                     <Bot className="w-4 h-4 text-white" />
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-semibold text-blue-800">IA Inteligente</h4>
-                                                    <p className="text-sm text-blue-600">Categorização automática dos seus gastos</p>
+                                                    <h4 className="font-semibold text-blue-800 dark:text-blue-400">IA Inteligente</h4>
+                                                    <p className="text-sm text-blue-600 dark:text-blue-300">Categorização automática dos seus gastos</p>
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg transform hover:scale-105 transition-transform duration-200">
+                                            <div className="flex items-center gap-3 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg transform hover:scale-105 transition-transform duration-200">
                                                 <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
                                                     <span className="text-white text-sm font-bold">📊</span>
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-semibold text-purple-800">Relatórios Automáticos</h4>
-                                                    <p className="text-sm text-purple-600">Receba resumos semanais por WhatsApp</p>
+                                                    <h4 className="font-semibold text-purple-800 dark:text-purple-400">Relatórios Automáticos</h4>
+                                                    <p className="text-sm text-purple-600 dark:text-purple-300">Receba resumos semanais por WhatsApp</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -375,13 +377,13 @@ export default function WhatsAppConnectPage() {
                                                     router.push("/")
                                                 }}
                                                 variant="outline"
-                                                className="w-full border-gray-300 text-gray-600 hover:bg-gray-50"
+                                                className="w-full border-border text-muted-foreground hover:bg-accent"
                                             >
                                                 Continuar sem conectar
                                             </Button>
                                         </div>
 
-                                        <p className="text-xs text-center text-gray-500 mt-4">
+                                        <p className="text-xs text-center text-muted-foreground mt-4">
                                             💡 Você pode conectar depois nas configurações
                                         </p>
                                     </div>
@@ -391,13 +393,13 @@ export default function WhatsAppConnectPage() {
                     </form>
 
                     {/* Demonstração da Conversa */}
-                    <div className="border-t pt-6">
+                    <div className="border-t border-border pt-6">
                         <div className="flex items-center gap-2 mb-4">
                             <Bot className="w-5 h-5 text-blue-600" />
-                            <h3 className="font-semibold text-gray-800">Demonstração ao vivo:</h3>
+                            <h3 className="font-semibold text-foreground">Demonstração ao vivo:</h3>
                         </div>
 
-                        <div className="bg-gray-50 rounded-lg p-4 h-80 overflow-y-auto">
+                        <div className="bg-muted rounded-lg p-4 h-80 overflow-y-auto">
                             <div className="space-y-3">
                                 {messages.map((message) => (
                                     <div
@@ -405,16 +407,15 @@ export default function WhatsAppConnectPage() {
                                         className={`flex ${message.isUser ? "justify-end" : "justify-start"} animate-fade-in`}
                                     >
                                         <div
-                                            className={`max-w-xs lg:max-w-sm p-3 rounded-lg ${
-                                                message.isUser
+                                            className={`max-w-xs lg:max-w-sm p-3 rounded-lg ${message.isUser
                                                     ? "bg-green-500 text-white rounded-br-none"
-                                                    : "bg-white text-gray-800 rounded-bl-none shadow-sm"
-                                            }`}
+                                                    : "bg-white dark:bg-zinc-800 text-gray-800 dark:text-zinc-100 rounded-bl-none shadow-sm"
+                                                }`}
                                         >
                                             {!message.isUser && (
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    <Bot className="w-3 h-3 text-blue-600" />
-                                                    <span className="text-xs font-medium text-blue-600">FinancePro</span>
+                                                    <Bot className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                                                    <span className="text-xs font-medium text-blue-600 dark:text-blue-400">FinancePro</span>
                                                 </div>
                                             )}
                                             <p className="text-sm">{message.text}</p>
@@ -424,7 +425,7 @@ export default function WhatsAppConnectPage() {
 
                                 {messages.length === 0 && showDemo && (
                                     <div className="flex justify-center items-center h-32">
-                                        <div className="flex items-center gap-2 text-gray-500">
+                                        <div className="flex items-center gap-2 text-muted-foreground">
                                             <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                                             <div
                                                 className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
@@ -441,8 +442,8 @@ export default function WhatsAppConnectPage() {
                             </div>
                         </div>
 
-                        <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                            <p className="text-sm text-blue-700">
+                        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                            <p className="text-sm text-blue-700 dark:text-blue-300">
                                 <strong>Como funciona:</strong> Converse naturalmente sobre seus gastos. Nossa IA entende e registra
                                 automaticamente no seu FinancePro!
                             </p>

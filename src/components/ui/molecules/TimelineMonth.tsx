@@ -1,111 +1,198 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { motion } from "framer-motion"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { ChevronLeft, ChevronRight, Filter, X } from "lucide-react"
 import { Button } from "../atoms/button"
 
 const months = [
-    "Janeiro",
-    "Fevereiro",
-    "Março",
-    "Abril",
-    "Maio",
-    "Junho",
-    "Julho",
-    "Agosto",
-    "Setembro",
-    "Outubro",
-    "Novembro",
-    "Dezembro",
+    { short: "Jan", full: "Janeiro" }, { short: "Fev", full: "Fevereiro" },
+    { short: "Mar", full: "Março" }, { short: "Abr", full: "Abril" },
+    { short: "Mai", full: "Maio" }, { short: "Jun", full: "Junho" },
+    { short: "Jul", full: "Julho" }, { short: "Ago", full: "Agosto" },
+    { short: "Set", full: "Setembro" }, { short: "Out", full: "Outubro" },
+    { short: "Nov", full: "Novembro" }, { short: "Dez", full: "Dezembro" },
 ]
 
 interface TimelineMonthSelectorProps {
     onSelectMonth: (month: number | null) => void
+    selectedMonth?: number | null // Controlled prop (1-12)
 }
 
-export default function TimelineMonthSelector({ onSelectMonth }: TimelineMonthSelectorProps) {
-    const [selectedMonth, setSelectedMonth] = useState<number | null>(null)
+export default function TimelineMonthSelector({ onSelectMonth, selectedMonth }: TimelineMonthSelectorProps) {
+    // If selectedMonth is provided (1-12), use it (convert to 0-11 index). 
+    // Else default to current month.
+    const getInitialIndex = () => {
+        if (selectedMonth) return selectedMonth - 1;
+        return new Date().getMonth();
+    }
+
+    const [isFiltering, setIsFiltering] = useState(!!selectedMonth)
+    const [focusedIndex, setFocusedIndex] = useState(getInitialIndex())
+
     const scrollContainerRef = useRef<HTMLDivElement>(null)
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+    const isProgrammaticScroll = useRef(false)
 
-    const handleMonthClick = (monthIndex: number) => {
-        const newSelectedMonth = selectedMonth === monthIndex + 1 ? null : monthIndex + 1
-        setSelectedMonth(newSelectedMonth)
-        onSelectMonth(newSelectedMonth)
-    }
+    const ITEM_WIDTH = 100;
 
-    const scroll = (direction: "left" | "right") => {
+    const scrollToMonth = (index: number, smooth = true) => {
         if (scrollContainerRef.current) {
-            const scrollAmount = direction === "left" ? -200 : 200
-            scrollContainerRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" })
+            isProgrammaticScroll.current = true;
+            const scrollPos = index * ITEM_WIDTH
+            scrollContainerRef.current.scrollTo({
+                left: scrollPos,
+                behavior: smooth ? 'smooth' : 'instant'
+            })
+            // Reset flag after animation
+            setTimeout(() => { isProgrammaticScroll.current = false }, 500)
+            setFocusedIndex(index)
         }
     }
 
+    // Sync with external prop selectedMonth
     useEffect(() => {
-        const container = scrollContainerRef.current
-        if (container) {
-            const handleWheel = (e: WheelEvent) => {
-                if (e.deltaY !== 0) {
-                    e.preventDefault()
-                    container.scrollLeft += e.deltaY
-                }
+        if (selectedMonth !== undefined && selectedMonth !== null) {
+            const index = selectedMonth - 1;
+            if (index !== focusedIndex) {
+                setIsFiltering(true);
+                setFocusedIndex(index);
+                // Delay scroll slightly to ensure layout is ready or if it's a remount
+                setTimeout(() => scrollToMonth(index, false), 50);
             }
-            container.addEventListener("wheel", handleWheel, { passive: false })
-            return () => container.removeEventListener("wheel", handleWheel)
+        } else if (selectedMonth === null && isFiltering) {
+            // If external prop set to null, clear internal filter
+            setIsFiltering(false);
+            // Optional: Scroll to current month or stay put? 
+            // Let's stay put but exit filter mode.
         }
+    }, [selectedMonth])
+
+
+    const handleSelect = (index: number) => {
+        // Optimistic UI update
+        setIsFiltering(true)
+        setFocusedIndex(index)
+        scrollToMonth(index)
+        onSelectMonth(index + 1)
+    }
+
+    const handleClear = () => {
+        setIsFiltering(false)
+        onSelectMonth(null)
+        // Scroll back to current month
+        const currentMonth = new Date().getMonth()
+        setFocusedIndex(currentMonth)
+        scrollToMonth(currentMonth)
+    }
+
+    const onScroll = () => {
+        if (!scrollContainerRef.current || isProgrammaticScroll.current) return;
+
+        const scrollLeft = scrollContainerRef.current.scrollLeft;
+        const index = Math.round(scrollLeft / ITEM_WIDTH);
+        const clampedIndex = Math.max(0, Math.min(11, index));
+
+        if (clampedIndex !== focusedIndex) {
+            setFocusedIndex(clampedIndex);
+
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+            timeoutRef.current = setTimeout(() => {
+                setIsFiltering(true);
+                onSelectMonth(clampedIndex + 1);
+            }, 500);
+        }
+    }
+
+    // Initial center on mount
+    useEffect(() => {
+        setTimeout(() => scrollToMonth(focusedIndex, false), 100)
     }, [])
 
     return (
-        <div className="w-full max-w-4xl mx-auto p-4">
-            <div className="relative">
-                <Button
-                    onClick={() => scroll("left")}
-                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-gray-800 p-2 rounded-full shadow-md"
-                >
-                    <ChevronLeft className="w-6 h-6" />
+        <div className="w-full flex flex-col gap-4 my-6">
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-2">
+                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                    <Filter className="w-4 h-4" />
+                    <span className="text-sm font-medium uppercase tracking-wide">
+                        {isFiltering ? "Filtrando por:" : "Mostrando:"}
+                    </span>
+                    <AnimatePresence mode="wait">
+                        <motion.span
+                            key={isFiltering ? focusedIndex : "all"}
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -5 }}
+                            className={`text-sm font-bold ${isFiltering ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-gray-100'}`}
+                        >
+                            {isFiltering ? months[focusedIndex].full : "Todas as Transações"}
+                        </motion.span>
+                    </AnimatePresence>
+                </div>
+
+                {isFiltering && (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleClear}
+                        className="text-xs h-7 hover:bg-red-50 hover:text-red-600 text-gray-400"
+                    >
+                        Limpar <X className="w-3 h-3 ml-1" />
+                    </Button>
+                )}
+            </div>
+
+            {/* Carousel */}
+            <div className="relative group">
+                {/* Center Bracket */}
+                <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-[100px] pointer-events-none z-10 flex flex-col items-center justify-center">
+                    <div className={`w-2 h-2 rounded-full mb-auto transition-colors duration-300 ${isFiltering ? 'bg-blue-500' : 'bg-gray-300'}`} />
+                    <div className={`absolute inset-0 rounded-2xl border-2 transition-colors duration-300 ${isFiltering ? 'border-blue-500/50 bg-blue-500/5' : 'border-gray-200 dark:border-gray-700'}`} />
+                    <div className={`w-2 h-2 rounded-full mt-auto transition-colors duration-300 ${isFiltering ? 'bg-blue-500' : 'bg-gray-300'}`} />
+                </div>
+
+                {/* Nav Arrows */}
+                <Button variant="ghost" size="icon" className="absolute left-0 top-1/2 -translate-y-1/2 z-20 hidden md:flex hover:bg-transparent hover:text-blue-500" onClick={() => handleSelect(Math.max(0, focusedIndex - 1))}>
+                    <ChevronLeft className="w-8 h-8 opacity-50" />
                 </Button>
+                <Button variant="ghost" size="icon" className="absolute right-0 top-1/2 -translate-y-1/2 z-20 hidden md:flex hover:bg-transparent hover:text-blue-500" onClick={() => handleSelect(Math.min(11, focusedIndex + 1))}>
+                    <ChevronRight className="w-8 h-8 opacity-50" />
+                </Button>
+
+                {/* Track */}
                 <div
                     ref={scrollContainerRef}
-                    className="flex overflow-x-auto scrollbar-hide space-x-4 p-4"
-                    style={{ scrollSnapType: "x mandatory" }}
+                    onScroll={onScroll}
+                    className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory py-6"
+                    style={{ scrollPaddingLeft: '50%', scrollPaddingRight: '50%' }}
                 >
-                    {months.map((month, index) => (
-                        <motion.button
-                            key={month}
-                            className={`flex-shrink-0 w-40 h-40 rounded-lg shadow-md flex flex-col items-center justify-center transition-colors
-                ${
-                                selectedMonth === index + 1
-                                    ? "bg-blue-500 text-white"
-                                    : "bg-white text-gray-800 hover:bg-blue-100 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700"
-                            }`}
-                            onClick={() => handleMonthClick(index)}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            style={{ scrollSnapAlign: "center" }}
-                        >
-                            <span className="text-3xl font-bold mb-2">{index + 1}</span>
-                            <span className="text-lg font-medium">{month}</span>
-                        </motion.button>
-                    ))}
+                    <div className="w-[calc(50%-50px)] flex-shrink-0" />
+                    {months.map((month, index) => {
+                        const isActive = focusedIndex === index;
+                        return (
+                            <button
+                                key={month.short}
+                                onClick={() => handleSelect(index)}
+                                className={`flex-shrink-0 w-[100px] h-[80px] snap-center flex flex-col items-center justify-center transition-all duration-300 transform ${isActive ? 'scale-100 opacity-100' : 'scale-75 opacity-40 hover:opacity-70'}`}
+                            >
+                                <span className={`text-2xl font-bold mb-1 transition-colors ${isActive && isFiltering ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600 dark:text-gray-500'}`}>
+                                    {month.short}
+                                </span>
+                                {isActive && (
+                                    <motion.span layoutId="activeLabel" className="text-[10px] uppercase font-bold tracking-widest text-gray-500">
+                                        2025
+                                    </motion.span>
+                                )}
+                            </button>
+                        )
+                    })}
+                    <div className="w-[calc(50%-50px)] flex-shrink-0" />
                 </div>
-                <Button
-                    onClick={() => scroll("right")}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-gray-800 p-2 rounded-full shadow-md"
-                >
-                    <ChevronRight className="w-6 h-6" />
-                </Button>
             </div>
-            {selectedMonth && (
-                <motion.button
-                    className="mt-6 p-2 rounded-full bg-red-500 text-white flex items-center justify-center mx-auto"
-                    onClick={() => handleMonthClick(selectedMonth - 1)}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                >
-                    <span>Limpar Seleção ({months[selectedMonth - 1]})</span>
-                </motion.button>
-            )}
+            <p className="text-center text-xs text-gray-400 -mt-2">Deslize para selecionar</p>
         </div>
     )
 }
-

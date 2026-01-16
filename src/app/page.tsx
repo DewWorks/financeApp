@@ -23,8 +23,7 @@ import { FinancialGoals } from "@/components/ui/organisms/FinancialGoals"
 import { useEffect, useState } from "react"
 import Swal from "sweetalert2"
 import type { IUser } from "@/interfaces/IUser"
-import { ThemeProvider } from "@/components/ui/organisms/ThemeContext"
-import SliderMonthSelector from "@/components/ui/molecules/SliderMonth"
+import TimelineMonthSelector from "@/components/ui/molecules/TimelineMonth"
 import { ChartTypeSelector } from "@/components/ui/charts/ChartTypeSelection"
 import { WhatsAppButton } from "@/components/ui/molecules/whatsapp-button"
 import { Tooltip } from "@/components/ui/atoms/tooltip"
@@ -32,6 +31,8 @@ import { ProfileSwitcher } from "@/components/ui/molecules/ProfileSwitcher"
 import { useCurrentProfile } from "@/hooks/useCurrentProfile"
 import { MobileTransactionFab } from "@/components/ui/molecules/MobileTransactionFab"
 import { DashboardSkeleton } from "@/components/ui/atoms/DashboardSkeleton"
+import { GlobalLoader } from "@/components/ui/molecules/GlobalLoader"
+import { ThemeToggle } from "@/components/ui/atoms/ThemeToggle"
 import * as mongoose from "mongoose";
 
 const COLORS = ["#0088FE", "#ff6666", "#FFBB28", "#FF8042", "#8884D8"]
@@ -309,14 +310,42 @@ export default function DashboardFinanceiro() {
     await deleteTransaction(transactionId)
   }
 
-  const handleToggleTransactions = async () => {
+  const [isLoadingAll, setIsLoadingAll] = useState(false)
+
+  const handleToggleTransactions = async (): Promise<boolean> => {
     if (isAllTransactions) {
+      setIsLoadingAll(true); // Show loader even for reset if needed, or maybe just for 'ALL'
       await getTransactions();
+      setIsAllTransactions(false);
+      setIsLoadingAll(false);
+      return true;
     } else {
-      await getAllTransactions();
-      await getAllTransactionsPage(1);
+      const result = await Swal.fire({
+        title: 'Carregar todo o histórico?',
+        text: "Essa ação irá buscar todas as suas transações desde o início. Isso permite visualizações completas e comparativos.",
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonColor: '#3b82f6',
+        cancelButtonColor: '#ef4444',
+        confirmButtonText: 'Sim, carregar',
+        cancelButtonText: 'Cancelar'
+      });
+
+      if (result.isConfirmed) {
+        setIsLoadingAll(true);
+        // Minimum visualization time for the premium loader (because it's cool)
+        await Promise.all([
+          getAllTransactions(),
+          getAllTransactionsPage(1),
+          new Promise(resolve => setTimeout(resolve, 3000)) // Force at least 3s of loading
+        ]);
+
+        setIsAllTransactions(true);
+        setIsLoadingAll(false);
+        return true;
+      }
+      return false;
     }
-    setIsAllTransactions(!isAllTransactions);
   };
 
   const handleProfile = () => {
@@ -353,25 +382,24 @@ export default function DashboardFinanceiro() {
     }
   }, [])
 
-  if (loading) {
+  if (loading && !isLoadingAll) { // Only show skeleton if NOT global loading (or should we show both underneath?)
     return (
-      <ThemeProvider>
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-8">
-          <DashboardSkeleton />
-        </div>
-      </ThemeProvider>
+      <div className="min-h-screen bg-gray-50 dark:bg-background p-4 sm:p-8">
+        <DashboardSkeleton />
+      </div>
     )
   }
 
   return (
-    <ThemeProvider>
+    <>
+      {isLoadingAll && <GlobalLoader />} {/* Premium Loader Overlay */}
       <motion.div
-        className="min-h-screen light:bg-gray-100 dark:bg-gray-900 transition-colors duration-200"
+        className="min-h-screen bg-gray-50 dark:bg-background"
+        variants={containerVariants}
         initial="hidden"
         animate="visible"
-        variants={containerVariants}
       >
-        <nav className="bg-white dark:bg-gray-800 shadow-md transition-colors duration-200">
+        <nav className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
             <div className="flex justify-between items-center h-16">
               {/* Logo */}
@@ -386,6 +414,10 @@ export default function DashboardFinanceiro() {
 
               {/* Área direita - User Info, Logout, Theme */}
               <div className="flex items-center space-x-2">
+
+                {/* Theme Toggle - NEW */}
+                <ThemeToggle />
+
                 {user && (
                   <>
                     {/* User Info - apenas ícone no mobile */}
@@ -425,7 +457,7 @@ export default function DashboardFinanceiro() {
               </div>
             </div>
           </div>
-        </nav>
+        </nav >
 
         <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
           <motion.div
@@ -536,7 +568,7 @@ export default function DashboardFinanceiro() {
                     size="sm"
                     className="p-1 sm:p-2 rounded-lg border dark:border-gray-600 bg-blue-600 text-white disabled:opacity-50"
                   >
-                    <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <ChevronLeft className="h-4 w-4 sm:h-5 w-5" />
                   </Button>
                   <span className="text-xs sm:text-md font-semibold dark:text-white px-2">
                     {currentPage}/{totalPages}
@@ -546,12 +578,12 @@ export default function DashboardFinanceiro() {
                     size="sm"
                     className="p-1 sm:p-2 rounded-lg border dark:border-gray-600 disabled:opacity-50 bg-blue-600 text-white"
                   >
-                    <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <ChevronRight className="h-4 w-4 sm:h-5 w-5" />
                   </Button>
                 </div>
                 {/* Filtro por mês */}
-                <div className="flex justify-center space-x-1 sm:space-x-2 my-3 sm:my-4 overflow-x-auto">
-                  <SliderMonthSelector onSelectMonth={filterTransactionsByMonth} />
+                <div className="flex justify-center space-x-1 sm:space-x-2 my-3 sm:my-4 overflow-x-auto w-full">
+                  <TimelineMonthSelector onSelectMonth={filterTransactionsByMonth} selectedMonth={selectedMonth} />
                 </div>
 
                 <TransactionsTable
@@ -622,7 +654,7 @@ export default function DashboardFinanceiro() {
           onAddIncome={handleAddIncome}
           onAddExpense={handleAddExpense}
         />
-      </motion.div>
-    </ThemeProvider>
+      </motion.div >
+    </>
   )
 }

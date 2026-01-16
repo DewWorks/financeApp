@@ -63,15 +63,15 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
     return (
         <>
             {/* Desktop view */}
-            <div className="hidden md:block dark:bg-gray-800 ">
+            <div className="hidden md:block">
                 {transactions.length > 0 && (
-                    <p className="text-center text-md text-gray-500 font-semibold dark:text-white mt-2">
+                    <p className="text-center text-md text-muted-foreground font-semibold mt-2">
                         Total de transações: {transactions.length}
                     </p>
                 )}
                 <Table>
                     <TableHeader>
-                        <TableRow className="text-black dark:text-white">
+                        <TableRow className="hover:bg-muted/50">
                             <TableHead>Data</TableHead>
                             <TableHead>Descrição</TableHead>
                             <TableHead>Valor</TableHead>
@@ -84,24 +84,24 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
                         {transactions.map((transaction) => {
                             const tagColor = getRandomColor();
                             return (
-                                <TableRow key={transaction._id?.toString()} className={transaction.type === 'income' ? 'bg-green-50' : 'bg-red-50'}>
-                                    <TableCell className="text-black dark:text-white dark:bg-gray-800">{new Date(transaction.date).toLocaleDateString()}</TableCell>
-                                    <TableCell className="text-black dark:text-white dark:bg-gray-800">{transaction.description}</TableCell>
-                                    <TableCell className={transaction.type === 'income' ? 'text-green-600 dark:bg-gray-800' : 'text-red-600 dark:bg-gray-800'}>
+                                <TableRow key={transaction._id?.toString()} className={transaction.type === 'income' ? 'bg-green-50/50 dark:bg-green-900/10 hover:bg-green-100/50 dark:hover:bg-green-900/20' : 'bg-red-50/50 dark:bg-red-900/10 hover:bg-red-100/50 dark:hover:bg-red-900/20'}>
+                                    <TableCell className="font-medium">{new Date(transaction.date).toLocaleDateString()}</TableCell>
+                                    <TableCell>{transaction.description}</TableCell>
+                                    <TableCell className={transaction.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
                                         R$ {transaction.amount !== undefined && transaction.amount !== null ? transaction.amount.toFixed(2) : 'N/A'}
                                         {transaction.isRecurring && transaction.recurrenceCount && (
-                                            <span className={`ml-1 text-xs text-gray-500 dark:text-gray-400 flex items-center ${transaction.type === 'income' ? 'text-green-600 dark:bg-gray-800' : 'text-red-600 dark:bg-gray-800'}`}>
+                                            <span className={`ml-1 text-xs flex items-center ${transaction.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                                 <Repeat className="h-3 w-3 mr-1" />
                                                 {transaction.recurrenceCount}x
                                             </span>
                                         )}
                                     </TableCell>
-                                    <TableCell className={transaction.type === 'income' ? 'text-green-600 font-bold dark:bg-gray-800' : 'text-red-600 font-bold dark:bg-gray-800'}>{transaction.type === "income" ? (
+                                    <TableCell className={transaction.type === 'income' ? 'text-green-600 font-bold dark:text-green-400' : 'text-red-600 font-bold dark:text-red-400'}>{transaction.type === "income" ? (
                                         <ArrowUpCircle className="w-4 h-4 text-green-500" />
                                     ) : (
                                         <ArrowDownCircle className="w-4 h-4 text-red-500" />
                                     )}</TableCell>
-                                    <TableCell className="dark:bg-gray-800">
+                                    <TableCell>
                                         <span
                                             className="px-2 py-1 rounded-full text-xs font-semibold"
                                             style={{
@@ -113,7 +113,7 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
                                             {transaction.tag}
                                         </span>
                                     </TableCell>
-                                    <TableCell className="dark:bg-gray-800">
+                                    <TableCell>
                                         <div className="flex space-x-2">
                                             <Button variant="outline" size="sm" onClick={() => handleEditClick(transaction)}>
                                                 <Edit className="text-blue-600 h-4 w-4" />
@@ -131,7 +131,7 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
             </div>
 
             {/* Mobile view */}
-            <div className="md:hidden space-y-4 dark:bg-gray-800">
+            <div className="md:hidden space-y-4">
                 <TransactionListMobile
                     transactions={transactions}
                     onEdit={handleEditClick}
@@ -140,7 +140,7 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
             </div>
 
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                <DialogContent className="sm:max-w-[425px] bg-white dark:bg-gray-900 dark:text-white">
+                <DialogContent className="sm:max-w-[425px]">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-destructive">
                             <AlertTriangle className="h-5 w-5" />
@@ -171,7 +171,7 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
             </Dialog>
 
             <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-                <DialogContent className="sm:max-w-[425px] bg-white dark:bg-gray-900 dark:text-white">
+                <DialogContent className="sm:max-w-[425px]">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-primary">
                             <Edit2 className="h-5 w-5" />

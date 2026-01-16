@@ -1,10 +1,9 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useMemo } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/card"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/atoms/popover"
-import { Info } from "lucide-react"
+import { BarChart2, Calendar, TrendingUp } from "lucide-react"
 import {
     ResponsiveContainer,
     AreaChart,
@@ -15,15 +14,9 @@ import {
     YAxis,
     CartesianGrid,
     Tooltip,
-    Legend,
-    TooltipProps,
+    Legend
 } from "recharts"
-import { formatDate, formatShortDate, formatCurrency } from "@/lib/utils"
-import { Swiper, SwiperSlide } from "swiper/react"
-import { Pagination } from "swiper/modules"
-import "swiper/css"
-import "swiper/css/pagination"
-import { Button } from "@/components/ui/atoms/button"
+import { formatShortDate, formatCurrency } from "@/lib/utils"
 
 interface TransactionData {
     data: string
@@ -31,51 +24,37 @@ interface TransactionData {
     despesa: number
 }
 
-interface FlexibleIncomeExpensesChartProps {
+interface IncomeVsExpensesChartProps {
     areaChartData: TransactionData[];
-    onFetchAllTransactions: () => void;
+    onFetchAllTransactions: () => Promise<boolean>;
 }
 
 type ChartType = "acumulado" | "mensal" | "anual"
 
-const chartTypes: ChartType[] = ["acumulado", "mensal", "anual"]
-
 const chartTitles: Record<ChartType, string> = {
-    acumulado: "Evolução",
-    mensal: "Mensal",
-    anual: "Anual",
+    acumulado: "Evolução Patrimonial",
+    mensal: "Fluxo Mensal",
+    anual: "Comparativo Anual",
 }
 
-const chartDescriptions: Record<ChartType, string> = {
-    acumulado: "Este gráfico mostra a evolução do saldo acumulado ao longo do tempo.",
-    mensal: "Apresenta o fluxo de receitas e despesas mês a mês.",
-    anual: "Compara receitas e despesas entre o ano atual e o ano anterior.",
-}
-
-export function IncomeVsExpensesChart({ areaChartData, onFetchAllTransactions }: FlexibleIncomeExpensesChartProps) {
-    const [isMobile, setIsMobile] = useState(false)
+export function IncomeVsExpensesChart({ areaChartData, onFetchAllTransactions }: IncomeVsExpensesChartProps) {
     const [selectedChartType, setSelectedChartType] = useState<ChartType>("acumulado")
 
-    useEffect(() => {
-        const checkIsMobile = () => {
-            setIsMobile(window.innerWidth < 768)
-        }
-        checkIsMobile()
-        window.addEventListener("resize", checkIsMobile)
-        return () => window.removeEventListener("resize", checkIsMobile)
-    }, [])
-
     const handleChartTypeChange = async (type: ChartType) => {
-        setSelectedChartType(type);
         if (type === "anual") {
-            onFetchAllTransactions();
+            const confirmed = await onFetchAllTransactions();
+            if (confirmed) {
+                setSelectedChartType(type);
+            }
+        } else {
+            setSelectedChartType(type);
         }
     };
 
     const processedData = useMemo(() => {
         const sortedData = [...areaChartData].sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime())
 
-        // Dados para o gráfico de Saldo Acumulado
+        // Acumulado
         let cumulativeReceita = 0
         let cumulativeDespesa = 0
         const acumuladoData = sortedData.map((t) => {
@@ -83,42 +62,42 @@ export function IncomeVsExpensesChart({ areaChartData, onFetchAllTransactions }:
             cumulativeDespesa += t.despesa
             return {
                 data: t.data,
-                saldoAcumulado: cumulativeReceita - cumulativeDespesa,
-                receitaAcumulada: cumulativeReceita,
-                despesaAcumulada: cumulativeDespesa,
+                receitaTotal: cumulativeReceita,
+                despesaTotal: cumulativeDespesa,
+                saldoLiquido: cumulativeReceita - cumulativeDespesa
             }
         })
 
-        // Dados para o gráfico de Fluxo Mensal
-        const mensalData = sortedData.reduce((acc: Record<string, TransactionData>, curr) => {
-            const monthYear = new Date(curr.data).toLocaleString("default", { month: "short", year: "numeric" })
-            if (!acc[monthYear]) {
-                acc[monthYear] = { data: monthYear, receita: 0, despesa: 0 }
-            }
-            acc[monthYear].receita += curr.receita
-            acc[monthYear].despesa += curr.despesa
-            return acc
+        // Mensal
+        const mensalData = sortedData.reduce((acc: Record<string, any>, curr) => {
+            const date = new Date(curr.data);
+            const key = `${date.getFullYear()}-${date.getMonth()}`;
+            const label = date.toLocaleString("pt-BR", { month: "short", year: "numeric" });
+
+            if (!acc[key]) acc[key] = { data: label, receita: 0, despesa: 0 };
+            acc[key].receita += curr.receita;
+            acc[key].despesa += curr.despesa;
+            return acc;
         }, {})
 
-        // Dados para o gráfico de Comparativo Anual
-        const anualData: Record<
-            string,
-            { mes: string; receitaAtual: number; despesaAtual: number; receitaAnterior: number; despesaAnterior: number }
-        > = {}
+        // Anual
+        const anualData: Record<string, { mes: string; receitaAtual: number; despesaAtual: number; receitaAnterior: number; despesaAnterior: number }> = {}
         const currentYear = new Date().getFullYear()
         sortedData.forEach((t) => {
-            const transactionDate = new Date(t.data)
-            const month = transactionDate.toLocaleString("default", { month: "short" })
-            const year = transactionDate.getFullYear()
-            if (!anualData[month]) {
-                anualData[month] = { mes: month, receitaAtual: 0, despesaAtual: 0, receitaAnterior: 0, despesaAnterior: 0 }
+            const d = new Date(t.data)
+            const monthIndex = d.getMonth();
+            const monthName = d.toLocaleString("pt-BR", { month: "short" })
+            const year = d.getFullYear()
+
+            if (!anualData[monthIndex]) {
+                anualData[monthIndex] = { mes: monthName, receitaAtual: 0, despesaAtual: 0, receitaAnterior: 0, despesaAnterior: 0 }
             }
             if (year === currentYear) {
-                anualData[month].receitaAtual += t.receita
-                anualData[month].despesaAtual += t.despesa
+                anualData[monthIndex].receitaAtual += t.receita
+                anualData[monthIndex].despesaAtual += t.despesa
             } else if (year === currentYear - 1) {
-                anualData[month].receitaAnterior += t.receita
-                anualData[month].despesaAnterior += t.despesa
+                anualData[monthIndex].receitaAnterior += t.receita
+                anualData[monthIndex].despesaAnterior += t.despesa
             }
         })
 
@@ -129,205 +108,128 @@ export function IncomeVsExpensesChart({ areaChartData, onFetchAllTransactions }:
         }
     }, [areaChartData])
 
-    const renderChart = (height: number) => {
-        switch (selectedChartType) {
-            case "acumulado":
-                return (
-                    <ResponsiveContainer width="100%" height={height}>
-                        <AreaChart data={processedData.acumulado} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="data" tickFormatter={formatShortDate} />
-                            <YAxis tickFormatter={(value) => formatCurrency(value)} />
-                            <Tooltip content={renderTooltipAcumulado} />
-                            <Legend />
-                            <Area type="monotone" dataKey="saldoAcumulado" stroke="#8884d8" fill="#8884d8" name="Saldo Acumulado" />
-                        </AreaChart>
-                    </ResponsiveContainer>
-                )
-            case "mensal":
-                return (
-                    <ResponsiveContainer width="100%" height={height}>
-                        <AreaChart data={processedData.mensal} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="data" />
-                            <YAxis tickFormatter={(value) => formatCurrency(value)} />
-                            <Tooltip content={renderTooltipMensal} />
-                            <Legend />
-                            <Area type="monotone" dataKey="receita" stroke="#4CAF50" fill="#4CAF50" name="Receita" />
-                            <Area type="monotone" dataKey="despesa" stroke="#F44336" fill="#F44336" name="Despesa" />
-                        </AreaChart>
-                    </ResponsiveContainer>
-                )
-            case "anual":
-                return (
-                    <ResponsiveContainer width="100%" height={height}>
-                        <LineChart data={processedData.anual} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="mes" />
-                            <YAxis tickFormatter={(value) => formatCurrency(value)} />
-                            <Tooltip content={renderTooltipAnual} />
-                            <Legend />
-                            <Line type="monotone" dataKey="receitaAtual" stroke="#4CAF50" name="Receita (Atual)" />
-                            <Line type="monotone" dataKey="despesaAtual" stroke="#F44336" name="Despesa (Atual)" />
-                            <Line type="monotone" dataKey="receitaAnterior" stroke="#81C784" name="Receita (Anterior)" />
-                            <Line type="monotone" dataKey="despesaAnterior" stroke="#E57373" name="Despesa (Anterior)" />
-                        </LineChart>
-                    </ResponsiveContainer>
-                )
-        }
-    }
-
-    const renderTooltipAcumulado = ({ active, payload, label }: TooltipProps<number, string>) => {
+    const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
-            const saldoAcumulado = payload[0].value ?? 0; 
             return (
-                <div className="bg-white p-2 border rounded shadow">
-                    <p className="font-bold">{formatDate(String(label))}</p>
-                    <p>Saldo Acumulado: {formatCurrency(saldoAcumulado)}</p>
-                </div>
-            );
-        }
-        return null;
-    };
-
-    const renderTooltipMensal = ({ active, payload, label }: TooltipProps<number, string>) => {
-        if (active && payload && payload.length >= 2) {
-            const receita = payload[0].value ?? 0;
-            const despesa = payload[1].value ?? 0;
-            return (
-                <div className="bg-white p-2 border rounded shadow">
-                    <p className="font-bold">{String(label)}</p>
-                    <p>Receita: {formatCurrency(receita)}</p>
-                    <p>Despesa: {formatCurrency(despesa)}</p>
-                    <p>Saldo: {formatCurrency(receita - despesa)}</p>
-                </div>
-            );
-        }
-        return null;
-    };
-
-    const renderTooltipAnual = ({ active, payload, label }: TooltipProps<number, string>) => {
-        if (active && payload && payload.length >= 4) {
-            const receitaAtual = payload[0].value ?? 0;
-            const despesaAtual = payload[1].value ?? 0;
-            const receitaAnterior = payload[2].value ?? 0;
-            const despesaAnterior = payload[3].value ?? 0;
-            return (
-                <div className="bg-white p-2 border rounded shadow">
-                    <p className="font-bold">{String(label)}</p>
-                    <p>Receita (Atual): {formatCurrency(receitaAtual)}</p>
-                    <p>Despesa (Atual): {formatCurrency(despesaAtual)}</p>
-                    <p>Receita (Anterior): {formatCurrency(receitaAnterior)}</p>
-                    <p>Despesa (Anterior): {formatCurrency(despesaAnterior)}</p>
-                </div>
-            );
-        }
-        return null;
-    };
-
-    const renderSummary = () => {
-        switch (selectedChartType) {
-            case "acumulado":
-                const lastValue = processedData.acumulado[processedData.acumulado.length - 1]
-                return (
-                    <div className="p-4 dark:text-white">
-                        <h3 className="text-lg font-semibold mb-2">Resumo Acumulado</h3>
-                        <ul className="list-disc pl-5">
-                            <li>Saldo atual: {formatCurrency(lastValue.saldoAcumulado)}</li>
-                            <li>Receita total: {formatCurrency(lastValue.receitaAcumulada)}</li>
-                            <li>Despesa total: {formatCurrency(lastValue.despesaAcumulada)}</li>
-                        </ul>
-                    </div>
-                )
-            case "mensal":
-                const totalReceitas = processedData.mensal.reduce((sum, item) => sum + item.receita, 0)
-                const totalDespesas = processedData.mensal.reduce((sum, item) => sum + item.despesa, 0)
-                return (
-                    <div className="p-4 dark:text-white">
-                        <h3 className="text-lg font-semibold mb-2">Resumo Mensal</h3>
-                        <ul className="list-disc pl-5">
-                            <li>Total de receitas: {formatCurrency(totalReceitas)}</li>
-                            <li>Total de despesas: {formatCurrency(totalDespesas)}</li>
-                            <li>Saldo: {formatCurrency(totalReceitas - totalDespesas)}</li>
-                        </ul>
-                    </div>
-                )
-            case "anual":
-                const currentYear = new Date().getFullYear()
-                const totalReceitaAtual = processedData.anual.reduce((sum, item) => sum + item.receitaAtual, 0)
-                const totalDespesaAtual = processedData.anual.reduce((sum, item) => sum + item.despesaAtual, 0)
-                const totalReceitaAnterior = processedData.anual.reduce((sum, item) => sum + item.receitaAnterior, 0)
-                const totalDespesaAnterior = processedData.anual.reduce((sum, item) => sum + item.despesaAnterior, 0)
-                return (
-                    <div className="p-4 dark:text-white">
-                        <h3 className="text-lg font-semibold mb-2">Resumo Anual</h3>
-                        <ul className="list-disc pl-5">
-                            <li>
-                                {currentYear}: Receita {formatCurrency(totalReceitaAtual)}, Despesa {formatCurrency(totalDespesaAtual)}
-                            </li>
-                            <li>
-                                {currentYear - 1}: Receita {formatCurrency(totalReceitaAnterior)}, Despesa{" "}
-                                {formatCurrency(totalDespesaAnterior)}
-                            </li>
-                            <li>Variação Receita: {((totalReceitaAtual / totalReceitaAnterior - 1) * 100).toFixed(2)}%</li>
-                            <li>Variação Despesa: {((totalDespesaAtual / totalDespesaAnterior - 1) * 100).toFixed(2)}%</li>
-                        </ul>
-                    </div>
-                )
-        }
-    }
-
-    return (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 1 }}>
-            <Card className="bg-white shadow-lg mb-8 dark:bg-gray-800">
-                <CardHeader className="w-full flex flex-row items-center justify-between">
-                    <CardTitle className="self-start text-lg font-semibold text-gray-900 dark:text-gray-100">Gráfico de Área Evolução</CardTitle>
-                    <Popover>
-                        <PopoverTrigger>
-                            <Info className="h-5 w-5 text-gray-500" />
-                        </PopoverTrigger>
-                        <PopoverContent className="bg-white dark:bg-gray-800 dark:text-gray-100">
-                            {chartDescriptions[selectedChartType]}
-                        </PopoverContent>
-                    </Popover>
-                </CardHeader>
-                <CardHeader className="w-full flex flex-col items-center md:justify-around sm:flex-row">
-                    <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                        {chartTitles[selectedChartType]}
-                    </CardTitle>
-
-                    <div className="flex items-center space-x-2">
-                        {chartTypes.map((type) => (
-                            <Button
-                                className={`text-white ${selectedChartType === type ? "bg-blue-600" : "bg-blue-400"}`}
-                                key={type}
-                                variant={selectedChartType === type ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => handleChartTypeChange(type)}
-                            >
-                                {chartTitles[type]}
-                            </Button>
+                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700">
+                    <p className="text-xs text-gray-400 mb-2">{String(label)}</p>
+                    <div className="space-y-1">
+                        {payload.map((entry: any, index: number) => (
+                            <div key={index} className="flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-1">
+                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color || entry.fill }} />
+                                    <span className="text-sm text-gray-600 dark:text-gray-300 font-medium">{entry.name}</span>
+                                </div>
+                                <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{formatCurrency(entry.value)}</span>
+                            </div>
                         ))}
                     </div>
+                </div>
+            )
+        }
+        return null
+    }
+
+    const GradientDefs = () => (
+        <defs>
+            <linearGradient id="gradientReceita" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
+                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="gradientDespesa" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2} />
+                <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+            </linearGradient>
+        </defs>
+    )
+
+    const renderChart = (height: number) => {
+        return (
+            <ResponsiveContainer width="100%" height={height}>
+                {selectedChartType === "anual" ? (
+                    <LineChart data={processedData.anual} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" className="dark:opacity-10" />
+                        <XAxis dataKey="mes" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 11 }} dy={10} />
+                        <YAxis tickFormatter={(val) => `R$${val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val}`} axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 11 }} />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                        <Line type="monotone" dataKey="receitaAtual" stroke="#10b981" strokeWidth={2} dot={false} name="Receita Atual" />
+                        <Line type="monotone" dataKey="despesaAtual" stroke="#ef4444" strokeWidth={2} dot={false} name="Despesa Atual" />
+                        <Line type="monotone" dataKey="receitaAnterior" stroke="#86efac" strokeDasharray="5 5" dot={false} name="Receita Ant." />
+                        <Line type="monotone" dataKey="despesaAnterior" stroke="#fca5a5" strokeDasharray="5 5" dot={false} name="Despesa Ant." />
+                    </LineChart>
+                ) : (
+                    <AreaChart data={selectedChartType === "acumulado" ? processedData.acumulado : processedData.mensal} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <GradientDefs />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" className="dark:opacity-10" />
+                        <XAxis
+                            dataKey="data"
+                            tickFormatter={selectedChartType === "acumulado" ? formatShortDate : undefined}
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: '#9CA3AF', fontSize: 11 }}
+                            dy={10}
+                        />
+                        <YAxis tickFormatter={(val) => `R$${val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val}`} axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 11 }} />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend wrapperStyle={{ paddingTop: '10px' }} />
+
+                        {selectedChartType === "acumulado" ? (
+                            <>
+                                <Area type="monotone" dataKey="receitaTotal" stroke="#10b981" strokeWidth={3} fill="url(#gradientReceita)" name="Receita Total" />
+                                <Area type="monotone" dataKey="despesaTotal" stroke="#ef4444" strokeWidth={3} fill="url(#gradientDespesa)" name="Despesa Total" />
+                            </>
+                        ) : (
+                            <>
+                                <Area type="monotone" dataKey="receita" stroke="#10b981" fill="url(#gradientReceita)" name="Receita" />
+                                <Area type="monotone" dataKey="despesa" stroke="#ef4444" fill="url(#gradientDespesa)" name="Despesa" />
+                            </>
+                        )}
+                    </AreaChart>
+                )}
+            </ResponsiveContainer>
+        )
+    }
+
+    // Modern Pill Filter
+    const renderFilters = () => (
+        <div className="flex justify-center md:justify-end space-x-2 mt-4 md:mt-0 bg-gray-100 dark:bg-gray-900/50 p-1 rounded-lg w-fit mx-auto md:mx-0">
+            {[
+                { id: "acumulado", label: "Evolução", icon: TrendingUp },
+                { id: "mensal", label: "Mensal", icon: BarChart2 },
+                { id: "anual", label: "Comparar", icon: Calendar }
+            ].map((btn) => (
+                <button
+                    key={btn.id}
+                    onClick={() => handleChartTypeChange(btn.id as ChartType)}
+                    className={`
+                        flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider transition-all duration-200
+                        ${selectedChartType === btn.id
+                            ? "bg-white dark:bg-gray-800 text-blue-600 shadow-sm"
+                            : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"}
+                    `}
+                >
+                    <btn.icon className="w-3 h-3" />
+                    <span className="hidden sm:inline">{btn.label}</span>
+                </button>
+            ))}
+        </div>
+    )
+
+    return (
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }}>
+            <Card className="bg-white dark:bg-gray-800 shadow-sm border-none ring-1 ring-gray-200 dark:ring-gray-700">
+                <CardHeader className="flex flex-col md:flex-row items-center justify-between pb-2">
+                    <div>
+                        <CardTitle className="text-lg font-bold text-gray-900 dark:text-gray-100">{chartTitles[selectedChartType]}</CardTitle>
+                        <p className="text-sm text-gray-500">Acompanhe seu balanço financeiro</p>
+                    </div>
+                    {renderFilters()}
                 </CardHeader>
                 <CardContent>
-                    {isMobile ? (
-                        <Swiper
-                            modules={[Pagination]}
-                            spaceBetween={20}
-                            slidesPerView={1}
-                            pagination={{ clickable: true }}
-                            className="w-full h-[300px]"
-                        >
-                            <SwiperSlide>{renderChart(250)}</SwiperSlide>
-                            <SwiperSlide>{renderSummary()}</SwiperSlide>
-                        </Swiper>
-                    ) : (
-                        <div className="space-y-4">
-                            {renderChart(300)}
-                            {renderSummary()}
-                        </div>
-                    )}
+                    <div className="h-[300px] w-full">
+                        {renderChart(300)}
+                    </div>
                 </CardContent>
             </Card>
         </motion.div>

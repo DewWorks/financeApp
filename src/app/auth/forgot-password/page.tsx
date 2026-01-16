@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/
 import { Title } from "@/components/ui/molecules/Title"
 import Swal from "sweetalert2"
 import { useRouter } from "next/navigation"
+import { ThemeToggle } from "@/components/ui/atoms/ThemeToggle"
 
 type Step = "email" | "code" | "password"
 
@@ -153,15 +154,15 @@ export default function ForgotPasswordPage() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="border-2 border-slate-600"
+                    className="border-2 border-border"
                     placeholder="email@example.com"
                     required
                 />
             </div>
-            <Button type="submit" className="w-full text-xl bg-blue-600 text-white" disabled={loading}>
+            <Button type="submit" className="w-full text-xl bg-blue-600 hover:bg-blue-700 text-white" disabled={loading}>
                 {loading ? "Enviando..." : "Próximo"}
             </Button>
-            <Button type="button" onClick={goBackToLogin} className="w-full text-xl bg-gray-600 text-white">
+            <Button type="button" onClick={goBackToLogin} variant="outline" className="w-full text-xl">
                 Voltar ao Login
             </Button>
         </form>
@@ -170,7 +171,7 @@ export default function ForgotPasswordPage() {
     const renderCodeStep = () => (
         <form onSubmit={handleCodeSubmit} className="space-y-4 text-xl">
             <div className="text-center mb-4">
-                <p className="text-gray-600">
+                <p className="text-muted-foreground">
                     Código enviado para: <strong>{email}</strong>
                 </p>
             </div>
@@ -183,16 +184,16 @@ export default function ForgotPasswordPage() {
                     type="text"
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
-                    className="border-2 border-slate-600"
+                    className="border-2 border-border"
                     placeholder="123456"
                     maxLength={6}
                     required
                 />
             </div>
-            <Button type="submit" className="w-full text-xl bg-blue-600 text-white" disabled={loading}>
+            <Button type="submit" className="w-full text-xl bg-blue-600 hover:bg-blue-700 text-white" disabled={loading}>
                 {loading ? "Verificando..." : "Verificar Código"}
             </Button>
-            <Button type="button" onClick={() => setCurrentStep("email")} className="w-full text-xl bg-gray-600 text-white">
+            <Button type="button" onClick={() => setCurrentStep("email")} variant="outline" className="w-full text-xl">
                 Voltar
             </Button>
         </form>
@@ -209,7 +210,7 @@ export default function ForgotPasswordPage() {
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="border-2 border-slate-600"
+                    className="border-2 border-border"
                     placeholder="***********"
                     minLength={6}
                     required
@@ -224,16 +225,16 @@ export default function ForgotPasswordPage() {
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="border-2 border-slate-600"
+                    className="border-2 border-border"
                     placeholder="***********"
                     minLength={6}
                     required
                 />
             </div>
-            <Button type="submit" className="w-full text-xl bg-blue-600 text-white" disabled={loading}>
+            <Button type="submit" className="w-full text-xl bg-blue-600 hover:bg-blue-700 text-white" disabled={loading}>
                 {loading ? "Redefinindo..." : "Concluir"}
             </Button>
-            <Button type="button" onClick={() => setCurrentStep("code")} className="w-full text-xl bg-gray-600 text-white">
+            <Button type="button" onClick={() => setCurrentStep("code")} variant="outline" className="w-full text-xl">
                 Voltar
             </Button>
         </form>
@@ -266,12 +267,15 @@ export default function ForgotPasswordPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-background relative">
+            <div className="absolute top-4 right-4">
+                <ThemeToggle />
+            </div>
             <Card className="w-full max-w-md">
                 <CardHeader className="flex items-center justify-center">
                     <Title />
                     <CardTitle className="text-2xl font-bold text-center">{getStepTitle()}</CardTitle>
-                    <p className="text-center text-gray-600 mt-2">{getStepDescription()}</p>
+                    <p className="text-center text-muted-foreground mt-2">{getStepDescription()}</p>
                 </CardHeader>
                 <CardContent>
                     {currentStep === "email" && renderEmailStep()}
