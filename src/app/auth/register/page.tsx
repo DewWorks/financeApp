@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/atoms/input"
 import { Label } from "@/components/ui/atoms/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/card"
 import { Title } from "@/components/ui/molecules/Title"
-import { MessageCircle, Bot, Zap, BarChart3, Clock, X } from "lucide-react"
+import { MessageCircle, Bot, Zap, BarChart3, Clock, X, Loader2 } from "lucide-react"
 import Swal from "sweetalert2"
 import { ThemeToggle } from "@/components/ui/atoms/ThemeToggle"
 
@@ -19,6 +19,7 @@ export default function RegisterPage() {
   const [cel, setCel] = useState("")
   const [password, setPassword] = useState("")
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
   const formatPhoneNumber = (value: string) => {
@@ -48,6 +49,7 @@ export default function RegisterPage() {
   }
 
   const performRegistration = async () => {
+    setIsLoading(true)
     try {
       const response = await fetch("/api/auth/register", {
         method: "POST",
@@ -88,6 +90,8 @@ export default function RegisterPage() {
         title: "Erro inesperado!",
         text: errorMessage,
       })
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -191,8 +195,19 @@ export default function RegisterPage() {
               </div>
 
               {/* Botão Cadastrar */}
-              <Button type="submit" className="w-full text-lg bg-blue-600 hover:bg-blue-700 text-white mt-6">
-                Cadastrar
+              <Button
+                type="submit"
+                className="w-full text-lg bg-blue-600 hover:bg-blue-700 text-white mt-6 disabled:opacity-70 disabled:cursor-not-allowed"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Cadastrando...
+                  </>
+                ) : (
+                  "Cadastrar"
+                )}
               </Button>
 
               {/* Divisor */}
