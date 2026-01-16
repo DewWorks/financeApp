@@ -24,7 +24,7 @@ import { useEffect, useState } from "react"
 import Swal from "sweetalert2"
 import type { IUser } from "@/interfaces/IUser"
 import { ThemeProvider } from "@/components/ui/organisms/ThemeContext"
-import SliderMonthSelector from "@/components/ui/molecules/SliderMonth"
+import TimelineMonthSelector from "@/components/ui/molecules/TimelineMonth"
 import { ChartTypeSelector } from "@/components/ui/charts/ChartTypeSelection"
 import { WhatsAppButton } from "@/components/ui/molecules/whatsapp-button"
 import { Tooltip } from "@/components/ui/atoms/tooltip"
@@ -550,8 +550,8 @@ export default function DashboardFinanceiro() {
                   </Button>
                 </div>
                 {/* Filtro por mês */}
-                <div className="flex justify-center space-x-1 sm:space-x-2 my-3 sm:my-4 overflow-x-auto">
-                  <SliderMonthSelector onSelectMonth={filterTransactionsByMonth} />
+                <div className="flex justify-center space-x-1 sm:space-x-2 my-3 sm:my-4 overflow-x-auto w-full">
+                  <TimelineMonthSelector onSelectMonth={filterTransactionsByMonth} selectedMonth={selectedMonth} />
                 </div>
 
                 <TransactionsTable
