@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getMongoClient } from '@/db/connectionDb';
 import twilio from 'twilio';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
 const { MessagingResponse } = twilio.twiml;
+
+// Initialize Gemini
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export async function POST(request: Request) {
     try {
@@ -13,78 +18,83 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
         }
 
-        // 1. Clean Phone Number (Remove 'whatsapp:' prefix)
-        const cleanPhone = from.replace('whatsapp:', '');
+        // 1. Clean Phone Number
+        // Twilio sends "whatsapp:+55...", we want to be able to match "+55..." or "55..."
+        const rawPhone = from.replace('whatsapp:', '').trim();
+        const cleanPhone = rawPhone.replace(/\D/g, ''); // Only digits
 
         // 2. Connect to DB and Find User
         const client = await getMongoClient();
         const db = client.db('financeApp');
 
-        // Find user where 'cel' array contains the phone number
+        // Find user where 'cel' array contains EITHER the raw format or the clean digits format
         const user = await db.collection('users').findOne({
-            cel: cleanPhone
+            cel: { $in: [rawPhone, cleanPhone, `+${cleanPhone}`] }
         });
 
         // TwiML Generator
         const twiml = new MessagingResponse();
 
         if (!user) {
-            console.log(`User not found for phone: ${cleanPhone}`);
-            twiml.message('❌ Usuário não encontrado. Verifique se seu número está cadastrado no perfil.');
+            console.log(`User not found for phone: ${cleanPhone}. From: ${from}`);
+            twiml.message('❌ Usuário não encontrado. Verifique se seu número está cadastrado no perfil (com DDD e código do país).');
             return new NextResponse(twiml.toString(), {
                 headers: { 'Content-Type': 'text/xml' },
             });
         }
 
-        // 3. Parse Message
-        // Regex: Checks for optional '+' then a number, then the rest
-        // Examples: "50 lunch", "+100 salary"
-        const regex = /^(\+)?\s*(\d+([.,]\d+)?)\s*(.*)$/i;
-        const match = body.match(regex);
+        // 3. AI Parsing (Gemini)
+        try {
+            // "gemini-2.0-flash" gave a quota limit of 0.
+            // "gemini-flash-latest" is the alias for the current stable flash model (usually 1.5) which has a free tier.
+            const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
-        if (!match) {
-            twiml.message('❌ Não entendi. Envie apenas o valor e descrição. Ex: "15 Padaria" ou "+50 Venda".');
-            return new NextResponse(twiml.toString(), {
-                headers: { 'Content-Type': 'text/xml' },
-            });
+            const prompt = `
+            Act as a financial parser. Analyze this WhatsApp message and extract transaction data.
+            Message: "${body}"
+            
+            Return ONLY a raw JSON object (no markdown, no quotes around the block) with:
+            - "amount": number (extract value).
+            - "description": string (short summary, max 5 words).
+            - "type": "income" or "expense" (default to "expense" unless key words like receives, salary, gain, +, etc are present).
+            - "tag": string (suggest a category like 'Alimentação', 'Transporte', 'Lazer', 'Casa', 'Trabalho', 'Saúde').
+            
+            If you cannot extract a valid amount, return null.
+            `;
+
+            const result = await model.generateContent(prompt);
+            const responseText = result.response.text();
+
+            // Clean markdown if present (Gemini sometimes parses ```json ... ```)
+            const cleanJson = responseText.replace(/```json|```/g, '').trim();
+            const data = JSON.parse(cleanJson);
+
+            if (!data || !data.amount) {
+                throw new Error("Invalid structure");
+            }
+
+            // 4. Create Transaction
+            const transaction = {
+                userId: user._id,
+                profileId: user._id, // Assuming same profile for main user
+                type: data.type || 'expense',
+                description: data.description || 'WhatsApp Transaction',
+                amount: parseFloat(data.amount),
+                date: new Date(),
+                tag: data.tag || 'WhatsApp',
+                createdAt: new Date(), // Important for sorting
+            };
+
+            await db.collection('transactions').insertOne(transaction);
+
+            // 5. Success Reply
+            const icon = transaction.type === 'income' ? '💰' : '💸';
+            twiml.message(`✅ Salvo: ${icon} ${transaction.type === 'income' ? 'Receita' : 'Despesa'} de R$ ${transaction.amount} \n📝 ${transaction.description} \n🏷️ ${transaction.tag}`);
+
+        } catch (aiError) {
+            console.error("AI Parse Error:", aiError);
+            twiml.message('❌ Não entendi o valor. Tente algo como: "Gastei 50 no almoço" ou "Recebi 100".');
         }
-
-        const isIncome = !!match[1]; // Group 1 is '+'
-        const amountStr = match[2].replace(',', '.'); // Handle comma decimal
-        let amount = parseFloat(amountStr);
-        let rawDescription = match[4].trim();
-
-        // 4. Extract Tags (#tag)
-        let tag = 'WhatsApp'; // Default tag
-        const tagRegex = /#(\w+)/;
-        const tagMatch = rawDescription.match(tagRegex);
-
-        if (tagMatch) {
-            tag = tagMatch[1]; // content of the tag without #
-            // Remove tag from description
-            rawDescription = rawDescription.replace(tagMatch[0], '').trim();
-        }
-
-        // Default description if empty
-        const description = rawDescription || (isIncome ? 'Receita WhatsApp' : 'Despesa WhatsApp');
-
-        // 5. Create Transaction
-        const transaction = {
-            userId: user._id,
-            profileId: user._id, // Assuming same profile for main user
-            type: isIncome ? 'income' : 'expense',
-            description: description,
-            amount: amount,
-            date: new Date(),
-            tag: tag,
-            createdAt: new Date(), // Important for sorting
-        };
-
-        await db.collection('transactions').insertOne(transaction);
-
-        // 6. Success Reply
-        const icon = isIncome ? '💰' : '💸';
-        twiml.message(`✅ Salvo: ${icon} ${isIncome ? 'Receita' : 'Despesa'} de R$ ${amount} \n📝 ${description} \n🏷️ ${tag}`);
 
         return new NextResponse(twiml.toString(), {
             headers: { 'Content-Type': 'text/xml' },
