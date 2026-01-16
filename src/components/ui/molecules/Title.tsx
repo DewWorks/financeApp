@@ -9,12 +9,12 @@ interface TitleProps {
 }
 
 export function Title({
-                          className = "",
-                          iconColor = "#3B82F6", // azul padrão
-                          textColor = "#1F2937", // cinza escuro padrão
-                          size = "md",
-                          showText = true,
-                      }: TitleProps) {
+    className = "",
+    iconColor = "#3B82F6", // azul padrão
+    textColor,
+    size = "md",
+    showText = true,
+}: TitleProps) {
     const sizeClasses = {
         sm: "w-6 h-6",
         md: "w-8 h-8",
@@ -41,9 +41,9 @@ export function Title({
 
             {/* Texto */}
             {showText && (
-                <span className={`font-bold ${textSizeClasses[size]}`} style={{ color: textColor }}>
-          FinancePro
-        </span>
+                <span className={`font-bold ${textSizeClasses[size]} ${textColor ? '' : 'text-foreground'}`} style={textColor ? { color: textColor } : {}}>
+                    FinancePro
+                </span>
             )}
         </div>
     )

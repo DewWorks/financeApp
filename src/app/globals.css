@@ -2,57 +2,132 @@
 @tailwind components;
 @tailwind utilities;
 
-.custom-popover {
-    background: #ffffff !important;
-    border-radius: 12px !important;
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2) !important;
-    padding: 16px !important;
-    font-family: "Inter", sans-serif !important;
-    max-width: 350px !important;
-}
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
 
-.custom-popover .driver-popover-title {
-    font-size: 18px !important;
-    font-weight: bold !important;
-    color: #333 !important;
-}
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
 
-.custom-popover .driver-popover-description {
-    font-size: 14px !important;
-    color: #666 !important;
-}
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
 
-.custom-popover .driver-popover-footer {
-    display: flex !important;
-    justify-content: space-between !important;
-    padding-top: 10px !important;
-}
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
 
-.custom-popover .driver-popover-button {
-    background: #007bff !important;
-    color: #ffffff !important;
-    border-radius: 6px !important;
-    padding: 6px 12px !important;
-    font-size: 14px !important;
-    transition: background 0.3s !important;
-}
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
 
-.custom-popover .driver-popover-button:hover {
-    background: #0056b3 !important;
-}
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
 
-.custom-popover .driver-popover-close-btn {
-    color: #ff0000 !important;
-    font-size: 16px !important;
-    cursor: pointer !important;
-}
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
 
-.custom-popover .driver-popover-close-btn:hover {
-    color: #cc0000 !important;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+  }
 }
 
 @layer base {
-    img{
-        display: initial;
-    }
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  img {
+    display: initial;
+  }
+}
+
+/* Custom Driver JS Popover overrides (Keep specific overrides) */
+.custom-popover {
+  background: #ffffff !important;
+  border-radius: 12px !important;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2) !important;
+  padding: 16px !important;
+  font-family: "Inter", sans-serif !important;
+  max-width: 350px !important;
+}
+
+.custom-popover .driver-popover-title {
+  font-size: 18px !important;
+  font-weight: bold !important;
+  color: #333 !important;
+}
+
+.custom-popover .driver-popover-description {
+  font-size: 14px !important;
+  color: #666 !important;
+}
+
+.custom-popover .driver-popover-footer {
+  display: flex !important;
+  justify-content: space-between !important;
+  padding-top: 10px !important;
+}
+
+.custom-popover .driver-popover-button {
+  background: #007bff !important;
+  color: #ffffff !important;
+  border-radius: 6px !important;
+  padding: 6px 12px !important;
+  font-size: 14px !important;
+  transition: background 0.3s !important;
+}
+
+.custom-popover .driver-popover-button:hover {
+  background: #0056b3 !important;
+  color: #ffffff !important;
+}
+
+.custom-popover .driver-popover-close-btn {
+  color: #ff0000 !important;
+  font-size: 16px !important;
+  cursor: pointer !important;
+}
+
+.custom-popover .driver-popover-close-btn:hover {
+  color: #cc0000 !important;
 }

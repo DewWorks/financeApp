@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     // Check if user already exists
     const existingUser = await db.collection('users').findOne({ email })
     if (existingUser) {
-      return NextResponse.json({ error: 'User already exists' }, { status: 400 })
+      return NextResponse.json({ error: 'Este email já está cadastrado. Tente fazer login.' }, { status: 400 })
     }
 
     // Hash password
@@ -28,10 +28,10 @@ export async function POST(request: Request) {
       executeQuery: false
     })
 
-    return NextResponse.json({ message: 'User registered successfully' }, { status: 201 })
+    return NextResponse.json({ message: 'Usuário cadastrado com sucesso!' }, { status: 201 })
     console.log(result);
   } catch (error) {
     console.error('Registration error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro interno do servidor. Tente novamente mais tarde.' }, { status: 500 })
   }
 }
