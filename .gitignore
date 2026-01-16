@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# User requested exclusions
+.env.local
+payload.json
+package-lock.json
+docker-compose.yml
+docker-compose.ymL
+src/lib/auth-api.ts
+test-db.ts
