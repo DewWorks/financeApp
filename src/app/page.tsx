@@ -4,7 +4,7 @@ import { useTransactions } from "@/hooks/useTransactions"
 import { driver } from "driver.js"
 import "driver.js/dist/driver.css"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/card"
-import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, User, ChevronLeft, ChevronRight, Search, RefreshCw } from 'lucide-react'
+import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, User, ChevronLeft, ChevronRight, Search, RefreshCw, TrendingUp, TrendingDown } from 'lucide-react'
 import { AddIncomeDialog } from "@/components/ui/organisms/AddIncomeDialog"
 import { AddExpenseDialog } from "@/components/ui/organisms/AddExpenseDialog"
 import type { ITransaction } from "@/interfaces/ITransaction"
@@ -497,10 +497,9 @@ export default function DashboardFinanceiro() {
             <SummaryCard
               title="Saldo Total"
               value={balance}
-              icon={DollarSign}
-              description="Atualizado agora"
-              variant="info"
-              valueClassName={balance < 0 ? "text-red-500" : "text-green-500"}
+              icon={balance >= 0 ? TrendingUp : TrendingDown}
+              description={balance >= 0 ? "Saldo Positivo" : "Saldo Negativo"}
+              variant={balance >= 0 ? "success" : "danger"}
             />
             <SummaryCard
               title="Receitas"
