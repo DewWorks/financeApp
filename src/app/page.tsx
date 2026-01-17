@@ -33,6 +33,7 @@ import { MobileTransactionFab } from "@/components/ui/molecules/MobileTransactio
 import { DashboardSkeleton } from "@/components/ui/atoms/DashboardSkeleton"
 import { GlobalLoader } from "@/components/ui/molecules/GlobalLoader"
 import { ThemeToggle } from "@/components/ui/atoms/ThemeToggle"
+import { FinancialInsight } from "@/components/ui/molecules/FinancialInsight"
 import * as mongoose from "mongoose";
 
 const COLORS = ["#0088FE", "#ff6666", "#FFBB28", "#FF8042", "#8884D8"]
@@ -423,7 +424,7 @@ export default function DashboardFinanceiro() {
                     {/* User Info - apenas ícone no mobile */}
                     <Tooltip title={'Perfil'} arrow>
                       <Button
-                        className="p-2 rounded-lg transition-colors hover:bg-blue-100 dark:hover:bg-gray-700"
+                        className="p-2 rounded-lg bg-transparent transition-colors hover:bg-blue-100 dark:hover:bg-gray-700"
                         onClick={handleProfile}
                       >
                         <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -434,7 +435,7 @@ export default function DashboardFinanceiro() {
                     <Tooltip title="Sair" arrow>
                       <Button
                         onClick={handleLogout}
-                        className="p-2 rounded-lg transition-colors hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400"
+                        className="p-2 rounded-lg bg-transparent transition-colors hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400"
                       >
                         <LogOut className="h-5 w-5" />
                       </Button>
@@ -459,34 +460,49 @@ export default function DashboardFinanceiro() {
           </div>
         </nav >
 
-        <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <motion.div
             variants={itemVariants}
-            className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 sm:mb-8 space-y-4 sm:space-y-0"
+            className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8"
           >
-            <div className="flex-1">
-              <div className="block sm:hidden">
-                <Title size="md" />
+            {/* Left Column: Title & Insight Widget */}
+            <div className="flex-1 flex flex-col md:flex-row gap-6 items-start md:items-center">
+              {/* Title Section */}
+              <div className="flex-shrink-0">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
+                  Dashboard
+                </h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  {currentProfileId ? `${currentProfileName}` : "Visão Geral"}
+                </p>
               </div>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">
-                Dashboard Financeiro
-              </h1>
-              <p className="mt-1 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                {currentProfileId ? `Conta: ${currentProfileName}` : "Conta Pessoal"}
-              </p>
-              <div className="mt-2 sm:mt-0">
-                <WhatsAppButton />
+
+              {/* Insight Widget - Takes available space */}
+              <div className="w-full md:max-w-md lg:max-w-lg">
+                <FinancialInsight
+                  userRequestName={user?.name}
+                  profileId={currentProfileId || undefined}
+                  loading={loading}
+                  compact={false}
+                  refreshTrigger={dataToUse.length}
+                />
               </div>
-            </div>
-            <div
-              className="hidden sm:flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto"
-              id="add-transactions"
-            >
-              <AddIncomeDialog onAddIncome={handleAddIncome} />
-              <AddExpenseDialog onAddExpense={handleAddExpense} />
             </div>
 
+            {/* Right Column: Actions */}
+            <div className="hidden sm:flex flex-row gap-3 w-full lg:w-auto" id="add-transactions">
+              <div className="flex-1 lg:flex-none">
+                <AddIncomeDialog onAddIncome={handleAddIncome} />
+              </div>
+              <div className="flex-1 lg:flex-none">
+                <AddExpenseDialog onAddExpense={handleAddExpense} />
+              </div>
+            </div>
           </motion.div>
+
+          <div className="block sm:hidden mb-6">
+            <WhatsAppButton />
+          </div>
 
           {/* Summary Cards - responsivo */}
           <motion.div
