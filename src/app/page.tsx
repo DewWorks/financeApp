@@ -643,14 +643,7 @@ export default function DashboardFinanceiro() {
                 {selectedChartType === "area" && (
                   <IncomeVsExpensesChart
                     onFetchAllTransactions={handleToggleTransactions}
-                    areaChartData={Array.isArray(chartData) && chartData.length > 0
-                      ? chartData.map((t) => ({
-                        data: t.date || "Sem data",
-                        receita: t.type === "income" ? t.amount || 0 : 0,
-                        despesa: t.type === "expense" ? t.amount || 0 : 0,
-                      }))
-                      : areaChartData
-                    }
+                    transactions={chartData.length > 0 ? chartData : transactions}
                   />
                 )}
               </CardContent>
