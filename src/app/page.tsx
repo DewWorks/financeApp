@@ -424,7 +424,7 @@ export default function DashboardFinanceiro() {
                     {/* User Info - apenas ícone no mobile */}
                     <Tooltip title={'Perfil'} arrow>
                       <Button
-                        className="p-2 rounded-lg transition-colors hover:bg-blue-100 dark:hover:bg-gray-700"
+                        className="p-2 rounded-lg bg-transparent transition-colors hover:bg-blue-100 dark:hover:bg-gray-700"
                         onClick={handleProfile}
                       >
                         <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -435,7 +435,7 @@ export default function DashboardFinanceiro() {
                     <Tooltip title="Sair" arrow>
                       <Button
                         onClick={handleLogout}
-                        className="p-2 rounded-lg transition-colors hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400"
+                        className="p-2 rounded-lg bg-transparent transition-colors hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400"
                       >
                         <LogOut className="h-5 w-5" />
                       </Button>
