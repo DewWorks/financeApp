@@ -4,7 +4,7 @@ import { useTransactions } from "@/hooks/useTransactions"
 import { driver } from "driver.js"
 import "driver.js/dist/driver.css"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/card"
-import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, User, ChevronLeft, ChevronRight, Search, RefreshCw } from 'lucide-react'
+import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, User, ChevronLeft, ChevronRight, Search, RefreshCw, TrendingUp, TrendingDown } from 'lucide-react'
 import { AddIncomeDialog } from "@/components/ui/organisms/AddIncomeDialog"
 import { AddExpenseDialog } from "@/components/ui/organisms/AddExpenseDialog"
 import type { ITransaction } from "@/interfaces/ITransaction"
@@ -80,19 +80,19 @@ export default function DashboardFinanceiro() {
     handleNextPage,
     filterTransactionsByMonth,
     selectedMonth,
-    loading
+    loading,
+    summaryData,
+    chartData
   } = useTransactions()
 
   const [selectedChartType, setSelectedChartType] = useState("pie")
 
   const dataToUse = isAllTransactions ? allTransactions : transactions;
-  const totalIncome = Array.isArray(dataToUse)
-    ? dataToUse.filter((t) => t.type === "income").reduce((sum, t) => sum + t.amount, 0)
-    : 0;
-  const totalExpense = Array.isArray(dataToUse)
-    ? dataToUse.filter((t) => t.type === "expense").reduce((sum, t) => sum + t.amount, 0)
-    : 0;
-  const balance = totalIncome - totalExpense
+
+  // Use backend data instead of frontend calculation
+  const totalIncome = summaryData.income;
+  const totalExpense = summaryData.expense;
+  const balance = summaryData.balance;
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -497,9 +497,9 @@ export default function DashboardFinanceiro() {
             <SummaryCard
               title="Saldo Total"
               value={balance}
-              icon={DollarSign}
-              description="Atualizado agora"
-              variant="info"
+              icon={balance >= 0 ? TrendingUp : TrendingDown}
+              description={balance >= 0 ? "Saldo Positivo" : "Saldo Negativo"}
+              variant={balance >= 0 ? "success" : "danger"}
             />
             <SummaryCard
               title="Receitas"
@@ -630,19 +630,19 @@ export default function DashboardFinanceiro() {
                 <ChartTypeSelector selectedType={selectedChartType} onSelectType={setSelectedChartType} />
               </CardHeader>
               <CardContent className="p-3 sm:p-6">
-                {selectedChartType === "pie" && <DistributionChart transactions={transactions} colors={COLORS} />}
-                {selectedChartType === "bar" && <RecentTransactionsChart transactions={transactions} colors={COLORS} />}
+                {selectedChartType === "pie" && <DistributionChart transactions={chartData.length > 0 ? chartData : transactions} colors={COLORS} />}
+                {selectedChartType === "bar" && <RecentTransactionsChart transactions={chartData.length > 0 ? chartData : transactions} colors={COLORS} />}
                 {selectedChartType === "line" && (
                   <CashFlowChart
                     onFetchAllTransactions={handleToggleTransactions}
-                    transactions={transactions}
+                    transactions={chartData.length > 0 ? chartData : transactions}
                     colors={["#8884d8", "#ff3366"]}
                   />
                 )}
                 {selectedChartType === "area" && (
                   <IncomeVsExpensesChart
                     onFetchAllTransactions={handleToggleTransactions}
-                    areaChartData={areaChartData}
+                    transactions={chartData.length > 0 ? chartData : transactions}
                   />
                 )}
               </CardContent>

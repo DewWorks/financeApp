@@ -10,22 +10,22 @@ import {
     Area,
     LineChart,
     Line,
+    BarChart,
+    Bar,
+    ComposedChart,
     XAxis,
     YAxis,
     CartesianGrid,
     Tooltip,
-    Legend
+    Legend,
+    ReferenceLine,
+    Cell
 } from "recharts"
-import { formatShortDate, formatCurrency } from "@/lib/utils"
-
-interface TransactionData {
-    data: string
-    receita: number
-    despesa: number
-}
+import { formatShortDate, formatCurrency, formatDate } from "@/lib/utils"
+import type { ITransaction } from "@/interfaces/ITransaction"
 
 interface IncomeVsExpensesChartProps {
-    areaChartData: TransactionData[];
+    transactions: ITransaction[]
     onFetchAllTransactions: () => Promise<boolean>;
 }
 
@@ -33,11 +33,11 @@ type ChartType = "acumulado" | "mensal" | "anual"
 
 const chartTitles: Record<ChartType, string> = {
     acumulado: "Evolução Patrimonial",
-    mensal: "Fluxo Mensal",
+    mensal: "Resultado Diário (Líquido)",
     anual: "Comparativo Anual",
 }
 
-export function IncomeVsExpensesChart({ areaChartData, onFetchAllTransactions }: IncomeVsExpensesChartProps) {
+export function IncomeVsExpensesChart({ transactions, onFetchAllTransactions }: IncomeVsExpensesChartProps) {
     const [selectedChartType, setSelectedChartType] = useState<ChartType>("acumulado")
 
     const handleChartTypeChange = async (type: ChartType) => {
@@ -52,75 +52,124 @@ export function IncomeVsExpensesChart({ areaChartData, onFetchAllTransactions }:
     };
 
     const processedData = useMemo(() => {
-        const sortedData = [...areaChartData].sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime())
+        if (!transactions || transactions.length === 0) {
+            return { acumulado: [], mensal: [], anual: [] };
+        }
 
-        // Acumulado
-        let cumulativeReceita = 0
-        let cumulativeDespesa = 0
-        const acumuladoData = sortedData.map((t) => {
-            cumulativeReceita += t.receita
-            cumulativeDespesa += t.despesa
+        const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+
+        // Common Aggregation Logic
+        const dailyMap: Record<string, { income: number, expense: number }> = {};
+
+        sortedTransactions.forEach(t => {
+            const d = new Date(t.date);
+            const key = d.toLocaleDateString('en-CA'); // YYYY-MM-DD
+            if (!dailyMap[key]) dailyMap[key] = { income: 0, expense: 0 };
+
+            if (t.type === "income") dailyMap[key].income += t.amount;
+            else dailyMap[key].expense += t.amount;
+        });
+
+        // 1. Acumulado Nodes
+        const dailyNodes = Object.keys(dailyMap).sort().map(key => {
+            const [y, m, d] = key.split('-').map(Number);
+            const dateObj = new Date(y, m - 1, d);
+            const net = dailyMap[key].income - dailyMap[key].expense;
             return {
-                data: t.data,
-                receitaTotal: cumulativeReceita,
-                despesaTotal: cumulativeDespesa,
-                saldoLiquido: cumulativeReceita - cumulativeDespesa
-            }
-        })
+                dateStr: key,
+                displayDate: formatShortDate(dateObj.toDateString()),
+                change: net
+            };
+        });
 
-        // Mensal
-        const mensalData = sortedData.reduce((acc: Record<string, any>, curr) => {
-            const date = new Date(curr.data);
-            const key = `${date.getFullYear()}-${date.getMonth()}`;
-            const label = date.toLocaleString("pt-BR", { month: "short", year: "numeric" });
+        let runningTotal = 0;
+        const acumuladoData = dailyNodes.map(node => {
+            runningTotal += node.change;
+            return {
+                data: node.dateStr,
+                displayDate: node.displayDate,
+                saldo: runningTotal,
+                change: node.change
+            };
+        });
 
-            if (!acc[key]) acc[key] = { data: label, receita: 0, despesa: 0 };
-            acc[key].receita += curr.receita;
-            acc[key].despesa += curr.despesa;
-            return acc;
-        }, {})
+        // 2. Mensal (NET RESULT -> Distinct from Gross Flow)
+        const mensalData = Object.keys(dailyMap).sort().map(key => {
+            const [y, m, d] = key.split('-').map(Number);
+            const vals = dailyMap[key];
+            const net = vals.income - vals.expense;
+            return {
+                dateStr: key,
+                displayDate: formatShortDate(new Date(y, m - 1, d).toDateString()),
+                resultado: net, // Single value per day
+                receita: vals.income,
+                despesa: vals.expense
+            };
+        });
 
-        // Anual
-        const anualData: Record<string, { mes: string; receitaAtual: number; despesaAtual: number; receitaAnterior: number; despesaAnterior: number }> = {}
+        // 3. Anual
+        const anualData: Record<number, { mes: string; receitaAtual: number; despesaAtual: number; receitaAnterior: number; despesaAnterior: number }> = {}
         const currentYear = new Date().getFullYear()
-        sortedData.forEach((t) => {
-            const d = new Date(t.data)
-            const monthIndex = d.getMonth();
-            const monthName = d.toLocaleString("pt-BR", { month: "short" })
-            const year = d.getFullYear()
 
-            if (!anualData[monthIndex]) {
-                anualData[monthIndex] = { mes: monthName, receitaAtual: 0, despesaAtual: 0, receitaAnterior: 0, despesaAnterior: 0 }
+        for (let i = 0; i < 12; i++) {
+            const d = new Date(currentYear, i, 1);
+            anualData[i] = {
+                mes: d.toLocaleString("pt-BR", { month: "short" }),
+                receitaAtual: 0, despesaAtual: 0, receitaAnterior: 0, despesaAnterior: 0
             }
+        }
+        sortedTransactions.forEach((t) => {
+            const d = new Date(t.date)
+            const monthIndex = d.getMonth();
+            const year = d.getFullYear()
             if (year === currentYear) {
-                anualData[monthIndex].receitaAtual += t.receita
-                anualData[monthIndex].despesaAtual += t.despesa
+                anualData[monthIndex].receitaAtual += (t.type === "income" ? t.amount : 0)
+                anualData[monthIndex].despesaAtual += (t.type === "expense" ? t.amount : 0)
             } else if (year === currentYear - 1) {
-                anualData[monthIndex].receitaAnterior += t.receita
-                anualData[monthIndex].despesaAnterior += t.despesa
+                anualData[monthIndex].receitaAnterior += (t.type === "income" ? t.amount : 0)
+                anualData[monthIndex].despesaAnterior += (t.type === "expense" ? t.amount : 0)
             }
         })
 
         return {
             acumulado: acumuladoData,
-            mensal: Object.values(mensalData),
+            mensal: mensalData,
             anual: Object.values(anualData),
         }
-    }, [areaChartData])
+    }, [transactions])
+
+    // Calculate gradient offset based on 0 value for Area Chart
+    const gradientOffset = () => {
+        const data = processedData.acumulado;
+        if (data.length <= 0) return 0;
+        const dataMax = Math.max(...data.map((i) => i.saldo));
+        const dataMin = Math.min(...data.map((i) => i.saldo));
+        if (dataMax <= 0) return 0;
+        if (dataMin >= 0) return 1;
+        return dataMax / (dataMax - dataMin);
+    };
+    const off = gradientOffset();
 
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
+            let displayLabel = label;
+            if (typeof label === 'string' && (label.includes('T') || label.includes('-'))) {
+                try { displayLabel = formatDate(label); } catch (e) { }
+            } else { displayLabel = label; }
+
             return (
                 <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700">
-                    <p className="text-xs text-gray-400 mb-2">{String(label)}</p>
+                    <p className="text-xs text-gray-400 mb-2">{displayLabel}</p>
                     <div className="space-y-1">
                         {payload.map((entry: any, index: number) => (
                             <div key={index} className="flex items-center justify-between gap-4">
                                 <div className="flex items-center gap-1">
-                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color || entry.fill }} />
-                                    <span className="text-sm text-gray-600 dark:text-gray-300 font-medium">{entry.name}</span>
+                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color || entry.fill || entry.stroke }} />
+                                    <span className="text-sm text-gray-600 dark:text-gray-300 font-medium capitalize">{entry.name}</span>
                                 </div>
-                                <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{formatCurrency(entry.value)}</span>
+                                <span className={`text-sm font-bold ${entry.value < 0 ? 'text-red-500' : 'text-green-500'}`}>
+                                    {formatCurrency(entry.value)}
+                                </span>
                             </div>
                         ))}
                     </div>
@@ -130,23 +179,15 @@ export function IncomeVsExpensesChart({ areaChartData, onFetchAllTransactions }:
         return null
     }
 
-    const GradientDefs = () => (
-        <defs>
-            <linearGradient id="gradientReceita" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
-                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-            </linearGradient>
-            <linearGradient id="gradientDespesa" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2} />
-                <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-            </linearGradient>
-        </defs>
-    )
-
     const renderChart = (height: number) => {
-        return (
-            <ResponsiveContainer width="100%" height={height}>
-                {selectedChartType === "anual" ? (
+        if (processedData.acumulado.length === 0 && processedData.mensal.length === 0 && processedData.anual.length === 0) {
+            return <div className="h-full flex items-center justify-center text-gray-400">Sem dados para este período</div>;
+        }
+
+        // 1. COMPARATIVO ANUAL -> LINE CHART
+        if (selectedChartType === "anual") {
+            return (
+                <ResponsiveContainer width="100%" height={height}>
                     <LineChart data={processedData.anual} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" className="dark:opacity-10" />
                         <XAxis dataKey="mes" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 11 }} dy={10} />
@@ -155,48 +196,75 @@ export function IncomeVsExpensesChart({ areaChartData, onFetchAllTransactions }:
                         <Legend wrapperStyle={{ paddingTop: '10px' }} />
                         <Line type="monotone" dataKey="receitaAtual" stroke="#10b981" strokeWidth={2} dot={false} name="Receita Atual" />
                         <Line type="monotone" dataKey="despesaAtual" stroke="#ef4444" strokeWidth={2} dot={false} name="Despesa Atual" />
-                        <Line type="monotone" dataKey="receitaAnterior" stroke="#86efac" strokeDasharray="5 5" dot={false} name="Receita Ant." />
-                        <Line type="monotone" dataKey="despesaAnterior" stroke="#fca5a5" strokeDasharray="5 5" dot={false} name="Despesa Ant." />
                     </LineChart>
-                ) : (
-                    <AreaChart data={selectedChartType === "acumulado" ? processedData.acumulado : processedData.mensal} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                        <GradientDefs />
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" className="dark:opacity-10" />
-                        <XAxis
-                            dataKey="data"
-                            tickFormatter={selectedChartType === "acumulado" ? formatShortDate : undefined}
-                            axisLine={false}
-                            tickLine={false}
-                            tick={{ fill: '#9CA3AF', fontSize: 11 }}
-                            dy={10}
-                        />
-                        <YAxis tickFormatter={(val) => `R$${val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val}`} axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 11 }} />
-                        <Tooltip content={<CustomTooltip />} />
-                        <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                </ResponsiveContainer>
+            )
+        }
 
-                        {selectedChartType === "acumulado" ? (
-                            <>
-                                <Area type="monotone" dataKey="receitaTotal" stroke="#10b981" strokeWidth={3} fill="url(#gradientReceita)" name="Receita Total" />
-                                <Area type="monotone" dataKey="despesaTotal" stroke="#ef4444" strokeWidth={3} fill="url(#gradientDespesa)" name="Despesa Total" />
-                            </>
-                        ) : (
-                            <>
-                                <Area type="monotone" dataKey="receita" stroke="#10b981" fill="url(#gradientReceita)" name="Receita" />
-                                <Area type="monotone" dataKey="despesa" stroke="#ef4444" fill="url(#gradientDespesa)" name="Despesa" />
-                            </>
-                        )}
-                    </AreaChart>
-                )}
+        // 2. MENSAL (RESULTADO LÍQUIDO) -> POSITIVE/NEGATIVE BAR CHART
+        // Distinct from "Side-by-See" bars. This is a single "Net" bar.
+        if (selectedChartType === "mensal") {
+            return (
+                <ResponsiveContainer width="100%" height={height}>
+                    <BarChart data={processedData.mensal} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" className="dark:opacity-10" />
+                        <XAxis dataKey="displayDate" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 11 }} dy={10} />
+                        <YAxis tickFormatter={(val) => `R$${val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val}`} axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 11 }} />
+                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
+                        <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                        <ReferenceLine y={0} stroke="#9ca3af" strokeDasharray="3 3" />
+
+                        <Bar dataKey="resultado" name="Resultado Líquido" radius={[4, 4, 0, 0]} maxBarSize={50}>
+                            {processedData.mensal.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.resultado >= 0 ? '#10b981' : '#ef4444'} />
+                            ))}
+                        </Bar>
+                    </BarChart>
+                </ResponsiveContainer>
+            )
+        }
+
+        // 3. EVOLUÇÃO (ACUMULADO) -> SMOOTH GRADIENT AREA CHART
+        return (
+            <ResponsiveContainer width="100%" height={height}>
+                <AreaChart data={processedData.acumulado} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                        <linearGradient id="splitColor" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset={off} stopColor="#10b981" stopOpacity={0.4} />
+                            <stop offset={off} stopColor="#ef4444" stopOpacity={0.4} />
+                        </linearGradient>
+                        <linearGradient id="splitColorStroke" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset={off} stopColor="#10b981" stopOpacity={1} />
+                            <stop offset={off} stopColor="#ef4444" stopOpacity={1} />
+                        </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" className="dark:opacity-10" />
+                    <XAxis dataKey="displayDate" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 11 }} dy={10} />
+                    <YAxis tickFormatter={(val) => `R$${val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val}`} axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 11 }} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                    <ReferenceLine y={0} stroke="#9ca3af" strokeDasharray="3 3" />
+
+                    <Area
+                        type="monotone"
+                        dataKey="saldo"
+                        stroke="url(#splitColorStroke)"
+                        fill="url(#splitColor)"
+                        strokeWidth={3}
+                        name="Saldo Acumulado"
+                        dot={{ r: 4, strokeWidth: 2, fill: "#fff", stroke: "#6b7280" }}
+                        activeDot={{ r: 6 }}
+                    />
+                </AreaChart>
             </ResponsiveContainer>
         )
     }
 
-    // Modern Pill Filter
     const renderFilters = () => (
         <div className="flex justify-center md:justify-end space-x-2 mt-4 md:mt-0 bg-gray-100 dark:bg-gray-900/50 p-1 rounded-lg w-fit mx-auto md:mx-0">
             {[
                 { id: "acumulado", label: "Evolução", icon: TrendingUp },
-                { id: "mensal", label: "Mensal", icon: BarChart2 },
+                { id: "mensal", label: "Resultado", icon: BarChart2 }, // Renamed Label to differentiate
                 { id: "anual", label: "Comparar", icon: Calendar }
             ].map((btn) => (
                 <button

@@ -5,18 +5,42 @@ import { useRouter } from 'next/navigation';
 export function useTransactions() {
   const [transactions, setTransactions] = useState<ITransaction[]>([]);
   const [allTransactions, setAllTransactions] = useState<ITransaction[]>([]);
-  // const [monthlyTransactions, setMonthlyTransactions] = useState<ITransaction[]>([]);
+  const [chartData, setChartData] = useState<ITransaction[]>([]); // Data specifically for charts (full month)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' | 'auth' } | null>(null)
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [isAllTransactions, setIsAllTransactions] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true); // Initial loading state
+  const [loading, setLoading] = useState<boolean>(true);
+  const [summaryData, setSummaryData] = useState<{ income: number, expense: number, balance: number }>({ income: 0, expense: 0, balance: 0 });
+
   const router = useRouter();
 
   const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'auth') => {
     setToast({ message, type })
   }
+
+  const getChartData = useCallback(async () => {
+    try {
+      let url = `/api/transactions?limit=1000`; // Fetch all for the month
+      if (selectedMonth) {
+        url += `&month=${selectedMonth}`;
+      } else {
+        const currentMonth = new Date().getMonth() + 1;
+        url += `&month=${currentMonth}`;
+      }
+
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data.transactions)) {
+          setChartData(data.transactions);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching chart data:', error);
+    }
+  }, [selectedMonth]);
 
   const getAllTransactions = useCallback(async () => {
     try {
@@ -44,7 +68,7 @@ export function useTransactions() {
   const getTransactions = useCallback(async (page = 1) => {
     try {
       setLoading(true);
-      showToast("Buscando transações paginadas.", "warning");
+      // showToast("Buscando transações paginadas.", "warning");
       const response = await fetch(`/api/transactions?page=${page}&limit=10&month=${selectedMonth}`);
       if (response.status === 401) {
         showToast("Sessão expirada. Redirecionando para login...", "warning");
@@ -56,7 +80,7 @@ export function useTransactions() {
         if (Array.isArray(data.transactions)) {
           setTransactions(data.transactions);
           setTotalPages(data.totalPages || 1);
-          showToast("Transações buscadas!", "success");
+          // showToast("Transações buscadas!", "success");
         } else {
           console.error("Erro: resposta inesperada", data);
           showToast("Erro ao carregar transações.", "error");
@@ -73,7 +97,7 @@ export function useTransactions() {
     } finally {
       setLoading(false);
     }
-  }, [selectedMonth]);
+  }, [selectedMonth, router]);
 
   const getAllTransactionsPage = useCallback(async (page = 1) => {
     try {
@@ -101,57 +125,46 @@ export function useTransactions() {
     }
   }, []);
 
-  // const getMonthlyTransactions = useCallback(async () => {
-  //   try {
-  //     const response = await fetch(`/api/transactions/month?month=${selectedMonth}`);
-  //     if (response.ok) {
-  //       const data = await response.json();
-  //       setMonthlyTransactions(data.transactions);
-  //     } else {
-  //       showToast('Erro ao carregar transações do mês.', 'error');
-  //     }
-  //   } catch (error) {
-  //     console.error('Erro ao buscar transações do mês:', error);
-  //     showToast('Ocorreu um erro ao carregar transações do mês.', 'error');
-  //   }
-  // }, [selectedMonth]);
+  const getSummary = useCallback(async () => {
+    try {
+      let url = '/api/transactions/summary';
+      if (selectedMonth) {
+        url += `?month=${selectedMonth}&year=${new Date().getFullYear()}`;
+      } else if (!isAllTransactions) {
+        const currentMonth = new Date().getMonth() + 1;
+        url += `?month=${currentMonth}&year=${new Date().getFullYear()}`;
+      }
+
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        setSummaryData(data);
+      }
+    } catch (error) {
+      console.error('Error fetching summary:', error);
+    }
+  }, [selectedMonth, isAllTransactions]);
+
+  // Update chart data when selectedMonth changes or a transaction is added/edited
+  useEffect(() => {
+    getChartData();
+  }, [getChartData, transactions]); // transactions dependency ensures chart updates on add/edit
+
+  useEffect(() => {
+    getSummary();
+  }, [getSummary, transactions]);
 
   useEffect(() => {
     if (!isAllTransactions) {
       getTransactions(currentPage);
     }
-  }, [currentPage, selectedMonth, isAllTransactions]);
+  }, [currentPage, selectedMonth, isAllTransactions, getTransactions]);
 
   useEffect(() => {
     if (isAllTransactions) {
       getAllTransactionsPage(currentPage);
     }
-  }, [isAllTransactions]);
-
-  // const fetchTransactions = useCallback(async () => {
-  //   try {
-  //     const response = await fetch('/api/admin/transactions');
-  //     if (response.ok) {
-  //       const data = await response.json();
-  //       if (Array.isArray(data.transactions)) {
-  //         setTransactions(data.transactions);
-  //       } else {
-  //         console.error('Data fetched is not an array:', data);
-  //         setTransactions([]);
-  //       }
-  //     } else if (response.status === 401) {
-  //       setToast({ message: 'Erro de autenticação', type: 'auth' });
-  //       showToast('Erro de autenticação', 'auth');
-  //     } else {
-  //       console.error('Failed to fetch transactions');
-  //       showToast('Falha ao carregar transações. Por favor, tente novamente.', 'error');
-  //     }
-  //   } catch (error) {
-  //     console.error('Error fetching transactions:', error);
-  //     setTransactions([]);
-  //     showToast('Ocorreu um erro ao carregar as transações. Por favor, tente novamente.', 'error');
-  //   }
-  // }, [AuthErrorModal]);
+  }, [isAllTransactions, currentPage, getAllTransactionsPage]);
 
   const addTransaction = async (transaction: Partial<ITransaction>) => {
     try {
@@ -164,7 +177,8 @@ export function useTransactions() {
         body: JSON.stringify(transaction)
       })
       if (response.ok) {
-        await getTransactions()
+        await getTransactions(currentPage) // Refresh current page
+        await getChartData(); // Refresh chart data explicitly
         showToast('Transação adicionada com sucesso!', 'success');
       } else if (response.status === 401) {
         showToast('Erro de autenticação', 'auth');
@@ -191,7 +205,8 @@ export function useTransactions() {
       })
 
       if (response.ok) {
-        await getTransactions()
+        await getTransactions(currentPage)
+        await getChartData();
         showToast('Transação atualizada com sucesso!', 'success');
       } else if (response.status === 401) {
         showToast('Erro de autenticação', 'auth');
@@ -213,7 +228,8 @@ export function useTransactions() {
         method: 'DELETE',
       })
       if (response.ok) {
-        await getTransactions()
+        await getTransactions(currentPage)
+        await getChartData();
         showToast('A transação foi excluída com sucesso.', 'success');
       } else if (response.status === 401) {
         showToast('Erro de autenticação', 'auth');
@@ -278,23 +294,20 @@ export function useTransactions() {
   const filterTransactionsByMonth = (month: number | null) => {
     setSelectedMonth(month);
     if (month === null) {
-      // Recarrega os dados da API para garantir que originalTransactions contenha todas as transações
-      // getTransactions();
       setCurrentPage(1);
     }
   };
 
-
   return {
     transactions,
     allTransactions,
+    chartData,
     setTransactions,
     getAllTransactions,
     getAllTransactionsPage,
     isAllTransactions,
     setIsAllTransactions,
     getTransactions,
-    //monthlyTransactions,
     addTransaction,
     editTransaction,
     deleteTransaction,
@@ -308,7 +321,7 @@ export function useTransactions() {
     handleNextPage,
     filterTransactionsByMonth,
     selectedMonth,
-    loading, // Expose loading state
+    loading,
+    summaryData,
   }
 }
-

@@ -8,6 +8,7 @@ interface SummaryCardProps {
     description?: string
     valueColor?: string
     variant?: "default" | "success" | "danger" | "info"
+    valueClassName?: string
 }
 
 export function SummaryCard({
@@ -15,7 +16,8 @@ export function SummaryCard({
     value,
     icon: Icon,
     description,
-    variant = "default"
+    variant = "default",
+    valueClassName
 }: SummaryCardProps) {
 
     // Define gradient and icon styles based on variant
@@ -59,7 +61,7 @@ export function SummaryCard({
                 </div>
             </CardHeader>
             <CardContent>
-                <div className={`text-2xl font-bold mt-1 ${activeStyle.textColor}`}>
+                <div className={`text-2xl font-bold mt-1 ${valueClassName || activeStyle.textColor}`}>
                     R$ {value.toFixed(2)}
                 </div>
                 {description && (
