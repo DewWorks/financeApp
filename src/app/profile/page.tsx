@@ -101,10 +101,27 @@ export default function ProfilePage() {
         }
 
         try {
+            // Normalizar telefone
+            let formattedPhone = editPhone.trim()
+            if (formattedPhone) {
+                const justNumbers = formattedPhone.replace(/\D/g, "")
+                if (justNumbers.length > 0) {
+                    // Se não começar com 55 (e tiver tamanho de número local), adiciona
+                    // Assumindo número local com 10 ou 11 dígitos (DDD + número)
+                    if (!justNumbers.startsWith("55") && justNumbers.length <= 11) {
+                        formattedPhone = `+55${justNumbers}`
+                    } else if (justNumbers.startsWith("55")) {
+                        formattedPhone = `+${justNumbers}`
+                    } else {
+                        formattedPhone = `+${justNumbers}`
+                    }
+                }
+            }
+
             const response = await axios.put(`/api/users`, {
                 name: editName.trim(),
                 email: editEmail.trim(),
-                cel: editPhone.trim() ? [editPhone.trim()] : [],
+                cel: formattedPhone ? [formattedPhone] : [],
             })
 
             if (response.status === 200) {
@@ -188,7 +205,16 @@ export default function ProfilePage() {
     }
 
     const formatPhoneNumber = (value: string) => {
+        // Permitir digitação livre, mas tentar manter formatação visual se possível
+        // Se começar com +, manter
+        const hasPlus = value.startsWith("+")
         const numbers = value.replace(/\D/g, "")
+
+        // Se o usuário estiver tentando digitar +55, deixa ele ir
+        if (hasPlus) {
+            return value
+        }
+
         if (numbers.length <= 11) {
             return numbers.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3")
         }
@@ -196,7 +222,17 @@ export default function ProfilePage() {
     }
 
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const formatted = formatPhoneNumber(e.target.value)
+        const input = e.target.value
+        // Se usuário apagar tudo, limpa
+        if (!input) {
+            setEditPhone("")
+            return
+        }
+
+        // Se o último caractere for não-numérico e não for '+', espaço, parêntese ou traço, ignora (opcional, mas bom pra UX)
+        // Aqui vamos ser permissivos como o usuário pediu "digitar livremente"
+        // Mas a função formatPhoneNumber tenta aplicar máscara se parecer local
+        const formatted = formatPhoneNumber(input)
         setEditPhone(formatted)
     }
 

@@ -104,8 +104,19 @@ export default function WhatsAppConnectPage() {
         setLoading(true)
 
         try {
-            const cleanPhone = cel.replace(/\D/g, "")
-            const response = await axios.patch("/api/users", { cel: [cleanPhone] })
+            // Normalizar telefone
+            let formattedPhone = cel.replace(/\D/g, "")
+            if (formattedPhone.length > 0) {
+                // Se não começar com 55 (e tiver tamanho de número local), adiciona
+                // Assumindo número local com 10 ou 11 dígitos (DDD + número)
+                if (!formattedPhone.startsWith("55") && formattedPhone.length <= 11) {
+                    formattedPhone = `+55${formattedPhone}`
+                } else {
+                    formattedPhone = `+${formattedPhone}`
+                }
+            }
+
+            const response = await axios.patch("/api/users", { cel: [formattedPhone] })
 
             if (response.status === 200) {
                 setIsConnected(true)
@@ -115,7 +126,7 @@ export default function WhatsAppConnectPage() {
                     html: `
                         <div style="text-align: center;">
                             <div style="font-size: 48px; margin: 20px 0;">📱</div>
-                            <p><strong>Número conectado:</strong> ${cel}</p>
+                            <p><strong>Número conectado:</strong> ${formattedPhone}</p>
                             <p style="color: #10B981; font-weight: 600;">✅ Pronto para usar!</p>
                             <hr style="margin: 20px 0;">
                             <p style="color: #666; font-size: 14px;">
@@ -184,7 +195,13 @@ export default function WhatsAppConnectPage() {
     }
 
     const formatPhoneNumber = (value: string) => {
+        const hasPlus = value.startsWith("+")
         const numbers = value.replace(/\D/g, "")
+
+        if (hasPlus) {
+            return value
+        }
+
         if (numbers.length <= 11) {
             return numbers.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3")
         }
@@ -408,8 +425,8 @@ export default function WhatsAppConnectPage() {
                                     >
                                         <div
                                             className={`max-w-xs lg:max-w-sm p-3 rounded-lg ${message.isUser
-                                                    ? "bg-green-500 text-white rounded-br-none"
-                                                    : "bg-white dark:bg-zinc-800 text-gray-800 dark:text-zinc-100 rounded-bl-none shadow-sm"
+                                                ? "bg-green-500 text-white rounded-br-none"
+                                                : "bg-white dark:bg-zinc-800 text-gray-800 dark:text-zinc-100 rounded-bl-none shadow-sm"
                                                 }`}
                                         >
                                             {!message.isUser && (

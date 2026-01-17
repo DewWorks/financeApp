@@ -59,11 +59,22 @@ export async function PATCH(request: Request) {
     const userId = await getUserIdFromToken();
     const { cel } = await request.json();
 
-    if (!cel || typeof cel !== 'string') {
+    let phoneToProcess = '';
+    if (Array.isArray(cel) && cel.length > 0) {
+        phoneToProcess = cel[0];
+    } else if (typeof cel === 'string') {
+        phoneToProcess = cel;
+    }
+
+    if (!phoneToProcess) {
         return NextResponse.json({ error: 'Número de celular inválido' }, { status: 400 });
     }
 
-    const normalizedPhone = cel.replace(/\D/g, ''); // remove não-números
+    // Normalização do telefone para formato +55
+    const cleanNum = phoneToProcess.replace(/\D/g, '');
+    const normalizedPhone = cleanNum.startsWith('55') && cleanNum.length > 11
+        ? `+${cleanNum}`
+        : `+55${cleanNum}`;
 
     const client = await getMongoClient();
     const db = client.db('financeApp');
@@ -84,7 +95,7 @@ export async function PATCH(request: Request) {
         // Adiciona número ao array
         const updatedUser = await db.collection('users').updateOne(
             { _id: userId },
-            {$push: {cel: {$each: [normalizedPhone]}}} as unknown as string[]
+            { $push: { cel: { $each: [normalizedPhone] } } } as unknown as string[]
         )
 
         // Envia e-mail de confirmação
@@ -110,7 +121,7 @@ export async function PATCH(request: Request) {
         return NextResponse.json({ message: 'Número de celular atualizado com sucesso', user: updatedUser }, { status: 200 });
     } catch (error) {
         console.error('Erro ao atualizar celular:', error);
-        if(user) {
+        if (user) {
             await sendEmail({
                 to: user.email,
                 subject: '📱 Número já está cadastrado no FinancePro',
@@ -195,7 +206,14 @@ export async function PUT(request: Request) {
         }
 
         if (cel && Array.isArray(cel)) {
-            updateData.cel = cel.filter((phone) => phone.trim())
+            updateData.cel = cel
+                .filter((phone) => phone.trim())
+                .map(phone => {
+                    const cleanNum = phone.replace(/\D/g, '');
+                    return cleanNum.startsWith('55') && cleanNum.length > 11
+                        ? `+${cleanNum}`
+                        : `+55${cleanNum}`;
+                });
         }
 
         const result = await db.collection("users").updateOne({ _id: userId }, { $set: updateData })
