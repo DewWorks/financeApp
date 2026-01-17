@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 export function useTransactions() {
   const [transactions, setTransactions] = useState<ITransaction[]>([]);
   const [allTransactions, setAllTransactions] = useState<ITransaction[]>([]);
+  const [chartData, setChartData] = useState<ITransaction[]>([]); // Data specifically for charts (full month)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' | 'auth' } | null>(null)
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -18,6 +19,28 @@ export function useTransactions() {
   const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'auth') => {
     setToast({ message, type })
   }
+
+  const getChartData = useCallback(async () => {
+    try {
+      let url = `/api/transactions?limit=1000`; // Fetch all for the month
+      if (selectedMonth) {
+        url += `&month=${selectedMonth}`;
+      } else {
+        const currentMonth = new Date().getMonth() + 1;
+        url += `&month=${currentMonth}`;
+      }
+
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data.transactions)) {
+          setChartData(data.transactions);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching chart data:', error);
+    }
+  }, [selectedMonth]);
 
   const getAllTransactions = useCallback(async () => {
     try {
@@ -45,7 +68,7 @@ export function useTransactions() {
   const getTransactions = useCallback(async (page = 1) => {
     try {
       setLoading(true);
-      showToast("Buscando transações paginadas.", "warning");
+      // showToast("Buscando transações paginadas.", "warning");
       const response = await fetch(`/api/transactions?page=${page}&limit=10&month=${selectedMonth}`);
       if (response.status === 401) {
         showToast("Sessão expirada. Redirecionando para login...", "warning");
@@ -57,7 +80,7 @@ export function useTransactions() {
         if (Array.isArray(data.transactions)) {
           setTransactions(data.transactions);
           setTotalPages(data.totalPages || 1);
-          showToast("Transações buscadas!", "success");
+          // showToast("Transações buscadas!", "success");
         } else {
           console.error("Erro: resposta inesperada", data);
           showToast("Erro ao carregar transações.", "error");
@@ -74,7 +97,7 @@ export function useTransactions() {
     } finally {
       setLoading(false);
     }
-  }, [selectedMonth]);
+  }, [selectedMonth, router]);
 
   const getAllTransactionsPage = useCallback(async (page = 1) => {
     try {
@@ -122,6 +145,11 @@ export function useTransactions() {
     }
   }, [selectedMonth, isAllTransactions]);
 
+  // Update chart data when selectedMonth changes or a transaction is added/edited
+  useEffect(() => {
+    getChartData();
+  }, [getChartData, transactions]); // transactions dependency ensures chart updates on add/edit
+
   useEffect(() => {
     getSummary();
   }, [getSummary, transactions]);
@@ -130,13 +158,13 @@ export function useTransactions() {
     if (!isAllTransactions) {
       getTransactions(currentPage);
     }
-  }, [currentPage, selectedMonth, isAllTransactions]);
+  }, [currentPage, selectedMonth, isAllTransactions, getTransactions]);
 
   useEffect(() => {
     if (isAllTransactions) {
       getAllTransactionsPage(currentPage);
     }
-  }, [isAllTransactions]);
+  }, [isAllTransactions, currentPage, getAllTransactionsPage]);
 
   const addTransaction = async (transaction: Partial<ITransaction>) => {
     try {
@@ -149,7 +177,8 @@ export function useTransactions() {
         body: JSON.stringify(transaction)
       })
       if (response.ok) {
-        await getTransactions()
+        await getTransactions(currentPage) // Refresh current page
+        await getChartData(); // Refresh chart data explicitly
         showToast('Transação adicionada com sucesso!', 'success');
       } else if (response.status === 401) {
         showToast('Erro de autenticação', 'auth');
@@ -176,7 +205,8 @@ export function useTransactions() {
       })
 
       if (response.ok) {
-        await getTransactions()
+        await getTransactions(currentPage)
+        await getChartData();
         showToast('Transação atualizada com sucesso!', 'success');
       } else if (response.status === 401) {
         showToast('Erro de autenticação', 'auth');
@@ -198,7 +228,8 @@ export function useTransactions() {
         method: 'DELETE',
       })
       if (response.ok) {
-        await getTransactions()
+        await getTransactions(currentPage)
+        await getChartData();
         showToast('A transação foi excluída com sucesso.', 'success');
       } else if (response.status === 401) {
         showToast('Erro de autenticação', 'auth');
@@ -270,6 +301,7 @@ export function useTransactions() {
   return {
     transactions,
     allTransactions,
+    chartData,
     setTransactions,
     getAllTransactions,
     getAllTransactionsPage,

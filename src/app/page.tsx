@@ -81,7 +81,8 @@ export default function DashboardFinanceiro() {
     filterTransactionsByMonth,
     selectedMonth,
     loading,
-    summaryData
+    summaryData,
+    chartData
   } = useTransactions()
 
   const [selectedChartType, setSelectedChartType] = useState("pie")
@@ -630,19 +631,26 @@ export default function DashboardFinanceiro() {
                 <ChartTypeSelector selectedType={selectedChartType} onSelectType={setSelectedChartType} />
               </CardHeader>
               <CardContent className="p-3 sm:p-6">
-                {selectedChartType === "pie" && <DistributionChart transactions={transactions} colors={COLORS} />}
-                {selectedChartType === "bar" && <RecentTransactionsChart transactions={transactions} colors={COLORS} />}
+                {selectedChartType === "pie" && <DistributionChart transactions={chartData.length > 0 ? chartData : transactions} colors={COLORS} />}
+                {selectedChartType === "bar" && <RecentTransactionsChart transactions={chartData.length > 0 ? chartData : transactions} colors={COLORS} />}
                 {selectedChartType === "line" && (
                   <CashFlowChart
                     onFetchAllTransactions={handleToggleTransactions}
-                    transactions={transactions}
+                    transactions={chartData.length > 0 ? chartData : transactions}
                     colors={["#8884d8", "#ff3366"]}
                   />
                 )}
                 {selectedChartType === "area" && (
                   <IncomeVsExpensesChart
                     onFetchAllTransactions={handleToggleTransactions}
-                    areaChartData={areaChartData}
+                    areaChartData={Array.isArray(chartData) && chartData.length > 0
+                      ? chartData.map((t) => ({
+                        data: t.date || "Sem data",
+                        receita: t.type === "income" ? t.amount || 0 : 0,
+                        despesa: t.type === "expense" ? t.amount || 0 : 0,
+                      }))
+                      : areaChartData
+                    }
                   />
                 )}
               </CardContent>
