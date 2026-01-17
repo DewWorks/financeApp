@@ -490,7 +490,7 @@ export default function DashboardFinanceiro() {
             </div>
 
             {/* Right Column: Actions */}
-            <div className="flex flex-row gap-3 w-full lg:w-auto" id="add-transactions">
+            <div className="hidden sm:flex flex-row gap-3 w-full lg:w-auto" id="add-transactions">
               <div className="flex-1 lg:flex-none">
                 <AddIncomeDialog onAddIncome={handleAddIncome} />
               </div>
