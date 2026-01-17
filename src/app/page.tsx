@@ -80,19 +80,18 @@ export default function DashboardFinanceiro() {
     handleNextPage,
     filterTransactionsByMonth,
     selectedMonth,
-    loading
+    loading,
+    summaryData
   } = useTransactions()
 
   const [selectedChartType, setSelectedChartType] = useState("pie")
 
   const dataToUse = isAllTransactions ? allTransactions : transactions;
-  const totalIncome = Array.isArray(dataToUse)
-    ? dataToUse.filter((t) => t.type === "income").reduce((sum, t) => sum + t.amount, 0)
-    : 0;
-  const totalExpense = Array.isArray(dataToUse)
-    ? dataToUse.filter((t) => t.type === "expense").reduce((sum, t) => sum + t.amount, 0)
-    : 0;
-  const balance = totalIncome - totalExpense
+
+  // Use backend data instead of frontend calculation
+  const totalIncome = summaryData.income;
+  const totalExpense = summaryData.expense;
+  const balance = summaryData.balance;
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -500,6 +499,7 @@ export default function DashboardFinanceiro() {
               icon={DollarSign}
               description="Atualizado agora"
               variant="info"
+              valueClassName={balance < 0 ? "text-red-500" : "text-green-500"}
             />
             <SummaryCard
               title="Receitas"

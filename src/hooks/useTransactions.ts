@@ -5,13 +5,14 @@ import { useRouter } from 'next/navigation';
 export function useTransactions() {
   const [transactions, setTransactions] = useState<ITransaction[]>([]);
   const [allTransactions, setAllTransactions] = useState<ITransaction[]>([]);
-  // const [monthlyTransactions, setMonthlyTransactions] = useState<ITransaction[]>([]);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' | 'auth' } | null>(null)
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [isAllTransactions, setIsAllTransactions] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true); // Initial loading state
+  const [loading, setLoading] = useState<boolean>(true);
+  const [summaryData, setSummaryData] = useState<{ income: number, expense: number, balance: number }>({ income: 0, expense: 0, balance: 0 });
+
   const router = useRouter();
 
   const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'auth') => {
@@ -101,20 +102,29 @@ export function useTransactions() {
     }
   }, []);
 
-  // const getMonthlyTransactions = useCallback(async () => {
-  //   try {
-  //     const response = await fetch(`/api/transactions/month?month=${selectedMonth}`);
-  //     if (response.ok) {
-  //       const data = await response.json();
-  //       setMonthlyTransactions(data.transactions);
-  //     } else {
-  //       showToast('Erro ao carregar transações do mês.', 'error');
-  //     }
-  //   } catch (error) {
-  //     console.error('Erro ao buscar transações do mês:', error);
-  //     showToast('Ocorreu um erro ao carregar transações do mês.', 'error');
-  //   }
-  // }, [selectedMonth]);
+  const getSummary = useCallback(async () => {
+    try {
+      let url = '/api/transactions/summary';
+      if (selectedMonth) {
+        url += `?month=${selectedMonth}&year=${new Date().getFullYear()}`;
+      } else if (!isAllTransactions) {
+        const currentMonth = new Date().getMonth() + 1;
+        url += `?month=${currentMonth}&year=${new Date().getFullYear()}`;
+      }
+
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        setSummaryData(data);
+      }
+    } catch (error) {
+      console.error('Error fetching summary:', error);
+    }
+  }, [selectedMonth, isAllTransactions]);
+
+  useEffect(() => {
+    getSummary();
+  }, [getSummary, transactions]);
 
   useEffect(() => {
     if (!isAllTransactions) {
@@ -127,31 +137,6 @@ export function useTransactions() {
       getAllTransactionsPage(currentPage);
     }
   }, [isAllTransactions]);
-
-  // const fetchTransactions = useCallback(async () => {
-  //   try {
-  //     const response = await fetch('/api/admin/transactions');
-  //     if (response.ok) {
-  //       const data = await response.json();
-  //       if (Array.isArray(data.transactions)) {
-  //         setTransactions(data.transactions);
-  //       } else {
-  //         console.error('Data fetched is not an array:', data);
-  //         setTransactions([]);
-  //       }
-  //     } else if (response.status === 401) {
-  //       setToast({ message: 'Erro de autenticação', type: 'auth' });
-  //       showToast('Erro de autenticação', 'auth');
-  //     } else {
-  //       console.error('Failed to fetch transactions');
-  //       showToast('Falha ao carregar transações. Por favor, tente novamente.', 'error');
-  //     }
-  //   } catch (error) {
-  //     console.error('Error fetching transactions:', error);
-  //     setTransactions([]);
-  //     showToast('Ocorreu um erro ao carregar as transações. Por favor, tente novamente.', 'error');
-  //   }
-  // }, [AuthErrorModal]);
 
   const addTransaction = async (transaction: Partial<ITransaction>) => {
     try {
@@ -278,12 +263,9 @@ export function useTransactions() {
   const filterTransactionsByMonth = (month: number | null) => {
     setSelectedMonth(month);
     if (month === null) {
-      // Recarrega os dados da API para garantir que originalTransactions contenha todas as transações
-      // getTransactions();
       setCurrentPage(1);
     }
   };
-
 
   return {
     transactions,
@@ -294,7 +276,6 @@ export function useTransactions() {
     isAllTransactions,
     setIsAllTransactions,
     getTransactions,
-    //monthlyTransactions,
     addTransaction,
     editTransaction,
     deleteTransaction,
@@ -308,7 +289,7 @@ export function useTransactions() {
     handleNextPage,
     filterTransactionsByMonth,
     selectedMonth,
-    loading, // Expose loading state
+    loading,
+    summaryData,
   }
 }
-
