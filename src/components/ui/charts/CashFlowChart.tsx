@@ -15,6 +15,8 @@ import {
     AreaChart,
     BarChart,
     Bar,
+    Line,
+    ComposedChart,
     ReferenceLine
 } from "recharts"
 import { formatDate, formatShortDate, formatCurrency } from "@/lib/utils"
@@ -35,7 +37,7 @@ const chartTitles: Record<ChartType, string> = {
 }
 
 export function CashFlowChart({ transactions, colors, onFetchAllTransactions }: CashFlowChartProps) {
-    const [selectedChartType, setSelectedChartType] = useState<ChartType>("saldoAcumulado")
+    const [selectedChartType, setSelectedChartType] = useState<ChartType>("fluxoDiario") // Start with Flow as it's most robust
 
     // Process Data
     const processedData = useMemo(() => {
@@ -45,24 +47,48 @@ export function CashFlowChart({ transactions, colors, onFetchAllTransactions }: 
 
         const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
-        // 1. Saldo Acumulado (Cumulative)
-        let cumulativeValue = 0
-        const saldoAcumuladoData = sortedTransactions.map(t => {
+        // 1. Saldo Acumulado (Daily Aggregation for Composed Chart)
+        // We need to aggregate by DAY first to ensure the Bar/Line matches X-Axis spots
+        const saldoMap: Record<string, { date: string, saldo: number, netChange: number, ord: number }> = {};
+
+        let cumulativeValue = 0;
+        // Group transactions by day to get Net Change per day
+        sortedTransactions.forEach(t => {
             cumulativeValue += t.type === "income" ? t.amount : -t.amount
-            return {
-                data: t.date,
-                saldo: cumulativeValue,
-                displayDate: formatShortDate(t.date)
+
+            // Key by day for plotting
+            const d = new Date(t.date);
+            const key = d.toLocaleDateString('en-CA');
+
+            if (!saldoMap[key]) {
+                saldoMap[key] = {
+                    date: t.date,
+                    saldo: 0,
+                    netChange: 0,
+                    ord: d.getTime()
+                }
             }
+            saldoMap[key].netChange += (t.type === "income" ? t.amount : -t.amount)
+        });
+
+        // Now assign the final cumulative saldo for that day (or running total)
+        // Actually, rendering cumulative line requires carrying over the previous day's total if days are missing? 
+        // For visual simplicity in "Month View", we plot the points we have.
+        const saldoValues = Object.values(saldoMap).sort((a, b) => a.ord - b.ord);
+
+        // Recalculate strict cumulative for the POINTS WE SHOW to ensure line continuity visual
+        let runningTotal = 0;
+        const saldoAcumuladoData = saldoValues.map(item => {
+            runningTotal += item.netChange;
+            return { ...item, saldo: runningTotal };
         })
 
-        // 2. Fluxo Diário (Daily Aggregation)
-        // Aggregates transactions by day to show bars.
+
+        // 2. Fluxo Diário (Daily Income vs Expense)
         const fluxoDiarioMap: Record<string, { date: string, receitas: number, despesas: number, ord: number }> = {}
         sortedTransactions.forEach(t => {
             const d = new Date(t.date);
-            // Use local date string to avoid timezone shifts
-            const key = d.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+            const key = d.toLocaleDateString('en-CA');
 
             if (!fluxoDiarioMap[key]) {
                 fluxoDiarioMap[key] = {
@@ -81,7 +107,6 @@ export function CashFlowChart({ transactions, colors, onFetchAllTransactions }: 
         const comparativoMap: Record<number, { mes: string, anoAtual: number, anoAnterior: number }> = {}
         const currentYear = new Date().getFullYear();
 
-        // Init 12 months
         for (let i = 0; i < 12; i++) {
             const date = new Date(currentYear, i, 1);
             comparativoMap[i] = {
@@ -110,22 +135,6 @@ export function CashFlowChart({ transactions, colors, onFetchAllTransactions }: 
     }, [transactions])
 
 
-    // Gradient Offset for Balance Area
-    const gradientOffset = () => {
-        const data = processedData.saldoAcumulado;
-        if (!data || data.length === 0) return 0;
-
-        const dataMax = Math.max(...data.map((i) => i.saldo));
-        const dataMin = Math.min(...data.map((i) => i.saldo));
-
-        if (dataMax <= 0) return 0;
-        if (dataMin >= 0) return 1;
-        if (dataMax === dataMin) return 0;
-
-        return dataMax / (dataMax - dataMin);
-    }
-    const off = gradientOffset();
-
     const handleChartTypeChange = async (type: ChartType) => {
         if (type === "comparativoAnual" && onFetchAllTransactions) {
             const confirmed = await onFetchAllTransactions();
@@ -140,13 +149,8 @@ export function CashFlowChart({ transactions, colors, onFetchAllTransactions }: 
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
             let displayLabel = label;
-            // Attempt to format if it looks like a date string
             if (typeof label === 'string' && (label.includes('T') || label.includes('-'))) {
-                try {
-                    displayLabel = formatDate(label);
-                } catch (e) {
-                    // keep original if fail
-                }
+                try { displayLabel = formatDate(label); } catch (e) { }
             }
 
             return (
@@ -170,7 +174,7 @@ export function CashFlowChart({ transactions, colors, onFetchAllTransactions }: 
     }
 
     const renderChart = (height: number) => {
-        // FLUXO DIÁRIO -> BAR CHART
+        // 1. FLUXO DIÁRIO -> BAR CHART (Working!)
         if (selectedChartType === "fluxoDiario") {
             const data = processedData.fluxoDiario;
             if (data.length === 0) return <div className="h-full flex items-center justify-center text-gray-400">Sem dados para este período</div>;
@@ -203,74 +207,65 @@ export function CashFlowChart({ transactions, colors, onFetchAllTransactions }: 
             );
         }
 
-        // EVOLUÇÃO & COMPARATIVO -> AREA CHART
-        let activeData: any[] = [];
-        let xKey = "data";
-
+        // 2. SALDO ACUMULADO (EVOLUÇÃO) -> COMPOSED (Bar + Line)
+        // This handles "Single Point" data gracefully because the BAR will render even if the LINE is a single dot.
         if (selectedChartType === "saldoAcumulado") {
-            activeData = processedData.saldoAcumulado;
-            xKey = "data";
-        } else {
-            activeData = processedData.comparativoAnual;
-            xKey = "mes";
-        }
+            const data = processedData.saldoAcumulado;
+            if (data.length === 0) return <div className="h-full flex items-center justify-center text-gray-400">Sem dados para este período</div>;
 
-        if (activeData.length === 0) return <div className="h-full flex items-center justify-center text-gray-400">Sem dados para este período</div>;
+            return (
+                <ResponsiveContainer width="100%" height={height}>
+                    <ComposedChart margin={{ top: 10, right: 10, left: -20, bottom: 0 }} data={data}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" className="dark:opacity-10" />
+                        <XAxis
+                            dataKey="date"
+                            tickFormatter={formatShortDate}
+                            tick={{ fill: '#6B7280', fontSize: 11 }}
+                            axisLine={false}
+                            tickLine={false}
+                            dy={10}
+                        />
+                        <YAxis
+                            tickFormatter={(val) => `R$${val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val}`}
+                            tick={{ fill: '#6B7280', fontSize: 11 }}
+                            axisLine={false}
+                            tickLine={false}
+                        />
+                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
+                        <Legend iconType="circle" wrapperStyle={{ paddingTop: '10px' }} />
+                        <ReferenceLine y={0} stroke="#9ca3af" strokeDasharray="3 3" />
 
-        return (
-            <ResponsiveContainer width="100%" height={height}>
-                <AreaChart margin={{ top: 10, right: 10, left: -20, bottom: 0 }} data={activeData}>
-                    <defs>
-                        <linearGradient id="splitColor" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset={off} stopColor="#10b981" stopOpacity={0.3} />
-                            <stop offset={off} stopColor="#ef4444" stopOpacity={0.3} />
-                        </linearGradient>
-                        <linearGradient id="splitColorStroke" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset={off} stopColor="#10b981" stopOpacity={1} />
-                            <stop offset={off} stopColor="#ef4444" stopOpacity={1} />
-                        </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" className="dark:opacity-10" />
+                        {/* Net Change Bar - Shows daily profit/loss clearly */}
+                        <Bar dataKey="netChange" name="Variação Diária" fill="#3b82f6" fillOpacity={0.4} radius={[2, 2, 0, 0]} barSize={20} />
 
-                    <XAxis
-                        dataKey={xKey}
-                        tick={{ fill: '#6B7280', fontSize: 11 }}
-                        axisLine={false}
-                        tickLine={false}
-                        dy={10}
-                        tickFormatter={(val) => selectedChartType === "saldoAcumulado" ? formatShortDate(val) : val}
-                    />
-
-                    <YAxis
-                        tickFormatter={(val) => `R$${val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val}`}
-                        tick={{ fill: '#6B7280', fontSize: 11 }}
-                        axisLine={false}
-                        tickLine={false}
-                    />
-
-                    <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#9ca3af', strokeWidth: 1, strokeDasharray: '4 4' }} />
-                    <ReferenceLine y={0} stroke="#9ca3af" strokeDasharray="3 3" strokeOpacity={0.5} />
-                    <Legend iconType="circle" wrapperStyle={{ paddingTop: '10px' }} />
-
-                    {selectedChartType === "saldoAcumulado" && (
-                        <Area
+                        {/* Cumulative Line - Shows trend */}
+                        <Line
                             type="monotone"
                             dataKey="saldo"
-                            stroke="url(#splitColorStroke)"
-                            strokeWidth={3}
-                            fill="url(#splitColor)"
                             name="Saldo Acumulado"
-                            animationDuration={1500}
+                            stroke="#2563eb"
+                            strokeWidth={3}
+                            dot={{ r: 4, fill: "#2563eb", strokeWidth: 2, stroke: "#fff" }} // DOT IS CRITICAL FOR SINGLE POINTS
+                            activeDot={{ r: 6 }}
                         />
-                    )}
+                    </ComposedChart>
+                </ResponsiveContainer>
+            )
+        }
 
-                    {selectedChartType === "comparativoAnual" && (
-                        <>
-                            <Area type="monotone" dataKey="anoAtual" stroke="#3b82f6" fillOpacity={0.1} fill="#3b82f6" name="Ano Atual" />
-                            <Area type="monotone" dataKey="anoAnterior" stroke="#9ca3af" strokeDasharray="5 5" fill="transparent" name="Ano Anterior" />
-                        </>
-                    )}
+        // 3. COMPARATIVO -> AREA CHART (Standard)
+        const data = processedData.comparativoAnual;
+        return (
+            <ResponsiveContainer width="100%" height={height}>
+                <AreaChart margin={{ top: 10, right: 10, left: -20, bottom: 0 }} data={data}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" className="dark:opacity-10" />
+                    <XAxis dataKey="mes" tick={{ fill: '#6B7280', fontSize: 11 }} axisLine={false} tickLine={false} dy={10} />
+                    <YAxis tickFormatter={(val) => `R$${val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val}`} tick={{ fill: '#6B7280', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend iconType="circle" wrapperStyle={{ paddingTop: '10px' }} />
 
+                    <Area type="monotone" dataKey="anoAtual" stroke="#3b82f6" fillOpacity={0.1} fill="#3b82f6" name="Ano Atual" />
+                    <Area type="monotone" dataKey="anoAnterior" stroke="#9ca3af" strokeDasharray="5 5" fill="transparent" name="Ano Anterior" />
                 </AreaChart>
             </ResponsiveContainer>
         )
