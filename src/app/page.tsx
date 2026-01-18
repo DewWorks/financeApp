@@ -4,7 +4,7 @@ import { useTransactions } from "@/hooks/useTransactions"
 import { driver } from "driver.js"
 import "driver.js/dist/driver.css"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/card"
-import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, User, ChevronLeft, ChevronRight, Search, RefreshCw, TrendingUp, TrendingDown } from 'lucide-react'
+import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, User, ChevronLeft, ChevronRight, Search, RefreshCw, TrendingUp, TrendingDown, Landmark, Wallet } from 'lucide-react'
 import { AddIncomeDialog } from "@/components/ui/organisms/AddIncomeDialog"
 import { AddExpenseDialog } from "@/components/ui/organisms/AddExpenseDialog"
 import type { ITransaction } from "@/interfaces/ITransaction"
@@ -94,6 +94,32 @@ export default function DashboardFinanceiro() {
   const totalIncome = summaryData.income;
   const totalExpense = summaryData.expense;
   const balance = summaryData.balance;
+
+  // --- OPEN FINANCE LOGIC ---
+  const [bankConnections, setBankConnections] = useState<any[]>([])
+  const [loadingConnections, setLoadingConnections] = useState(true)
+
+  useEffect(() => {
+    const fetchBankConnections = async () => {
+      try {
+        const response = await fetch('/api/bank-connections')
+        if (response.ok) {
+          const data = await response.json()
+          setBankConnections(data)
+        }
+      } catch (error) {
+        console.error("Erro ao buscar conexões bancárias:", error)
+      } finally {
+        setLoadingConnections(false)
+      }
+    }
+    fetchBankConnections()
+  }, [])
+
+  const totalBankBalance = bankConnections.reduce((total, conn) => {
+    return total + conn.accounts.reduce((accTotal: number, acc: any) => accTotal + acc.balance, 0)
+  }, 0)
+  // --------------------------
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -504,6 +530,103 @@ export default function DashboardFinanceiro() {
           <div className="fixed bottom-4 left-4 z-40 sm:bottom-8 sm:right-8 sm:left-auto">
             <WhatsAppButton />
           </div>
+
+
+          {/* Conditional Open Finance Section */}
+          <motion.div variants={itemVariants} className="mb-6">
+            {loadingConnections ? (
+              <Card className="bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 border-none shadow-md animate-pulse h-32">
+                <CardContent className="flex items-center justify-center h-full">
+                  <RefreshCw className="animate-spin h-6 w-6 text-gray-400" />
+                </CardContent>
+              </Card>
+            ) : bankConnections.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Summary Card for Bank Connections */}
+                <Card className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white border-none shadow-lg overflow-hidden relative">
+                  <div className="absolute top-0 right-0 p-4 opacity-10">
+                    <Landmark className="w-24 h-24" />
+                  </div>
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-lg font-bold flex items-center gap-2">
+                          <Wallet className="h-5 w-5 text-blue-300" /> Minhas Contas
+                        </h3>
+                        <p className="text-blue-200 text-sm">Saldo integrado via Open Finance</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="bg-white/10 hover:bg-white/20 text-white border-none h-8 text-xs"
+                        onClick={() => router.push('/bank')}
+                      >
+                        Gerenciar
+                      </Button>
+                    </div>
+
+                    <div className="mt-4">
+                      <span className="text-blue-300 text-sm">Saldo Total Conectado</span>
+                      <h2 className="text-3xl font-bold mt-1">
+                        R$ {totalBankBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </h2>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Quick List of Accounts (Scrollable if many) */}
+                <Card className="bg-white dark:bg-gray-800 shadow-md border-none flex flex-col justify-center">
+                  <CardContent className="p-4 space-y-3 max-h-48 overflow-y-auto custom-scrollbar">
+                    {bankConnections.flatMap(conn => conn.accounts).slice(0, 3).map((acc: any, idx: number) => (
+                      <div key={`${acc.accountId}-${idx}`} className="flex justify-between items-center p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full">
+                            <Landmark className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">{acc.name}</p>
+                            <p className="text-xs text-muted-foreground">{acc.number}</p>
+                          </div>
+                        </div>
+                        <span className={`text-sm font-bold ${acc.balance >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                          {acc.currency} {acc.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    ))}
+                    {bankConnections.flatMap(conn => conn.accounts).length > 3 && (
+                      <div className="text-center pt-1">
+                        <Button variant="link" size="sm" className="text-xs h-auto p-0 text-muted-foreground" onClick={() => router.push('/bank')}>
+                          Ver mais contas...
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              <Card className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-none shadow-lg">
+                <CardContent className="flex flex-col sm:flex-row items-center justify-between p-6 gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-white/20 p-3 rounded-full">
+                      <Landmark className="w-8 h-8 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold">Open Finance</h3>
+                      <p className="text-blue-100">Conecte seu banco e sincronize extratos automaticamente.</p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="secondary"
+                    size="lg"
+                    className="w-full sm:w-auto font-semibold shadow-md whitespace-nowrap"
+                    onClick={() => router.push('/bank')}
+                  >
+                    Conectar Agora
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </motion.div>
 
           {/* Summary Cards - responsivo */}
           <motion.div
