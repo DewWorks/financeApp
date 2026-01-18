@@ -26,9 +26,10 @@ export async function GET(request: Request) {
         // Pegar profileId da query param se existir (para contas compartilhadas)
         const { searchParams } = new URL(request.url);
         const profileId = searchParams.get("profileId") || undefined;
+        const scope = (searchParams.get("scope") as 'recent' | 'all') || 'recent';
 
         const service = new InsightService();
-        const insight = await service.generateDailyInsight(userId, profileId);
+        const insight = await service.generateDailyInsight(userId, profileId, scope);
 
         return NextResponse.json(insight);
     } catch (error) {

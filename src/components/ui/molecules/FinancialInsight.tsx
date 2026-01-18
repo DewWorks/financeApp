@@ -30,9 +30,10 @@ interface FinancialInsightProps {
     loading?: boolean
     compact?: boolean
     refreshTrigger?: unknown
+    scope?: 'recent' | 'all'
 }
 
-export function FinancialInsight({ userRequestName, profileId, loading = false, compact = false, refreshTrigger }: FinancialInsightProps) {
+export function FinancialInsight({ userRequestName, profileId, loading = false, compact = false, refreshTrigger, scope = 'recent' }: FinancialInsightProps) {
     const [data, setData] = useState<InsightData | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [currentIndex, setCurrentIndex] = useState(0)
@@ -43,8 +44,11 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
     useEffect(() => {
         const fetchInsights = async () => {
             try {
-                const query = profileId ? `?profileId=${profileId}` : "";
-                const res = await fetch(`/api/insights${query}`);
+                const query = new URLSearchParams()
+                if (profileId) query.append("profileId", profileId)
+                if (scope) query.append("scope", scope)
+
+                const res = await fetch(`/api/insights?${query.toString()}`);
                 if (res.ok) {
                     const json = await res.json();
                     setData(json);
@@ -59,7 +63,7 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
         if (!loading) {
             fetchInsights()
         }
-    }, [profileId, loading, refreshTrigger])
+    }, [profileId, loading, refreshTrigger, scope])
 
     // Carousel Logic
     useEffect(() => {
