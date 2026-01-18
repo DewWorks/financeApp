@@ -122,7 +122,8 @@ export default function DashboardFinanceiro() {
     // Default Fallback
     const defaultDetails = { color: '#1e293b', logo: 'https://logo.clearbit.com/bank.com' };
 
-    if (name.includes('nubank') || name.includes('nu pagamentos')) return { color: '#820ad1', logo: 'https://logo.clearbit.com/nubank.com.br' }; // Roxo Nubank
+    // Logos atualizados e confiáveis (GitHub Logos/Wikimedia)
+    if (name.includes('nubank') || name.includes('nu pagamentos')) return { color: '#820ad1', logo: 'https://cdn.worldvectorlogo.com/logos/nubank-3.svg' }; // Roxo Nubank
     if (name.includes('itaú') || name.includes('itau')) return { color: '#ec7000', logo: 'https://logo.clearbit.com/itau.com.br' };
     if (name.includes('bradesco')) return { color: '#cc092f', logo: 'https://logo.clearbit.com/bradesco.com.br' };
     if (name.includes('santander')) return { color: '#ec2028', logo: 'https://logo.clearbit.com/santander.com.br' };
@@ -136,6 +137,11 @@ export default function DashboardFinanceiro() {
 
     return defaultDetails;
   }
+
+  // ... (existing code)
+
+  // ... (later in the file)
+
 
   // Separar contas com Filtro Estrito para não misturar Crédito no Saldo
   // E aplicar identidade visual da Conexão (Branding)
@@ -687,7 +693,7 @@ export default function DashboardFinanceiro() {
                       <div className="flex overflow-x-auto pb-4 gap-4 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide snap-x">
                         {creditAccounts.map((acc: any, idx: number) => (
                           <div key={`${acc.accountId}-${idx}`}
-                            className="min-w-[300px] w-full h-52 rounded-2xl p-6 flex flex-col justify-between text-white shadow-xl snap-center relative overflow-hidden transition-all hover:scale-[1.02] hover:shadow-2xl"
+                            className="min-w-[300px] w-full h-48 rounded-2xl p-6 flex flex-col justify-between text-white shadow-xl snap-center relative overflow-hidden transition-all hover:scale-[1.02] hover:shadow-2xl"
                             style={{ background: acc.brand.color }}
                           >
                             {/* Texture/Pattern */}
@@ -720,7 +726,7 @@ export default function DashboardFinanceiro() {
                             {/* Footer: Balance & Label */}
                             <div className="z-10 relative flex justify-between items-end mt-2">
                               <div>
-                                <p className="text-[10px] text-white/70 uppercase tracking-widest font-semibold mb-0.5">Fatura Atual</p>
+                                <p className="text-[10px] text-white/70 uppercase tracking-widest font-semibold mb-0.5">Limite Atual</p>
                                 <h3 className="text-2xl font-bold tracking-tight text-white drop-shadow-md">
                                   {acc.currency} {acc.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                 </h3>
