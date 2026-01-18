@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/atoms/card"
 import { Button } from "@/components/ui/atoms/button"
 import { Title } from "@/components/ui/molecules/Title"
-import { Loader2, ShieldCheck, Landmark, Plus, RefreshCw, Wallet } from "lucide-react"
+import { Loader2, ShieldCheck, Landmark, Plus, RefreshCw, Wallet, ChevronLeft } from "lucide-react"
 import Swal from "sweetalert2"
 import dynamic from 'next/dynamic';
 
@@ -108,6 +108,18 @@ export default function BankConnectPage() {
         <div className="min-h-screen bg-gray-50 dark:bg-background p-4 sm:p-8">
             <div className="max-w-4xl mx-auto space-y-6">
 
+                {/* Back Button */}
+                <div className="mb-4">
+                    <Button
+                        variant="ghost"
+                        className="gap-2 pl-0 hover:bg-transparent hover:text-blue-600 dark:hover:text-blue-400"
+                        onClick={() => router.push('/')}
+                    >
+                        <ChevronLeft className="h-5 w-5" />
+                        Voltar para o Dashboard
+                    </Button>
+                </div>
+
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                     <div>
@@ -117,7 +129,7 @@ export default function BankConnectPage() {
                         <p className="text-gray-500 dark:text-gray-400 mt-1">Gerencie suas conexões bancárias via Open Finance</p>
                     </div>
                     {!showWidget && (
-                        <Button onClick={handleStartConnection} size="lg" className="shadow-lg">
+                        <Button onClick={handleStartConnection} size="lg" className="shadow-lg text-white">
                             <Plus className="mr-2 h-5 w-5" /> Nova Conexão
                         </Button>
                     )}

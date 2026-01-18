@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/atoms/input"
 import { Label } from "@/components/ui/atoms/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/card"
 import { Title } from "@/components/ui/molecules/Title"
-import { MessageCircle, Bot, CheckCircle, Phone, Wifi } from "lucide-react"
+import { MessageCircle, Bot, CheckCircle, Phone, Wifi, ChevronLeft } from "lucide-react"
 import Swal from "sweetalert2"
 import { ThemeToggle } from "@/components/ui/atoms/ThemeToggle"
 
@@ -232,6 +232,17 @@ export default function WhatsAppConnectPage() {
         <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-background p-4 relative">
             <div className="absolute top-4 right-4">
                 <ThemeToggle />
+            </div>
+            <div className="absolute top-4 left-4">
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                    onClick={() => router.push('/')}
+                >
+                    <ChevronLeft className="h-5 w-5" />
+                    <span className="hidden sm:inline">Voltar</span>
+                </Button>
             </div>
             <Card className="w-full max-w-2xl bg-card">
                 <CardHeader className="text-center">
