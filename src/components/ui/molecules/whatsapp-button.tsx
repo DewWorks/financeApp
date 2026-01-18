@@ -1,180 +1,214 @@
 "use client"
 
-import { MessageCircle } from "lucide-react"
-import { Button } from "@/components/ui/atoms/button"
+import { MessageCircle, Send, CheckCheck, Bell } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { useState } from "react"
-import { Title } from "@/components/ui/molecules/Title"
+import { useState, useEffect } from "react"
 
 interface WhatsAppButtonProps {
     className?: string
 }
 
+const NOTIFICATIONS = [
+    { text: "FinancePro", icon: MessageCircle, color: "text-white" },
+    { text: "WhatsApp Conectado", icon: CheckCheck, color: "text-green-200" },
+    { text: "Relatório Disponível", icon: Bell, color: "text-yellow-200" },
+    { text: "1 Nova Mensagem", icon: MessageCircle, color: "text-white" }
+]
+
 export function WhatsAppButton({ className = "" }: WhatsAppButtonProps) {
     const router = useRouter()
     const [isTransitioning, setIsTransitioning] = useState(false)
+    const [isExpanded, setIsExpanded] = useState(false)
+    const [currentNotif, setCurrentNotif] = useState(0)
+
+    // Auto-expand/collapse logic
+    useEffect(() => {
+        // Initial delay before first expansion
+        const initialTimeout = setTimeout(() => {
+            triggerNotification()
+        }, 2000)
+
+        // Loop for notifications every 15 seconds
+        const interval = setInterval(() => {
+            triggerNotification()
+        }, 15000)
+
+        return () => {
+            clearTimeout(initialTimeout)
+            clearInterval(interval)
+        }
+    }, [])
+
+    const triggerNotification = () => {
+        setCurrentNotif((prev) => (prev + 1) % NOTIFICATIONS.length)
+        setIsExpanded(true)
+
+        // Collapse after 5 seconds
+        setTimeout(() => {
+            setIsExpanded(false)
+        }, 5000)
+    }
 
     const handleClick = async () => {
         setIsTransitioning(true)
-
         setTimeout(() => {
             router.push("/whatsapp-connect")
-        }, 5000)
+        }, 4000)
     }
+
+    const toggleExpand = (e: React.MouseEvent) => {
+        e.stopPropagation()
+        setIsExpanded(!isExpanded)
+    }
+
+    const activeNotif = NOTIFICATIONS[currentNotif]
 
     return (
         <>
             <motion.div
-                className={`${className}`}
-                animate={{
-                    y: [0, -4, 0],
-                }}
-                transition={{
-                    duration: 1.5,
-                    repeat: isTransitioning ? 0 : Number.POSITIVE_INFINITY,
-                    ease: "easeInOut",
-                }}
+                className={`${className} relative z-50`}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
             >
-                <Button
-                    onClick={handleClick}
-                    disabled={isTransitioning}
-                    className="bg-green-600 hover:bg-green-500 border border-gray-200 font-medium px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50"
+                {/* Radar Waves Effect (Only when collapsed to draw attention) */}
+                <AnimatePresence>
+                    {!isExpanded && !isTransitioning && (
+                        <>
+                            <motion.div
+                                className="absolute inset-0 bg-green-500 rounded-full opacity-0"
+                                animate={{ scale: [1, 2], opacity: [0.5, 0] }}
+                                transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}
+                            />
+                            <motion.div
+                                className="absolute inset-0 bg-green-500 rounded-full opacity-0"
+                                animate={{ scale: [1, 1.5], opacity: [0.6, 0] }}
+                                transition={{ duration: 2, repeat: Infinity, ease: "easeOut", delay: 0.5 }}
+                            />
+                        </>
+                    )}
+                </AnimatePresence>
+
+                {/* Notification Badge (Always visible if not transitioning) */}
+                {!isTransitioning && (
+                    <motion.div
+                        className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full z-20 shadow-sm border-2 border-white dark:border-gray-900"
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ repeat: Infinity, duration: 1.5 }}
+                    >
+                        1
+                    </motion.div>
+                )}
+
+                <motion.button
+                    onClick={isExpanded ? handleClick : toggleExpand}
+                    layout
+                    className={`
+                        relative overflow-hidden shadow-2xl transition-all duration-300 flex items-center
+                        bg-gradient-to-r from-[#25D366] to-[#128C7E]
+                        ${isExpanded ? "pr-6 pl-2 py-3 rounded-full" : "w-14 h-14 rounded-full justify-center"}
+                    `}
+                    whileTap={{ scale: 0.95 }}
                 >
-                    <div className="flex items-center gap-3">
-                        <MessageCircle className="w-6 h-6 text-green-300" />
-                        <div className="scale-5">
-                            <Title textColor={"#fff"} />
-                        </div>
+                    {/* Icon Container */}
+                    <motion.div layout className={`relative z-10 p-2 ${isExpanded ? "bg-white/20 rounded-full mr-3" : ""}`}>
+                        <activeNotif.icon className={`w-6 h-6 text-white drop-shadow-md`} />
+                    </motion.div>
+
+                    {/* Text Container */}
+                    <AnimatePresence mode="wait">
+                        {isExpanded && (
+                            <motion.div
+                                initial={{ opacity: 0, width: 0 }}
+                                animate={{ opacity: 1, width: "auto" }}
+                                exit={{ opacity: 0, width: 0 }}
+                                className="flex flex-col items-start overflow-hidden whitespace-nowrap"
+                            >
+                                <span className="text-[10px] font-bold text-green-100 uppercase tracking-wider">
+                                    Nova Notificação
+                                </span>
+                                <span className="text-sm font-bold text-white leading-tight">
+                                    {activeNotif.text}
+                                </span>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Shimmer Effect */}
+                    <div className="absolute inset-0 overflow-hidden rounded-full pointer-events-none">
+                        <motion.div
+                            className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12"
+                            animate={{ translateX: ["-100%", "200%"] }}
+                            transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                        />
                     </div>
-                </Button>
+                </motion.button>
             </motion.div>
 
-            {/* Transição Simplificada */}
+            {/* Premium Full Screen Transition */}
             <AnimatePresence>
                 {isTransitioning && (
                     <motion.div
-                        className="fixed inset-0 z-50 pointer-events-none"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
+                        className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-950"
+                        initial={{ opacity: 0, clipPath: "circle(0% at bottom right)" }}
+                        animate={{ opacity: 1, clipPath: "circle(150% at bottom right)" }}
                         exit={{ opacity: 0 }}
+                        transition={{ duration: 0.8, ease: "circIn" }}
                     >
-                        {/* Fundo gradiente */}
-                        <motion.div
-                            className="absolute inset-0 bg-gradient-to-br from-green-500 to-blue-600"
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 2 }}
-                            transition={{ duration: 5, ease: "easeInOut" }}
-                        />
+                        {/* Background Animated Gradient */}
+                        <div className="absolute inset-0 overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-br from-green-900 via-gray-900 to-black opacity-90" />
+                            <motion.div
+                                className="absolute -inset-[50%] opacity-30 blur-3xl bg-gradient-to-r from-green-600 to-emerald-600"
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                            />
+                        </div>
 
-                        {/* Ícones Centrais Grandes */}
-                        <motion.div
-                            className="absolute inset-0 flex items-center justify-center"
-                            initial={{ scale: 0 }}
-                            animate={{ scale: [0, 1.2, 1] }}
-                            transition={{ duration: 2, ease: "easeInOut" }}
-                        >
-                            <div className="flex items-center gap-8">
-                                {/* WhatsApp Icon */}
-                                <motion.div
-                                    initial={{ x: -100, rotate: -180 }}
-                                    animate={{ x: 0, rotate: 0 }}
-                                    transition={{ delay: 0.5, duration: 1.5, ease: "easeOut" }}
-                                >
-                                    <MessageCircle className="w-20 h-20 text-white drop-shadow-2xl" />
-                                </motion.div>
-
-                                {/* Símbolo de conexão */}
-                                <motion.div
-                                    className="text-white text-6xl font-bold"
-                                    initial={{ opacity: 0, scale: 0 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ delay: 1.5, duration: 0.8 }}
-                                >
-                                    +
-                                </motion.div>
-
-                                {/* FinancePro Icon */}
-                                <motion.div
-                                    initial={{ x: 100, rotate: 180 }}
-                                    animate={{ x: 0, rotate: 0 }}
-                                    transition={{ delay: 0.5, duration: 1.5, ease: "easeOut" }}
-                                    className="scale-[3]"
-                                >
-                                    <Title textColor={"#fff"} size={'lg'}/>
-                                </motion.div>
-                            </div>
-                        </motion.div>
-
-                        {/* Texto Simples */}
-                        <motion.div
-                            className="absolute inset-0 flex flex-col items-center justify-center text-white text-center"
-                            style={{ marginTop: "300px" }}
-                        >
-                            <motion.h2
-                                className="text-3xl font-bold mb-6"
-                                initial={{ opacity: 0, y: 30 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 2, duration: 0.8 }}
+                        <div className="relative z-10 flex flex-col items-center p-8 text-center">
+                            <motion.div
+                                initial={{ scale: 0.5, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                transition={{ type: "spring", stiffness: 200, damping: 20 }}
+                                className="mb-8 relative"
                             >
-                                Se prepare! Conectando...
+                                <div className="absolute inset-0 bg-green-500 blur-2xl opacity-40 animate-pulse" />
+                                <MessageCircle className="w-24 h-24 text-[#25D366] drop-shadow-[0_0_15px_rgba(37,211,102,0.5)]" />
+                            </motion.div>
+
+                            <motion.h2
+                                initial={{ y: 20, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                transition={{ delay: 0.2 }}
+                                className="text-4xl font-bold text-white mb-2"
+                            >
+                                FinancePro
                             </motion.h2>
 
+                            <motion.p
+                                initial={{ y: 20, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                transition={{ delay: 0.4 }}
+                                className="text-gray-400 mb-8 text-lg"
+                            >
+                                Conectando ao WhatsApp Seguro...
+                            </motion.p>
+
+                            {/* Loading Bar */}
                             <motion.div
-                                className="space-y-2 text-lg"
+                                className="w-64 h-2 bg-gray-800 rounded-full overflow-hidden shadow-inner"
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
-                                transition={{ delay: 2.5, duration: 0.8 }}
+                                transition={{ delay: 0.6 }}
                             >
-                                <div>💬 Controle por mensagem</div>
-                                <div>🤖 IA automática</div>
-                                <div>📊 Relatórios instantâneos</div>
+                                <motion.div
+                                    className="h-full bg-gradient-to-r from-green-400 to-[#25D366]"
+                                    initial={{ width: "0%" }}
+                                    animate={{ width: "100%" }}
+                                    transition={{ duration: 3.5, ease: "easeInOut" }}
+                                />
                             </motion.div>
-                        </motion.div>
-
-                        {/* Loading */}
-                        <motion.div
-                            className="absolute bottom-20 left-1/2 transform -translate-x-1/2 text-white text-center"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 3.5, duration: 0.8 }}
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className="flex gap-1">
-                                    {[...Array(3)].map((_, i) => (
-                                        <motion.div
-                                            key={i}
-                                            className="w-2 h-2 bg-white rounded-full"
-                                            animate={{
-                                                scale: [1, 1.5, 1],
-                                                opacity: [0.5, 1, 0.5],
-                                            }}
-                                            transition={{
-                                                duration: 1,
-                                                delay: i * 0.2,
-                                                repeat: Number.POSITIVE_INFINITY,
-                                            }}
-                                        />
-                                    ))}
-                                </div>
-                                <span className="text-sm">Conectando...</span>
-                            </div>
-                        </motion.div>
-
-                        {/* Zoom Final */}
-                        <motion.div
-                            className="absolute inset-0 bg-white"
-                            initial={{ scale: 0, borderRadius: "50%" }}
-                            animate={{
-                                scale: [0, 0, 3],
-                                borderRadius: ["50%", "50%", "0%"],
-                            }}
-                            transition={{
-                                duration: 5,
-                                times: [0, 0.8, 1],
-                                ease: "easeInOut",
-                            }}
-                        />
+                        </div>
                     </motion.div>
                 )}
             </AnimatePresence>

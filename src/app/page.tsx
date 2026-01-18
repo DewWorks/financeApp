@@ -500,7 +500,7 @@ export default function DashboardFinanceiro() {
             </div>
           </motion.div>
 
-          <div className="block sm:hidden mb-6">
+          <div className="fixed bottom-4 left-4 z-40 sm:bottom-8 sm:right-8 sm:left-auto">
             <WhatsAppButton />
           </div>
 
