@@ -116,10 +116,76 @@ export default function DashboardFinanceiro() {
     fetchBankConnections()
   }, [])
 
-  const totalBankBalance = bankConnections.reduce((total, conn) => {
-    return total + conn.accounts.reduce((accTotal: number, acc: any) => accTotal + acc.balance, 0)
-  }, 0)
-  // --------------------------
+  const getBankDetails = (bankName: string) => {
+    const name = bankName.toLowerCase();
+
+    // Default Fallback
+    const defaultDetails = { color: '#1e293b', logo: 'https://logo.clearbit.com/bank.com' };
+
+    if (name.includes('nubank') || name.includes('nu pagamentos')) return { color: '#820ad1', logo: 'https://logo.clearbit.com/nubank.com.br' }; // Roxo Nubank
+    if (name.includes('itaú') || name.includes('itau')) return { color: '#ec7000', logo: 'https://logo.clearbit.com/itau.com.br' };
+    if (name.includes('bradesco')) return { color: '#cc092f', logo: 'https://logo.clearbit.com/bradesco.com.br' };
+    if (name.includes('santander')) return { color: '#ec2028', logo: 'https://logo.clearbit.com/santander.com.br' };
+    if (name.includes('inter')) return { color: '#ff7a00', logo: 'https://logo.clearbit.com/bancointer.com.br' };
+    if (name.includes('brasil')) return { color: '#0038a8', logo: 'https://logo.clearbit.com/bb.com.br' }; // Azul BB
+    if (name.includes('bb')) return { color: '#0038a8', logo: 'https://logo.clearbit.com/bb.com.br' }; // Azul BB
+    if (name.includes('caixa')) return { color: '#0066b3', logo: 'https://logo.clearbit.com/caixa.gov.br' };
+    if (name.includes('btg')) return { color: '#000000', logo: 'https://logo.clearbit.com/btgpactual.com' };
+    if (name.includes('xp')) return { color: '#000000', logo: 'https://logo.clearbit.com/xpi.com.br' };
+    if (name.includes('c6')) return { color: '#000000', logo: 'https://logo.clearbit.com/c6bank.com.br' };
+
+    return defaultDetails;
+  }
+
+  // Separar contas com Filtro Estrito para não misturar Crédito no Saldo
+  // E aplicar identidade visual da Conexão (Branding)
+  const allAccounts = bankConnections.flatMap(conn => {
+    const accounts = conn.accounts || [];
+    if (accounts.length === 0) return [];
+
+    // Tenta achar a identidade da conexão baseada em qualquer uma das contas
+    const representativeAccount = accounts.find((acc: any) => {
+      const name = (acc.name || '').toLowerCase();
+      return name.includes('nubank') || name.includes('nu pagamentos') ||
+        name.includes('itaú') || name.includes('itau') ||
+        name.includes('bradesco') ||
+        name.includes('santander') ||
+        name.includes('inter') ||
+        name.includes('brasil') ||
+        name.includes('caixa') ||
+        name.includes('btg') ||
+        name.includes('xp') ||
+        name.includes('c6');
+    }) || accounts[0];
+
+    const connectionBrand = representativeAccount ? getBankDetails(representativeAccount.name || '') : getBankDetails('');
+
+    return accounts.map((acc: any) => ({
+      ...acc,
+      brand: connectionBrand
+    }));
+  });
+
+  // Normalizar tipos para evitar problemas de case (Maiúsculo) e incluir BANK
+  const checkingTypes = ['CHECKING_ACCOUNT', 'SAVINGS_ACCOUNT', 'PAYMENT_ACCOUNT', 'BANK'];
+
+  // Saldo Disponível (Conta Corrente, Poupança, Pagamento, BANK)
+  const checkingAccounts = allAccounts.filter((acc: any) =>
+    acc.type && checkingTypes.includes(acc.type.toUpperCase())
+  );
+
+  // Cartões de Crédito (Explicitamente CREDIT_CARD ou CREDIT)
+  const creditAccounts = allAccounts.filter((acc: any) =>
+    acc.type && (acc.type.toUpperCase() === 'CREDIT_CARD' || acc.type.toUpperCase() === 'CREDIT')
+  );
+
+  // Outras contas (Investimentos, ou tipos desconhecidos)
+  const otherAccounts = allAccounts.filter((acc: any) => {
+    const type = acc.type ? acc.type.toUpperCase() : '';
+    return !checkingTypes.includes(type) && type !== 'CREDIT_CARD' && type !== 'CREDIT';
+  });
+
+  const totalCheckingBalance = checkingAccounts.reduce((sum: number, acc: any) => sum + acc.balance, 0);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -533,75 +599,183 @@ export default function DashboardFinanceiro() {
 
 
           {/* Conditional Open Finance Section */}
-          <motion.div variants={itemVariants} className="mb-6">
+          <motion.div variants={itemVariants} className="mb-8">
+            <div className="flex justify-between items-end mb-4 px-1">
+              <div>
+                <h2 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                  <Wallet className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  Minhas Contas & Cartões
+                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Visão geral integrada</p>
+              </div>
+              {bankConnections.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => router.push('/bank')}
+                  className="text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-gray-800"
+                >
+                  Gerenciar
+                </Button>
+              )}
+            </div>
+
             {loadingConnections ? (
-              <Card className="bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 border-none shadow-md animate-pulse h-32">
-                <CardContent className="flex items-center justify-center h-full">
-                  <RefreshCw className="animate-spin h-6 w-6 text-gray-400" />
-                </CardContent>
-              </Card>
-            ) : bankConnections.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Summary Card for Bank Connections */}
-                <Card className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white border-none shadow-lg overflow-hidden relative">
-                  <div className="absolute top-0 right-0 p-4 opacity-10">
-                    <Landmark className="w-24 h-24" />
-                  </div>
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h3 className="text-lg font-bold flex items-center gap-2">
-                          <Wallet className="h-5 w-5 text-blue-300" /> Minhas Contas
-                        </h3>
-                        <p className="text-blue-200 text-sm">Saldo integrado via Open Finance</p>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="bg-white/10 hover:bg-white/20 text-white border-none h-8 text-xs"
-                        onClick={() => router.push('/bank')}
-                      >
-                        Gerenciar
-                      </Button>
-                    </div>
+                <div className="h-32 rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse" />
+                <div className="h-32 rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse" />
+              </div>
+            ) : bankConnections.length > 0 ? (
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
 
-                    <div className="mt-4">
-                      <span className="text-blue-300 text-sm">Saldo Total Conectado</span>
-                      <h2 className="text-3xl font-bold mt-1">
-                        R$ {totalBankBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </h2>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Quick List of Accounts (Scrollable if many) */}
-                <Card className="bg-white dark:bg-gray-800 shadow-md border-none flex flex-col justify-center">
-                  <CardContent className="p-4 space-y-3 max-h-48 overflow-y-auto custom-scrollbar">
-                    {bankConnections.flatMap(conn => conn.accounts).slice(0, 3).map((acc: any, idx: number) => (
-                      <div key={`${acc.accountId}-${idx}`} className="flex justify-between items-center p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                        <div className="flex items-center gap-3">
-                          <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full">
-                            <Landmark className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                {/* Left Column: Checking Accounts & Balance */}
+                <div className="flex flex-col gap-6">
+                  {checkingAccounts.length > 0 && (
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">
+                        Saldo Disponível
+                      </h3>
+                      <div className="flex flex-col gap-4">
+                        {/* Card Único de Saldo Consolidado com Detalhes */}
+                        <div className="rounded-2xl p-6 bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-between min-h-[160px]">
+                          <div className="flex justify-between items-start mb-4">
+                            <div className="flex items-center gap-3">
+                              <div className="bg-green-100 dark:bg-green-900/30 p-2.5 rounded-xl">
+                                <DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Saldo Consolidado</p>
+                                <h3 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
+                                  R$ {totalCheckingBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </h3>
+                              </div>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm font-medium">{acc.name}</p>
-                            <p className="text-xs text-muted-foreground">{acc.number}</p>
+
+                          {/* Lista das contas dentro do card */}
+                          <div className="border-t border-gray-100 dark:border-gray-700 pt-3 mt-1">
+                            <div className="flex flex-col gap-2">
+                              {checkingAccounts.map((acc: any, idx: number) => (
+                                <div key={idx} className="flex justify-between items-center text-sm group">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: acc.brand.color }}></div>
+                                    <span className="text-gray-600 dark:text-gray-300 font-medium group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                                      {acc.name}
+                                    </span>
+                                  </div>
+                                  <span className="text-gray-900 dark:text-gray-100 font-semibold opacity-90">
+                                    {acc.currency} {acc.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                  </span>
+                                </div>
+                              )
+                              )}
+                            </div>
                           </div>
                         </div>
-                        <span className={`text-sm font-bold ${acc.balance >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                          {acc.currency} {acc.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </span>
                       </div>
-                    ))}
-                    {bankConnections.flatMap(conn => conn.accounts).length > 3 && (
-                      <div className="text-center pt-1">
-                        <Button variant="link" size="sm" className="text-xs h-auto p-0 text-muted-foreground" onClick={() => router.push('/bank')}>
-                          Ver mais contas...
-                        </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Right Column: Credit Cards */}
+                <div className="flex flex-col gap-6">
+                  {creditAccounts.length > 0 && (
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">
+                        Cartões de Crédito
+                      </h3>
+                      <div className="flex overflow-x-auto pb-4 gap-4 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide snap-x">
+                        {creditAccounts.map((acc: any, idx: number) => (
+                          <div key={`${acc.accountId}-${idx}`}
+                            className="min-w-[300px] w-full h-52 rounded-2xl p-6 flex flex-col justify-between text-white shadow-xl snap-center relative overflow-hidden transition-all hover:scale-[1.02] hover:shadow-2xl"
+                            style={{ background: acc.brand.color }}
+                          >
+                            {/* Texture/Pattern */}
+                            <div className="absolute right-0 top-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                            <div className="absolute left-0 bottom-0 w-32 h-32 bg-black/10 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
+
+                            {/* Header: Logo & Chip */}
+                            <div className="flex justify-between items-start z-10 relative">
+                              <div className="flex items-center gap-3">
+                                <div className="bg-white p-1.5 rounded-lg shadow-sm">
+                                  <img
+                                    src={acc.brand.logo}
+                                    alt={acc.name}
+                                    className="h-6 w-6 object-contain"
+                                    onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.innerHTML = '<svg class="w-6 h-6 text-gray-800" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l18 0" /><path d="M3 10l18 0" /><path d="M5 6l7 -3l7 3" /><path d="M4 10l0 11" /><path d="M20 10l0 11" /><path d="M8 14l0 3" /><path d="M12 14l0 3" /><path d="M16 14l0 3" /></svg>' }}
+                                  />
+                                </div>
+                                <span className="font-bold text-lg tracking-wide text-white/90 drop-shadow-md whitespace-nowrap overflow-hidden text-ellipsis max-w-[140px]">{acc.name}</span>
+                              </div>
+                              <div className="w-10 h-8 bg-gradient-to-br from-yellow-200 to-yellow-500 rounded-md opacity-80 border border-yellow-300/50" />
+                            </div>
+
+                            {/* Middle: Number Mask */}
+                            <div className="z-10 mt-4 relative">
+                              <p className="font-mono text-lg tracking-[0.2em] text-white/80 drop-shadow-sm">
+                                •••• •••• •••• {acc.number ? acc.number.slice(-4) : '0000'}
+                              </p>
+                            </div>
+
+                            {/* Footer: Balance & Label */}
+                            <div className="z-10 relative flex justify-between items-end mt-2">
+                              <div>
+                                <p className="text-[10px] text-white/70 uppercase tracking-widest font-semibold mb-0.5">Fatura Atual</p>
+                                <h3 className="text-2xl font-bold tracking-tight text-white drop-shadow-md">
+                                  {acc.currency} {acc.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </h3>
+                              </div>
+                              <div className="flex flex-col items-end">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-white/60">Limit</span>
+                                <span className="text-xs font-mono text-white/90">------</span>
+                              </div>
+                            </div>
+                          </div>
+
+                        ))}
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
+                    </div>
+                  )}
+                </div>
+
+                {/* Section: Outras Contas (Fallback) */}
+                {otherAccounts.length > 0 && (
+                  <div className="col-span-1 xl:col-span-2 space-y-3">
+                    <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">
+                      Outras Contas ({otherAccounts.length})
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {otherAccounts.map((acc: any, idx: number) => (
+                        <div key={idx} className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col justify-between">
+                          <div className="flex justify-between items-start">
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{acc.name}</span>
+                            <span className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-300">{acc.type}</span>
+                          </div>
+                          <div className="mt-2">
+                            <h4 className="text-lg font-bold text-gray-900 dark:text-white">
+                              {acc.currency} {acc.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </h4>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Fallback Total */}
+                {checkingAccounts.length === 0 && creditAccounts.length === 0 && otherAccounts.length === 0 && (
+                  <div className="col-span-1 xl:col-span-2 p-6 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-700 rounded-xl">
+                    <h3 className="text-yellow-800 dark:text-yellow-200 font-bold flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5" />
+                      Conexão Ativa, mas nenhuma conta identificada.
+                    </h3>
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                      Recebemos {allAccounts.length} contas do banco, mas não conseguimos categorizá-las.
+                      <br />Tipos encontrados: {allAccounts.map(a => a.type).join(', ') || 'Nenhum tipo definido'}
+                    </p>
+                  </div>
+                )}
+
               </div>
             ) : (
               <Card className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-none shadow-lg">
@@ -794,7 +968,7 @@ export default function DashboardFinanceiro() {
           onAddIncome={handleAddIncome}
           onAddExpense={handleAddExpense}
         />
-      </motion.div >
+      </motion.div>
     </>
   )
 }
