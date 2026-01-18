@@ -485,6 +485,7 @@ export default function DashboardFinanceiro() {
                   loading={loading}
                   compact={false}
                   refreshTrigger={dataToUse.length}
+                  scope={isAllTransactions ? 'all' : 'recent'}
                 />
               </div>
             </div>

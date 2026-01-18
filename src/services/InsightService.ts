@@ -3,7 +3,7 @@ import { ObjectId } from "mongodb";
 
 export interface InsightItem {
     id: string;
-    type: "weekly" | "monthly" | "category" | "zero_spend" | "tip" | "general";
+    type: "weekly" | "monthly" | "category" | "zero_spend" | "tip" | "general" | "deep_metric" | "savings" | "trend";
     text: string;
     value: string;
     trend: "positive" | "negative" | "neutral";
@@ -20,12 +20,12 @@ export interface InsightResult {
 }
 
 export class InsightService {
-    async generateDailyInsight(userId: string, profileId?: string): Promise<InsightResult> {
+    async generateDailyInsight(userId: string, profileId?: string, scope: 'recent' | 'all' = 'recent'): Promise<InsightResult> {
         const client = await getMongoClient();
         const db = client.db("financeApp");
         const collection = db.collection("transactions");
 
-        // 1. Saudação baseada no horário
+        // 1. Saudação
         const hour = new Date().getUTCHours() - 3;
         let greeting = "Olá";
         if (hour >= 5 && hour < 12) greeting = "Bom dia";
@@ -34,7 +34,7 @@ export class InsightService {
 
         // 2. Query Base
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const query: any = { type: "expense" };
+        const query: any = {}; // Buscamos tudo, filtraremos depois por tipo se precisar
         if (profileId) {
             query.profileId = new ObjectId(profileId);
         } else {
@@ -46,20 +46,20 @@ export class InsightService {
         now.setHours(now.getHours() - 3); // Ajuste GMT-3
         const todayStr = now.toISOString().split('T')[0];
 
-        // 3. Buscar transações
-        // Sem filtro estrito de data na query para garantir que pegamos tudo, inclusive datas "mal formatadas"
+        // 3. Determinar limite
+        const daysToFetch = scope === 'all' ? 365 : 60;
+        const limit = scope === 'all' ? 2000 : 300; // Aumentar limite para pegar income também
+
         const transactions = await collection.find({
             ...query,
-        }).sort({ _id: -1 }).limit(200).toArray();
+        }).sort({ date: -1 }).limit(limit).toArray();
 
-        // Helpers de data (ParseDate Robust)
+        // Helpers
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const parseDate = (dateInput: any): Date | null => {
             if (!dateInput) return null;
             if (dateInput instanceof Date) return isNaN(dateInput.getTime()) ? null : dateInput;
-
             const dateStr = String(dateInput);
-
             if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
                 const [y, m, d] = dateStr.split('-').map(Number);
                 return new Date(y, m - 1, d);
@@ -87,7 +87,7 @@ export class InsightService {
         const currentMonth = todayDate.getMonth();
         const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
 
-        // Agregadores
+        // Agregadores Standard
         let todayTotal = 0;
         let weekTotal = 0;
         let lastWeekTotal = 0;
@@ -95,51 +95,205 @@ export class InsightService {
         let lastMonthTotal = 0;
         const categoryMap: { [key: string]: number } = {};
 
+        // Agregadores Deep Analysis
+        let totalIncome12M = 0;
+        let totalExpense12M = 0;
+        const monthlyExpenses: { [key: string]: number } = {};
+        const monthlyIncomes: { [key: string]: number } = {};
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let biggestExpense: any = null;
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         transactions.forEach((t: any) => {
             const amount = Number(t.amount) || 0;
             const tDate = parseDate(t.date);
             if (!tDate) return;
 
-            // Hoje - Check robusto de "Mesmo Dia"
-            if (tDate.getDate() === todayDate.getDate() &&
-                tDate.getMonth() === todayDate.getMonth() &&
-                tDate.getFullYear() === todayDate.getFullYear()) {
-                todayTotal += amount;
+            const diffTime = Math.abs(todayDate.getTime() - tDate.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            if (diffDays > daysToFetch) return;
+
+            const isExpense = t.type === 'expense';
+            const isIncome = t.type === 'income';
+
+            // --- Cálculos Padrão (Recente - apenas Despesas) ---
+            if (isExpense) {
+                if (tDate.getDate() === todayDate.getDate() &&
+                    tDate.getMonth() === todayDate.getMonth() &&
+                    tDate.getFullYear() === todayDate.getFullYear()) {
+                    todayTotal += amount;
+                }
+
+                const tWeek = getWeekNumber(tDate);
+                if (tWeek === currentWeekNum && tDate.getFullYear() === todayDate.getFullYear()) weekTotal += amount;
+                if (tWeek === lastWeekNum && tDate.getFullYear() === todayDate.getFullYear()) lastWeekTotal += amount;
+
+                if (tDate.getMonth() === currentMonth && tDate.getFullYear() === todayDate.getFullYear()) {
+                    monthTotal += amount;
+                    const cat = t.tag || t.category || "Outros";
+                    categoryMap[cat] = (categoryMap[cat] || 0) + amount;
+                }
+                if (tDate.getMonth() === lastMonth && (tDate.getFullYear() === todayDate.getFullYear() || (currentMonth === 0 && tDate.getFullYear() === todayDate.getFullYear() - 1))) {
+                    lastMonthTotal += amount;
+                }
             }
 
-            // Semanal
-            const tWeek = getWeekNumber(tDate);
-            if (tWeek === currentWeekNum && tDate.getFullYear() === todayDate.getFullYear()) weekTotal += amount;
-            if (tWeek === lastWeekNum && tDate.getFullYear() === todayDate.getFullYear()) lastWeekTotal += amount;
+            // --- Cálculos Deep (Scope = All) ---
+            if (scope === 'all') {
+                const monthKey = `${tDate.getMonth()}/${tDate.getFullYear()}`; // 0/2024
 
-            // Mensal
-            if (tDate.getMonth() === currentMonth && tDate.getFullYear() === todayDate.getFullYear()) {
-                monthTotal += amount;
-                const cat = t.tag || t.category || "Outros";
-                categoryMap[cat] = (categoryMap[cat] || 0) + amount;
-            }
-            if (tDate.getMonth() === lastMonth && (tDate.getFullYear() === todayDate.getFullYear() || (currentMonth === 0 && tDate.getFullYear() === todayDate.getFullYear() - 1))) {
-                lastMonthTotal += amount;
+                if (isExpense) {
+                    totalExpense12M += amount;
+                    monthlyExpenses[monthKey] = (monthlyExpenses[monthKey] || 0) + amount;
+
+                    if (!biggestExpense || amount > biggestExpense.amount) {
+                        biggestExpense = { ...t, dateObj: tDate };
+                    }
+                } else if (isIncome) {
+                    totalIncome12M += amount;
+                    monthlyIncomes[monthKey] = (monthlyIncomes[monthKey] || 0) + amount;
+                }
             }
         });
 
-        // 4. Coleta de múltiplos insights
         const insights: InsightItem[] = [];
 
-        // Insight 1: Variação Semanal
+        // =========================================================
+        // DEEP ANALYSIS STRATEGIES (Scope === 'all')
+        // =========================================================
+        if (scope === 'all') {
+            const monthsAnalyzed = Object.keys(monthlyExpenses).length || 1;
+
+            // 1. Savings Rate (Taxa de Poupança) GLOBAL
+            if (totalIncome12M > 0) {
+                const savings = totalIncome12M - totalExpense12M;
+                const savingsRate = (savings / totalIncome12M) * 100;
+
+                if (savingsRate > 20) {
+                    insights.push({
+                        id: "deep-savings-high",
+                        type: "savings",
+                        text: "Alta Taxa de Poupança",
+                        value: `${savingsRate.toFixed(0)}%`,
+                        trend: "positive",
+                        details: `No acumulado do período, você poupou ${savingsRate.toFixed(1)}% de toda sua renda.`,
+                        recommendation: "Excelente! Considere investir esse excedente para render juros."
+                    });
+                } else if (savingsRate < 0) {
+                    insights.push({
+                        id: "deep-savings-neg",
+                        type: "savings",
+                        text: "Alerta de Déficit",
+                        value: `${savingsRate.toFixed(0)}%`,
+                        trend: "negative",
+                        details: `Você gastou R$ ${Math.abs(savings).toFixed(0)} a mais do que ganhou no período analisado.`,
+                        recommendation: "Priorize pagar dívidas e reduzir custos fixos imediatamente."
+                    });
+                } else {
+                    insights.push({
+                        id: "deep-savings-neutral",
+                        type: "savings",
+                        text: "Equilíbrio Financeiro",
+                        value: `${savingsRate.toFixed(0)}%`,
+                        trend: "neutral",
+                        details: `Sua taxa de poupança está em ${savingsRate.toFixed(1)}%. O ideal é tentar chegar a 20%.`,
+                        recommendation: "Tente guardar um pouco mais a cada mês para criar sua reserva."
+                    });
+                }
+            }
+
+            // 2. Tendência Semestral (Últimos 3 vs Anteriores 3)
+            // Precisamos ordenar as chaves mensais para dividir
+            const sortedMonths = Object.keys(monthlyExpenses).sort((a, b) => {
+                const [ma, ya] = a.split('/').map(Number);
+                const [mb, yb] = b.split('/').map(Number);
+                return new Date(ya, ma).getTime() - new Date(yb, mb).getTime();
+            });
+
+            if (sortedMonths.length >= 2) {
+                // Pega os ultimos 3
+                const last3 = sortedMonths.slice(-3);
+                const prev3 = sortedMonths.slice(-6, -3); // Se tiver menos de 6, pega o que der
+
+                const avgLast3 = last3.reduce((acc, k) => acc + monthlyExpenses[k], 0) / last3.length;
+                const avgPrev3 = prev3.length > 0 ? prev3.reduce((acc, k) => acc + monthlyExpenses[k], 0) / prev3.length : 0;
+
+                if (avgPrev3 > 0) {
+                    const trendDiff = avgLast3 - avgPrev3;
+                    const trendPct = (trendDiff / avgPrev3) * 100;
+
+                    if (trendPct > 15) {
+                        insights.push({
+                            id: "deep-trend-rising",
+                            type: "trend",
+                            text: "Tendência de Alta",
+                            value: `+${trendPct.toFixed(0)}%`,
+                            trend: "negative",
+                            details: `Seus gastos médios recentes (R$ ${avgLast3.toFixed(0)}) estão ${trendPct.toFixed(0)}% maiores que a média anterior.`,
+                            recommendation: "Identifique se assumiu novos custos fixos recentemente."
+                        });
+                    } else if (trendPct < -10) {
+                        insights.push({
+                            id: "deep-trend-falling",
+                            type: "trend",
+                            text: "Tendência de Baixa",
+                            value: `${trendPct.toFixed(0)}%`,
+                            trend: "positive",
+                            details: `Seus gastos estão caindo! Média recente: R$ ${avgLast3.toFixed(0)} vs Anterior: R$ ${avgPrev3.toFixed(0)}.`,
+                            recommendation: "Sua gestão está funcionando. Continue assim!"
+                        });
+                    }
+                }
+            }
+
+            // 3. Média Simples (se não caiu no trend)
+            if (monthsAnalyzed > 0 && totalExpense12M > 0) {
+                const avg = totalExpense12M / monthsAnalyzed;
+                // Só adiciona se não tiver trend forte, pra não ficar redundante? Ou adiciona como dado extra.
+                // Vamos adicionar com ID único, o frontend roda no carrossel.
+                insights.push({
+                    id: "deep-avg",
+                    type: "deep_metric",
+                    text: "Média Mensal",
+                    value: `R$ ${avg.toFixed(0)}`,
+                    trend: "neutral",
+                    details: `Média de R$ ${avg.toFixed(2)} gastos por mês (base: ${monthsAnalyzed} meses).`,
+                    recommendation: "Use este valor como base para montar seu orçamento mensal."
+                });
+            }
+
+            // 4. Biggest Expense (Mantido)
+            if (biggestExpense) {
+                insights.push({
+                    id: "deep-biggest",
+                    type: "deep_metric",
+                    text: "Maior Gasto",
+                    value: `R$ ${biggestExpense.amount}`,
+                    trend: "negative",
+                    details: `Gasto único mais alto: '${biggestExpense.description}' em ${biggestExpense.dateObj.toLocaleDateString()}.`,
+                    recommendation: "Mapeie grandes despesas anuais para não ser pego de surpresa."
+                });
+            }
+        }
+
+        // =========================================================
+        // STANDARD STRATEGIES (Standard)
+        // =========================================================
+
         if (lastWeekTotal > 50) {
             const diff = weekTotal - lastWeekTotal;
             const percentage = (diff / lastWeekTotal) * 100;
-            if (percentage > 20) {
+            const threshold = scope === 'all' ? 30 : 20;
+
+            if (percentage > threshold) {
                 insights.push({
                     id: "weekly-rise",
                     type: "weekly",
                     text: "Gastos da semana subiram",
                     value: `+${percentage.toFixed(0)}%`,
                     trend: "negative",
-                    details: `Seus gastos nesta semana (${weekTotal.toFixed(0)}) estão bem maiores que na anterior (${lastWeekTotal.toFixed(0)}).`,
-                    recommendation: "Revise suas compras recentes e veja se houve algum imprevisto ou gasto supérfluo."
+                    details: `Esta semana: R$ ${weekTotal.toFixed(0)} vs Semana passada: R$ ${lastWeekTotal.toFixed(0)}.`,
+                    recommendation: "Atenção com gastos impulsivos no fim de semana."
                 });
             } else if (percentage < -15) {
                 insights.push({
@@ -149,73 +303,69 @@ export class InsightService {
                     value: `${percentage.toFixed(0)}%`,
                     trend: "positive",
                     details: "Você gastou menos esta semana comparado à anterior.",
-                    recommendation: "Ótimo trabalho! Tente manter esse ritmo de economia."
+                    recommendation: "Excelente resultado semanal!"
                 });
             }
         }
 
-        // Insight 2: Top Categoria Mensal
         if (Object.keys(categoryMap).length > 0) {
             const topCategory = Object.entries(categoryMap).reduce((a, b) => a[1] > b[1] ? a : b);
-            const catName = topCategory[0];
             const catAmount = topCategory[1];
 
-            if (monthTotal > 0 && catAmount > (monthTotal * 0.4)) { // > 40%
+            if (monthTotal > 0 && catAmount > (monthTotal * 0.4)) { // 40%
                 insights.push({
                     id: "top-category",
                     type: "category",
-                    text: `Atenção com ${catName}`,
+                    text: `Foco em ${topCategory[0]}`,
                     value: `${((catAmount / monthTotal) * 100).toFixed(0)}%`,
                     trend: "neutral",
-                    details: `A categoria ${catName} representa ${((catAmount / monthTotal) * 100).toFixed(0)}% de todos os seus gastos do mês.`,
-                    recommendation: `Considere definir um limite específico para ${catName} no próximo mês.`
+                    details: `${topCategory[0]} consome ${((catAmount / monthTotal) * 100).toFixed(0)}% do seu orçamento mensal.`,
+                    recommendation: "Avalie se é possível reduzir custos nesta categoria específica."
                 });
             }
         }
 
-        // Insight 3: Zero Gastos ou Resumo do Dia
-        const h = new Date().getHours(); // Hora servidor
+        const h = new Date().getHours();
         const currentHourBR = new Date().getUTCHours() - 3;
 
-        if (todayTotal === 0) {
-            if (currentHourBR >= 16) {
+        if (todayTotal === 0 && currentHourBR >= 16) {
+            insights.push({
+                id: "zero-spend",
+                type: "zero_spend",
+                text: "Dia sem gastos! 👏",
+                value: "R$ 0",
+                trend: "positive",
+                details: "Você não registrou nenhuma despesa hoje.",
+                recommendation: "Dias off ajudam a equilibrar contas pesadas."
+            });
+        }
+
+        // Fallbacks
+        if (insights.length < 2) {
+            if (scope === 'all') {
                 insights.push({
-                    id: "zero-spend",
-                    type: "zero_spend",
-                    text: "Dia sem gastos! 👏",
-                    value: "R$ 0",
-                    trend: "positive",
-                    details: "Você não registrou nenhuma despesa hoje.",
-                    recommendation: "Dias sem gastos ajudam muito no balanço final do mês. Continue assim!"
+                    id: "deep-info",
+                    type: "general",
+                    text: "Análise Histórica",
+                    value: "12 meses",
+                    trend: "neutral",
+                    details: "Base de dados analisada: últimos 365 dias de transações.",
+                    recommendation: "Continue registrando receitas e despesas para diagnósticos precisos."
+                });
+            } else {
+                insights.push({
+                    id: "general-tip",
+                    type: "tip",
+                    text: "Dica Rápida",
+                    value: "💡",
+                    trend: "neutral",
+                    details: "Para começar a investir, o primeiro passo é quitar dívidas de juros altos.",
+                    recommendation: "Revise faturas de cartão e cheque especial."
                 });
             }
-        } else {
-            insights.push({
-                id: "daily-summary",
-                type: "general",
-                text: "Gastos de hoje",
-                value: `R$ ${todayTotal.toFixed(0)}`,
-                trend: "neutral",
-                details: `Você já gastou R$ ${todayTotal.toFixed(2)} hoje.`,
-                recommendation: "Acompanhe seus gastos diários para não perder o controle."
-            });
         }
 
-        // Insight 4: Dica Financeira (Random/General)
-        // Adiciona uma dica se tiver poucos insights (menos de 2)
-        if (insights.length < 2) {
-            insights.push({
-                id: "general-tip",
-                type: "tip",
-                text: "Dica Financeira",
-                value: "💡",
-                trend: "neutral",
-                details: "A regra 50-30-20 é ótima: 50% necessidades, 30% desejos, 20% poupança.",
-                recommendation: "Tente aplicar essa divisão no seu orçamento mensal."
-            });
-        }
-
-        // Fallback se nada foi gerado (improvável com as regras acima, mas por segurança)
+        // Garante que temos algo
         if (insights.length === 0) {
             insights.push({
                 id: "fallback",
@@ -223,14 +373,14 @@ export class InsightService {
                 text: "Mantenha o foco",
                 value: "---",
                 trend: "neutral",
-                details: "Continue registrando seus gastos para obter insights melhores.",
-                recommendation: "O hábito de registrar é o primeiro passo para o controle financeiro."
+                details: "Registre suas movimentações para gerar inteligência financeira.",
+                recommendation: "O controle começa pelo registro diário."
             });
         }
 
         return {
             greeting,
-            insights, // Retorna array
+            insights,
             dailySummary: {
                 total: todayTotal
             }
