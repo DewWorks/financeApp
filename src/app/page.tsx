@@ -693,7 +693,7 @@ export default function DashboardFinanceiro() {
                       <div className="flex overflow-x-auto pb-4 gap-4 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide snap-x">
                         {creditAccounts.map((acc: any, idx: number) => (
                           <div key={`${acc.accountId}-${idx}`}
-                            className="min-w-[300px] w-full h-48 rounded-2xl p-6 flex flex-col justify-between text-white shadow-xl snap-center relative overflow-hidden transition-all hover:scale-[1.02] hover:shadow-2xl"
+                            className="min-w-[300px] w-full h-40 rounded-2xl p-6 flex flex-col justify-between text-white shadow-xl snap-center relative overflow-hidden transition-all hover:scale-[1.02] hover:shadow-2xl"
                             style={{ background: acc.brand.color }}
                           >
                             {/* Texture/Pattern */}
