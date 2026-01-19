@@ -4,7 +4,7 @@ import { useTransactions } from "@/hooks/useTransactions"
 import { driver } from "driver.js"
 import "driver.js/dist/driver.css"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/card"
-import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, User, ChevronLeft, ChevronRight, Search, RefreshCw, TrendingUp, TrendingDown } from 'lucide-react'
+import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, User, ChevronLeft, ChevronRight, Search, RefreshCw, TrendingUp, TrendingDown, Landmark, Wallet } from 'lucide-react'
 import { AddIncomeDialog } from "@/components/ui/organisms/AddIncomeDialog"
 import { AddExpenseDialog } from "@/components/ui/organisms/AddExpenseDialog"
 import type { ITransaction } from "@/interfaces/ITransaction"
@@ -34,6 +34,7 @@ import { DashboardSkeleton } from "@/components/ui/atoms/DashboardSkeleton"
 import { GlobalLoader } from "@/components/ui/molecules/GlobalLoader"
 import { ThemeToggle } from "@/components/ui/atoms/ThemeToggle"
 import { FinancialInsight } from "@/components/ui/molecules/FinancialInsight"
+import { OpenFinanceWidget } from "@/components/ui/molecules/OpenFinanceWidget"
 import * as mongoose from "mongoose";
 
 const COLORS = ["#0088FE", "#ff6666", "#FFBB28", "#FF8042", "#8884D8"]
@@ -505,6 +506,10 @@ export default function DashboardFinanceiro() {
             <WhatsAppButton />
           </div>
 
+
+          {/* Open Finance Widget - Collapsible & Optimized */}
+          <OpenFinanceWidget />
+
           {/* Summary Cards - responsivo */}
           <motion.div
             id="transactions-values"
@@ -671,7 +676,7 @@ export default function DashboardFinanceiro() {
           onAddIncome={handleAddIncome}
           onAddExpense={handleAddExpense}
         />
-      </motion.div >
+      </motion.div>
     </>
   )
 }
