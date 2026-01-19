@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/atoms/card"
 import { Button } from "@/components/ui/atoms/button"
 import { Title } from "@/components/ui/molecules/Title"
-import { Loader2, ShieldCheck, Landmark, Plus, RefreshCw, Wallet, ChevronLeft } from "lucide-react"
+import { Loader2, ShieldCheck, Landmark, Plus, RefreshCw, Wallet, ChevronLeft, Trash2, ArrowRight } from "lucide-react"
 import Swal from "sweetalert2"
 import dynamic from 'next/dynamic';
+import { getBankDetails } from "@/lib/utils"
 
 // Carregamento dinâmico para evitar erros de SSR e Tipagem
 const PluggyConnect = dynamic(
@@ -104,6 +105,44 @@ export default function BankConnectPage() {
         })
     }
 
+    const handleDeleteConnection = async (itemId: string, bankName: string) => {
+        const result = await Swal.fire({
+            title: 'Tem certeza?',
+            text: `Deseja remover a conexão com ${bankName}? Seus dados não serão mais sincronizados.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sim, remover',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                const response = await fetch(`/api/bank-connections?itemId=${itemId}`, {
+                    method: 'DELETE',
+                });
+
+                if (response.ok) {
+                    Swal.fire(
+                        'Removido!',
+                        'A conexão foi removida com sucesso.',
+                        'success'
+                    );
+                    fetchConnections();
+                } else {
+                    throw new Error('Falha ao deletar');
+                }
+            } catch (error) {
+                Swal.fire(
+                    'Erro',
+                    'Não foi possível remover a conexão.',
+                    'error'
+                );
+            }
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-background p-4 sm:p-8">
             <div className="max-w-4xl mx-auto space-y-6">
@@ -129,8 +168,8 @@ export default function BankConnectPage() {
                         <p className="text-gray-500 dark:text-gray-400 mt-1">Gerencie suas conexões bancárias via Open Finance</p>
                     </div>
                     {!showWidget && (
-                        <Button onClick={handleStartConnection} size="lg" className="shadow-lg text-white">
-                            <Plus className="mr-2 h-5 w-5" /> Nova Conexão
+                        <Button onClick={handleStartConnection} size="lg" className="shadow-lg text-white gap-2">
+                            <Plus className="h-5 w-5" /> Nova Conexão
                         </Button>
                     )}
                 </div>
@@ -156,56 +195,143 @@ export default function BankConnectPage() {
                                 </CardContent>
                             </Card>
                         ) : (
-                            connections.map((conn) => (
-                                <Card key={conn._id} className="overflow-hidden border-l-4 border-l-blue-500 shadow-md">
-                                    <CardHeader className="bg-gray-50/50 dark:bg-gray-800/50 pb-4">
-                                        <div className="flex justify-between items-start">
-                                            <div className="flex gap-4 items-center">
-                                                {/* Se tiver URL de imagem do banco, poderia por aqui. Por enquanto um icone genérico */}
-                                                <div className="bg-white p-2 rounded-lg shadow-sm border">
-                                                    <Landmark className="h-6 w-6 text-gray-700" />
+                            connections.map((conn) => {
+                                // Obter conta representativa para nome e logo do banco
+                                const mainAccount = conn.accounts && conn.accounts.length > 0 ? conn.accounts[0] : { name: 'Banco Desconhecido' };
+                                const bankDetails = getBankDetails(mainAccount.name);
+
+                                const checkingTypes = ["CHECKING_ACCOUNT", "SAVINGS_ACCOUNT", "PAYMENT_ACCOUNT", "BANK"];
+                                const checkingAccounts = conn.accounts.filter((acc: any) =>
+                                    acc.type && checkingTypes.includes(acc.type.toUpperCase())
+                                );
+                                const creditAccounts = conn.accounts.filter((acc: any) =>
+                                    acc.type && (acc.type.toUpperCase() === "CREDIT_CARD" || acc.type.toUpperCase() === "CREDIT")
+                                );
+
+                                return (
+                                    <Card key={conn._id} className="overflow-hidden border-none shadow-md ring-1 ring-gray-200 dark:ring-gray-700">
+                                        <div className="h-2 w-full" style={{ backgroundColor: bankDetails.color }} />
+                                        <CardHeader className="bg-white dark:bg-gray-800 pb-4">
+                                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                                <div className="flex gap-4 items-center">
+                                                    <div className="bg-white p-2 rounded-xl shadow-sm border h-12 w-12 flex items-center justify-center">
+                                                        <img src={bankDetails.logo} alt="Logo Banco" className="h-8 w-8 object-contain" />
+                                                    </div>
+                                                    <div>
+                                                        <CardTitle className="text-lg flex items-center gap-2">
+                                                            {mainAccount.name.split(' - ')[0]}
+                                                        </CardTitle>
+                                                        <CardDescription className="flex items-center gap-2 mt-1">
+                                                            <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${conn.status === 'UPDATED' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                                                                }`}>
+                                                                {conn.status === 'UPDATED' ? 'Atualizado' : conn.status}
+                                                            </span>
+                                                            <span className="text-xs text-gray-400">
+                                                                • Atualizado em: {new Date(conn.lastSyncAt).toLocaleString()}
+                                                            </span>
+                                                        </CardDescription>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <CardTitle className="text-lg">Conexão Bancária</CardTitle>
-                                                    <CardDescription className="flex items-center gap-2">
-                                                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${conn.status === 'UPDATED' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                                                            }`}>
-                                                            {conn.status}
-                                                        </span>
-                                                        <span className="text-xs text-gray-400">
-                                                            Atualizado em: {new Date(conn.lastSyncAt).toLocaleString()}
-                                                        </span>
-                                                    </CardDescription>
+                                                <div className="flex items-center gap-2 w-full sm:w-auto">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={fetchConnections}
+                                                        className="flex-1 sm:flex-none gap-2 bg-blue-600 text-white hover:bg-blue-800"
+                                                    >
+                                                        <RefreshCw className="h-3.5 w-3.5" />
+                                                        Atualizar
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => handleDeleteConnection(conn.itemId, mainAccount.name)}
+                                                        className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
                                                 </div>
                                             </div>
-                                            <Button variant="ghost" size="sm" onClick={fetchConnections}>
-                                                <RefreshCw className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent className="pt-4">
-                                        <h4 className="text-sm font-semibold text-gray-500 mb-2 uppercase tracking-wider">Contas Sincronizadas</h4>
-                                        <div className="space-y-3">
-                                            {conn.accounts.map((acc: any) => (
-                                                <div key={acc.accountId} className="flex justify-between items-center p-3 bg-white dark:bg-gray-800 rounded-lg border hover:border-blue-300 transition-colors">
-                                                    <div className="flex items-center gap-3">
-                                                        <Wallet className="h-5 w-5 text-gray-400" />
-                                                        <div>
-                                                            <p className="font-medium">{acc.name}</p>
-                                                            <p className="text-xs text-gray-500">{acc.type} • {acc.number}</p>
+                                        </CardHeader>
+                                        <CardContent className="pt-0 bg-gray-50/50 dark:bg-gray-800/50 border-t">
+                                            <div className="space-y-6 mt-6">
+                                                {/* Seção de Contas Correntes */}
+                                                {checkingAccounts.length > 0 && (
+                                                    <div className="space-y-2">
+                                                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-1">Contas</h4>
+                                                        {checkingAccounts.map((acc: any) => (
+                                                            <div key={acc.accountId} className="flex justify-between items-center p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 hover:border-blue-300 transition-colors">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-gray-500">
+                                                                        <Wallet className="h-4 w-4" />
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="font-medium text-sm text-gray-700 dark:text-gray-200">{acc.name}</p>
+                                                                        <p className="text-xs text-gray-500">{acc.type} • **** {acc.number ? acc.number.slice(-4) : '****'}</p>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    <p className={`font-bold text-sm ${acc.balance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                                        {acc.currency} {acc.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                {/* Seção de Cartões de Crédito (Cards Visuais) */}
+                                                {creditAccounts.length > 0 && (
+                                                    <div className="space-y-3">
+                                                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-1">Cartões de Crédito</h4>
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                            {creditAccounts.map((acc: any) => (
+                                                                <div
+                                                                    key={acc.accountId}
+                                                                    className="relative w-full h-48 rounded-2xl p-5 flex flex-col justify-between text-white shadow-lg overflow-hidden transition-transform hover:scale-[1.01]"
+                                                                    style={{ background: bankDetails.color }}
+                                                                >
+                                                                    {/* Background Decorativo */}
+                                                                    <div className="absolute right-0 top-0 w-48 h-48 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
+                                                                    <div className="absolute left-0 bottom-0 w-32 h-32 bg-black/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
+
+                                                                    <div className="flex justify-between items-start z-10 relative">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <div className="bg-white/95 p-1.5 rounded-md shadow-sm">
+                                                                                <img src={bankDetails.logo} alt={acc.name} className="h-5 w-5 object-contain" />
+                                                                            </div>
+                                                                            <span className="font-bold text-sm tracking-wide text-white/95 drop-shadow-md truncate max-w-[120px]">
+                                                                                {acc.name}
+                                                                            </span>
+                                                                        </div>
+                                                                        {/* Chip Simulado */}
+                                                                        <div className="w-9 h-7 bg-gradient-to-br from-yellow-200 to-yellow-500 rounded sm:rounded-md opacity-90 border border-yellow-600/30" />
+                                                                    </div>
+
+                                                                    <div className="z-10 relative flex justify-between items-end">
+                                                                        <div>
+                                                                            <p className="text-[10px] text-white/80 uppercase tracking-wider font-medium mb-0.5">Limite Atual</p>
+                                                                            <h3 className="text-2xl font-bold text-white drop-shadow-md">
+                                                                                {acc.currency} {acc.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                                                                            </h3>
+                                                                        </div>
+                                                                        <div className="text-right">
+                                                                            <p className="text-[10px] text-white/60">Final</p>
+                                                                            <p className="font-mono text-sm text-white/90 tracking-wider">
+                                                                                •••• {acc.number ? acc.number.slice(-4) : "0000"}
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
                                                         </div>
                                                     </div>
-                                                    <div className="text-right">
-                                                        <p className={`font-bold ${acc.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                            {acc.currency} {acc.balance.toFixed(2)}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))
+                                                )}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                )
+                            })
                         )}
                     </div>
                 )}

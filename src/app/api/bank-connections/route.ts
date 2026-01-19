@@ -42,18 +42,9 @@ export async function POST(req: NextRequest) {
         const client = await getMongoClient();
         const db = client.db("financeApp");
 
-        let finalUserId = userId;
-
-        // HACK: Fallback for testing if Auth fails or is missing in dev
-        if (!finalUserId) {
-            const firstUser = await db.collection("users").findOne({});
-            if (firstUser) {
-                finalUserId = firstUser._id;
-                logDebug(`Fallback: Using first user found: ${finalUserId}`);
-            } else {
-                logDebug("Unauthorized - No User ID and no fallback users");
-                return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-            }
+        if (!userId) {
+            logDebug("Unauthorized - No User ID");
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
         const body = await req.json();
@@ -75,7 +66,7 @@ export async function POST(req: NextRequest) {
 
         // Salvar ou atualizar conexão
         const updateData = {
-            userId: finalUserId,
+            userId: userId,
             provider: 'pluggy',
             itemId: item.id,
             status: item.status,
@@ -114,31 +105,59 @@ export async function POST(req: NextRequest) {
         );
     }
 }
-    // Keep POST as is... adding GET below
+// Keep POST as is... adding GET below
 
 export async function GET(req: NextRequest) {
-        try {
-            const userId = await getUserId();
-            const client = await getMongoClient();
-            const db = client.db("financeApp");
+    try {
+        const userId = await getUserId();
+        const client = await getMongoClient();
+        const db = client.db("financeApp");
 
-            let finalUserId = userId;
-            // HACK: Fallback logic same as POST
-            if (!finalUserId) {
-                const firstUser = await db.collection("users").findOne({});
-                if (firstUser) {
-                    finalUserId = firstUser._id;
-                } else {
-                    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-                }
-            }
-
-            const connections = await db.collection('bankConnections').find({ userId: finalUserId }).toArray();
-
-            return NextResponse.json(connections);
-        } catch (error: any) {
-            console.error("Erro ao buscar conexões:", error);
-            return NextResponse.json({ error: "Erro ao buscar conexões" }, { status: 500 });
+        if (!userId) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        const connections = await db.collection('bankConnections').find({ userId: userId }).toArray();
+
+        return NextResponse.json(connections);
+    } catch (error: any) {
+        console.error("Erro ao buscar conexões:", error);
+        return NextResponse.json({ error: "Erro ao buscar conexões" }, { status: 500 });
     }
+
+}
+
+export async function DELETE(req: NextRequest) {
+    try {
+        const userId = await getUserId();
+        const client = await getMongoClient();
+        const db = client.db("financeApp");
+
+        if (!userId) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const { searchParams } = new URL(req.url);
+        const itemId = searchParams.get('itemId');
+
+        if (!itemId) {
+            return NextResponse.json({ error: "ItemId is required" }, { status: 400 });
+        }
+
+        logDebug(`Deleting connection: ${itemId} for user: ${userId}`);
+
+        const result = await db.collection('bankConnections').deleteOne({
+            itemId: itemId,
+            userId: userId // Ensure user owns the connection
+        });
+
+        if (result.deletedCount === 0) {
+            return NextResponse.json({ error: "Conexão não encontrada ou não pertence ao usuário" }, { status: 404 });
+        }
+
+        return NextResponse.json({ success: true });
+    } catch (error: any) {
+        console.error("Erro ao deletar conexão:", error);
+        return NextResponse.json({ error: "Erro ao deletar conexão" }, { status: 500 });
+    }
+}
