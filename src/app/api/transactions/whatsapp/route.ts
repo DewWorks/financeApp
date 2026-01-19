@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import crypto from "crypto"
 import { getMongoClient } from "@/db/connectionDb"
 import { ObjectId } from "mongodb"
 import bcrypt from "bcryptjs"
@@ -15,7 +16,7 @@ class AuthError extends Error {
 
 // Função para gerar senha de 6 dígitos
 function generateRandomPassword(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString()
+    return crypto.randomInt(100000, 1000000).toString()
 }
 
 async function findOrCreateUser(phoneNumber: string) {

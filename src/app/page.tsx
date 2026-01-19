@@ -1,6 +1,6 @@
 "use client"
 
-import { useTransactions } from "@/hooks/useTransactions"
+import { useTransactions } from "@/context/TransactionsContext"
 import { driver } from "driver.js"
 import "driver.js/dist/driver.css"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/card"
@@ -36,6 +36,8 @@ import { ThemeToggle } from "@/components/ui/atoms/ThemeToggle"
 import { FinancialInsight } from "@/components/ui/molecules/FinancialInsight"
 import { OpenFinanceWidget } from "@/components/ui/molecules/OpenFinanceWidget"
 import * as mongoose from "mongoose";
+import { TransactionsProvider } from "@/context/TransactionsContext"
+import { GoalsProvider } from "@/context/GoalsContext"
 
 const COLORS = ["#0088FE", "#ff6666", "#FFBB28", "#FF8042", "#8884D8"]
 
@@ -58,10 +60,11 @@ const itemVariants = {
   }
 }
 
-export default function DashboardFinanceiro() {
+function DashboardContent() {
   const router = useRouter()
   const [user, setUser] = useState<IUser | null>(null)
-  const { currentProfileId, currentProfileName } = useCurrentProfile()
+  
+  const { currentProfileId, currentProfileName, isLoading: isProfileLoading } = useCurrentProfile();
 
   const {
     transactions,
@@ -118,12 +121,8 @@ export default function DashboardFinanceiro() {
     fetchUser()
   }, [])
 
-  // Atualizar transações quando o profile mudar
-  useEffect(() => {
-    if (currentProfileId !== undefined) {
-      getTransactions()
-    }
-  }, [currentProfileId])
+  // OPTIMIZATION: Removed manual getTransactions() call on profile change. 
+  // TransactionsProvider now watches `profileId` and updates automatically.
 
   const areaChartData = Array.isArray(dataToUse)
     ? dataToUse.slice(0, 15).map((t) => ({
@@ -679,4 +678,28 @@ export default function DashboardFinanceiro() {
       </motion.div>
     </>
   )
+}
+
+function DashboardWrapper() {
+  const { currentProfileId, isLoading } = useCurrentProfile()
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-background p-4 sm:p-8 flex items-center justify-center">
+        <DashboardSkeleton />
+      </div>
+    )
+  }
+
+  return (
+    <TransactionsProvider profileId={currentProfileId}>
+      <GoalsProvider>
+        <DashboardContent />
+      </GoalsProvider>
+    </TransactionsProvider>
+  )
+}
+
+export default function DashboardFinanceiro() {
+  return <DashboardWrapper />
 }

@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from "react"
 export function useCurrentProfile() {
     const [currentProfileId, setCurrentProfileId] = useState<string | null>(null)
     const [currentProfileName, setCurrentProfileName] = useState<string>("")
+    const [isLoading, setIsLoading] = useState(true)
 
     useEffect(() => {
         // Carregar do localStorage
@@ -13,6 +14,7 @@ export function useCurrentProfile() {
 
         setCurrentProfileId(profileId === "null" ? null : profileId)
         setCurrentProfileName(profileName || "Conta Pessoal")
+        setIsLoading(false)
     }, [])
 
     const switchProfile = useCallback((profileId: string | null, profileName?: string) => {
@@ -36,5 +38,6 @@ export function useCurrentProfile() {
         currentProfileName,
         switchProfile,
         isPersonal: !currentProfileId,
+        isLoading
     }
 }

@@ -29,6 +29,8 @@ import {
 } from "lucide-react"
 import Swal from "sweetalert2"
 import { ITransaction } from "@/interfaces/ITransaction"
+import { useCurrentProfile } from "@/hooks/useCurrentProfile"
+import { DashboardSkeleton } from "@/components/ui/atoms/DashboardSkeleton"
 
 interface ProfileMember {
     userId: string
@@ -68,6 +70,7 @@ interface ProfileStats {
 }
 
 export default function CollaborativeDetailsPage() {
+    const { currentProfileId, isLoading: isProfileLoading } = useCurrentProfile()
     const [profile, setProfile] = useState<CollaborativeProfile | null>(null)
     const [stats, setStats] = useState<ProfileStats | null>(null)
     const [loading, setLoading] = useState(true)
@@ -88,14 +91,7 @@ export default function CollaborativeDetailsPage() {
     const router = useRouter()
 
     useEffect(() => {
-        fetchProfileData()
-        fetchProfileStats()
-    }, [])
-
-    const fetchProfileData = async () => {
-        try {
-            const currentProfileId = localStorage.getItem("current-profile-id")
-
+        if (!isProfileLoading) {
             if (!currentProfileId || currentProfileId === "null") {
                 Swal.fire({
                     icon: "warning",
@@ -106,8 +102,15 @@ export default function CollaborativeDetailsPage() {
                 })
                 return
             }
+            fetchProfileData(currentProfileId)
+            fetchProfileStats(currentProfileId)
+        }
+    }, [currentProfileId, isProfileLoading])
 
-            const response = await axios.get(`/api/profiles/${currentProfileId}/details`)
+
+    const fetchProfileData = async (profileId: string) => {
+        try {
+            const response = await axios.get(`/api/profiles/${profileId}/details`)
 
             if (response.status === 200) {
                 const profileData = response.data
@@ -130,12 +133,9 @@ export default function CollaborativeDetailsPage() {
         }
     }
 
-    const fetchProfileStats = async () => {
+    const fetchProfileStats = async (profileId: string) => {
         try {
-            const currentProfileId = localStorage.getItem("current-profile-id")
-            if (!currentProfileId || currentProfileId === "null") return
-
-            const response = await axios.get(`/api/profiles/${currentProfileId}/stats`)
+            const response = await axios.get(`/api/profiles/${profileId}/stats`)
             if (response.status === 200) {
                 setStats(response.data)
             }
@@ -172,28 +172,25 @@ export default function CollaborativeDetailsPage() {
                     icon: "success",
                     title: "Membro Adicionado!",
                     html: `
-          <div style="text-align: left;">
-            <p><strong>✅ ${memberAdded.name}</strong> foi adicionado com sucesso!</p>
-            <p><strong>📧 Email:</strong> ${memberAdded.email}</p>
-            <p><strong>🔐 Permissão:</strong> ${memberAdded.permission}</p>
-            <hr style="margin: 15px 0;">
-            <p style="color: #666; font-size: 14px;">
-              📬 Um email de boas-vindas foi enviado com todas as informações necessárias.
-            </p>
-          </div>
-        `,
+            <div style="text-align: left;">
+             <p><strong>✅ ${memberAdded.name}</strong> foi adicionado com sucesso!</p>
+             <p><strong>📧 Email:</strong> ${memberAdded.email}</p>
+             <p><strong>🔐 Permissão:</strong> ${memberAdded.permission}</p>
+             <hr style="margin: 15px 0;">
+             <p style="color: #666; font-size: 14px;">
+               📬 Um email de boas-vindas foi enviado.
+             </p>
+           </div>
+         `,
                     confirmButtonText: "Entendi",
                     timer: 5000,
                 })
 
-                // Reset form
                 setNewMemberEmail("")
                 setNewMemberPhone("")
                 setNewMemberPermission("COLABORATOR")
                 setShowAddMember(false)
-
-                // Refresh data
-                fetchProfileData()
+                if (currentProfileId) fetchProfileData(currentProfileId)
             }
         } catch (error: unknown) {
             const err = error as { response?: { data?: { error?: string } } };
@@ -210,8 +207,6 @@ export default function CollaborativeDetailsPage() {
 
     const handleUpdateMember = async (memberId: string, newPermission: string) => {
         try {
-            console.log("Updating member:", memberId, "to permission:", newPermission)
-
             const response = await axios.put(`/api/profiles/${profile?._id}/members/${memberId}`, {
                 permission: newPermission,
                 profileId: profile?._id,
@@ -225,21 +220,17 @@ export default function CollaborativeDetailsPage() {
                     icon: "success",
                     title: "Permissão Atualizada!",
                     html: `
-          <div style="text-align: left;">
-            <p><strong>✅ ${updatedMember.name}</strong></p>
-            <p><strong>📧 Email:</strong> ${updatedMember.email}</p>
-            <p><strong>🔄 Alteração:</strong> ${updatedMember.oldPermission} → ${updatedMember.newPermission}</p>
-            <hr style="margin: 15px 0;">
-            <p style="color: #666; font-size: 14px;">
-              📬 Um email de notificação foi enviado sobre a mudança de permissão.
-            </p>
-          </div>
-        `,
+           <div style="text-align: left;">
+             <p><strong>✅ ${updatedMember.name}</strong></p>
+             <p><strong>📧 Email:</strong> ${updatedMember.email}</p>
+             <p><strong>🔄 Alteração:</strong> ${updatedMember.oldPermission} → ${updatedMember.newPermission}</p>
+           </div>
+         `,
                     confirmButtonText: "Entendi",
                     timer: 4000,
                 })
 
-                fetchProfileData()
+                if (currentProfileId) fetchProfileData(currentProfileId)
                 setEditingMember(null)
             }
         } catch (error: unknown) {
@@ -256,16 +247,7 @@ export default function CollaborativeDetailsPage() {
     const handleRemoveMember = async (memberId: string, memberName: string) => {
         const result = await Swal.fire({
             title: "Tem certeza?",
-            html: `
-        <div style="text-align: left;">
-          <p>Deseja remover <strong>${memberName}</strong> do perfil colaborativo?</p>
-          <hr style="margin: 15px 0;">
-          <p style="color: #666; font-size: 14px;">
-            ⚠️ Esta ação não pode ser desfeita.<br>
-            📬 Um email de notificação será enviado ao membro removido.
-          </p>
-        </div>
-      `,
+            html: `Remover <strong>${memberName}</strong>? Esta ação não pode ser desfeita.`,
             icon: "warning",
             showCancelButton: true,
             confirmButtonColor: "#d33",
@@ -279,27 +261,14 @@ export default function CollaborativeDetailsPage() {
                 const response = await axios.delete(`/api/profiles/${profile?._id}/members/${memberId}`)
 
                 if (response.status === 200) {
-                    const { removedMember } = response.data
-
                     Swal.fire({
                         icon: "success",
                         title: "Membro Removido!",
-                        html: `
-            <div style="text-align: left;">
-              <p><strong>✅ ${removedMember.name}</strong> foi removido com sucesso!</p>
-              <p><strong>📧 Email:</strong> ${removedMember.email}</p>
-              <p><strong>🔐 Permissão anterior:</strong> ${removedMember.permission}</p>
-              <hr style="margin: 15px 0;">
-              <p style="color: #666; font-size: 14px;">
-                📬 Um email de notificação foi enviado sobre a remoção.
-              </p>
-            </div>
-          `,
-                        confirmButtonText: "Entendi",
-                        timer: 4000,
+                        text: "O membro foi removido com sucesso.",
+                        timer: 2000,
                     })
 
-                    fetchProfileData()
+                    if (currentProfileId) fetchProfileData(currentProfileId)
                 }
             } catch (error: unknown) {
                 const err = error as { response?: { data?: { error?: string } } };
@@ -338,7 +307,7 @@ export default function CollaborativeDetailsPage() {
                 })
 
                 setShowSettings(false)
-                fetchProfileData()
+                if (currentProfileId) fetchProfileData(currentProfileId)
 
                 // Atualizar localStorage se necessário
                 localStorage.setItem("current-profile-name", editName.trim())
@@ -370,27 +339,14 @@ export default function CollaborativeDetailsPage() {
     const getPermissionColor = (permission: string) => {
         switch (permission) {
             case "ADMIN":
-                return "bg-yellow-100 text-yellow-800 border-yellow-200"
+                return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800"
             case "COLABORATOR":
-                return "bg-blue-100 text-blue-800 border-blue-200"
+                return "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 border-blue-200 dark:border-blue-800"
             case "VIEWER":
-                return "bg-gray-100 text-gray-800 border-gray-200"
+                return "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300 border-gray-200 dark:border-gray-700"
             default:
-                return "bg-gray-100 text-gray-800 border-gray-200"
+                return "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300 border-gray-200 dark:border-gray-700"
         }
-    }
-
-    const formatPhoneNumber = (value: string) => {
-        const numbers = value.replace(/\D/g, "")
-        if (numbers.length <= 11) {
-            return numbers.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3")
-        }
-        return value
-    }
-
-    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const formatted = formatPhoneNumber(e.target.value)
-        setNewMemberPhone(formatted)
     }
 
     const formatCurrency = (value: number) => {
@@ -404,46 +360,41 @@ export default function CollaborativeDetailsPage() {
         router.push("/")
     }
 
-    if (loading) {
+    if (loading || isProfileLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-100">
-                <Card className="w-full max-w-md">
-                    <CardContent className="flex items-center justify-center p-8">
-                        <div className="text-center">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                            <p className="text-gray-600">Carregando detalhes da conta...</p>
-                        </div>
-                    </CardContent>
-                </Card>
+            <div className="min-h-screen bg-gray-50 dark:bg-background p-4 sm:p-8 flex items-center justify-center">
+                <DashboardSkeleton />
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 py-8">
+        <div className="min-h-screen bg-gray-50 dark:bg-background py-8">
             <div className="max-w-6xl mx-auto px-4">
                 {/* Header */}
-                <Card className="mb-6">
+                <Card className="mb-6 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
                     <CardHeader>
                         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                             <div className="flex items-center gap-3">
-                                <Users className="w-8 h-8 text-blue-500" />
+                                <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+                                    <Users className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                                </div>
                                 <div>
-                                    <CardTitle className="text-2xl font-bold">{profile?.name}</CardTitle>
-                                    <p className="text-gray-600 mt-1">{profile?.description}</p>
-                                    <p className="text-sm text-gray-500 mt-1">
+                                    <CardTitle className="text-2xl font-bold text-gray-900 dark:text-gray-100">{profile?.name}</CardTitle>
+                                    <p className="text-gray-600 dark:text-gray-400 mt-1">{profile?.description}</p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
                                         Criada em {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : ""}
                                     </p>
                                 </div>
                             </div>
                             <div className="flex gap-2">
                                 {profile?.isUserAdmin && (
-                                    <Button onClick={() => setShowSettings(true)} variant="outline" className="flex items-center gap-2">
+                                    <Button onClick={() => setShowSettings(true)} variant="outline" className="flex items-center gap-2 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800">
                                         <Settings className="w-4 h-4" />
                                         Configurações
                                     </Button>
                                 )}
-                                <Button onClick={goBack} variant="outline" className="flex items-center gap-2 bg-transparent">
+                                <Button onClick={goBack} variant="outline" className="flex items-center gap-2 bg-transparent dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800">
                                     <ArrowLeft className="w-4 h-4" />
                                     Voltar
                                 </Button>
@@ -455,44 +406,44 @@ export default function CollaborativeDetailsPage() {
                 {/* Statistics Cards */}
                 {stats && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                        <Card>
+                        <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
                             <CardContent className="p-4">
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-green-100 rounded-lg">
-                                        <TrendingUp className="w-5 h-5 text-green-600" />
+                                    <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                                        <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
                                     </div>
                                     <div>
-                                        <p className="text-sm text-gray-600">Receitas (Mês)</p>
-                                        <p className="text-lg font-semibold text-green-600">{formatCurrency(stats.monthly.income)}</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">Receitas (Mês)</p>
+                                        <p className="text-lg font-semibold text-green-600 dark:text-green-400">{formatCurrency(stats.monthly.income)}</p>
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
 
-                        <Card>
+                        <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
                             <CardContent className="p-4">
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-red-100 rounded-lg">
-                                        <TrendingDown className="w-5 h-5 text-red-600" />
+                                    <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                                        <TrendingDown className="w-5 h-5 text-red-600 dark:text-red-400" />
                                     </div>
                                     <div>
-                                        <p className="text-sm text-gray-600">Despesas (Mês)</p>
-                                        <p className="text-lg font-semibold text-red-600">{formatCurrency(stats.monthly.expense)}</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">Despesas (Mês)</p>
+                                        <p className="text-lg font-semibold text-red-600 dark:text-red-400">{formatCurrency(stats.monthly.expense)}</p>
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
 
-                        <Card>
+                        <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
                             <CardContent className="p-4">
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-blue-100 rounded-lg">
-                                        <DollarSign className="w-5 h-5 text-blue-600" />
+                                    <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                                        <DollarSign className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                     </div>
                                     <div>
-                                        <p className="text-sm text-gray-600">Saldo (Mês)</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">Saldo (Mês)</p>
                                         <p
-                                            className={`text-lg font-semibold ${stats.monthly.balance >= 0 ? "text-green-600" : "text-red-600"}`}
+                                            className={`text-lg font-semibold ${stats.monthly.balance >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
                                         >
                                             {formatCurrency(stats.monthly.balance)}
                                         </p>
@@ -501,15 +452,15 @@ export default function CollaborativeDetailsPage() {
                             </CardContent>
                         </Card>
 
-                        <Card>
+                        <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
                             <CardContent className="p-4">
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-purple-100 rounded-lg">
-                                        <Activity className="w-5 h-5 text-purple-600" />
+                                    <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                                        <Activity className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                                     </div>
                                     <div>
-                                        <p className="text-sm text-gray-600">Transações</p>
-                                        <p className="text-lg font-semibold text-purple-600">{stats.monthly.transactionCount}</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">Transações</p>
+                                        <p className="text-lg font-semibold text-purple-600 dark:text-purple-400">{stats.monthly.transactionCount}</p>
                                     </div>
                                 </div>
                             </CardContent>
@@ -520,10 +471,10 @@ export default function CollaborativeDetailsPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Members Management */}
                     <div className="lg:col-span-2">
-                        <Card>
+                        <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
                             <CardHeader>
                                 <div className="flex items-center justify-between">
-                                    <CardTitle className="text-lg flex items-center gap-2">
+                                    <CardTitle className="text-lg flex items-center gap-2 text-gray-900 dark:text-gray-100">
                                         <Users className="w-5 h-5" />
                                         Membros ({profile?.members.length || 0})
                                     </CardTitle>
@@ -543,12 +494,12 @@ export default function CollaborativeDetailsPage() {
                             <CardContent>
                                 {/* Add Member Form */}
                                 {showAddMember && profile?.isUserAdmin && (
-                                    <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
-                                        <h4 className="font-medium mb-4">Adicionar Novo Membro</h4>
+                                    <div className="mb-6 p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                                        <h4 className="font-medium mb-4 text-gray-900 dark:text-gray-100">Adicionar Novo Membro</h4>
                                         <form onSubmit={handleAddMember} className="space-y-4">
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div className="space-y-2">
-                                                    <Label htmlFor="email">Email *</Label>
+                                                    <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">Email *</Label>
                                                     <Input
                                                         id="email"
                                                         type="email"
@@ -556,31 +507,36 @@ export default function CollaborativeDetailsPage() {
                                                         onChange={(e) => setNewMemberEmail(e.target.value)}
                                                         placeholder="usuario@exemplo.com"
                                                         required
+                                                        className="bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
                                                     />
                                                 </div>
 
                                                 <div className="space-y-2">
-                                                    <Label htmlFor="phone">Telefone (Opcional)</Label>
+                                                    <Label htmlFor="phone" className="text-gray-700 dark:text-gray-300">Telefone (Opcional)</Label>
                                                     <Input
                                                         id="phone"
                                                         type="tel"
                                                         value={newMemberPhone}
-                                                        onChange={handlePhoneChange}
+                                                        onChange={(e) => {
+                                                            const formatted = e.target.value.replace(/\D/g, "").replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
+                                                            setNewMemberPhone(formatted);
+                                                        }}
                                                         placeholder="(11) 99999-9999"
                                                         maxLength={15}
+                                                        className="bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
                                                     />
                                                 </div>
                                             </div>
 
                                             <div className="space-y-2">
-                                                <Label htmlFor="permission">Permissão</Label>
+                                                <Label htmlFor="permission" className="text-gray-700 dark:text-gray-300">Permissão</Label>
                                                 <select
                                                     id="permission"
                                                     value={newMemberPermission}
                                                     onChange={(e) =>
                                                         setNewMemberPermission(e.target.value as "ADMIN" | "COLABORATOR" | "VIEWER")
                                                     }
-                                                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                    className="w-full p-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                                                 >
                                                     <option value="VIEWER">Visualizador - Apenas visualizar</option>
                                                     <option value="COLABORATOR">Colaborador - Adicionar e editar transações</option>
@@ -607,6 +563,7 @@ export default function CollaborativeDetailsPage() {
                                                         setNewMemberPermission("COLABORATOR")
                                                     }}
                                                     size="sm"
+                                                    className="dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
                                                 >
                                                     Cancelar
                                                 </Button>
@@ -620,25 +577,19 @@ export default function CollaborativeDetailsPage() {
                                     {profile?.members.map((member) => (
                                         <div
                                             key={member.userId}
-                                            className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
+                                            className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                                    <Users className="w-4 h-4 text-blue-600" />
+                                                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                                                    <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                                                 </div>
 
                                                 <div>
-                                                    <h4 className="font-medium text-gray-900 text-sm">{member.userName}</h4>
-                                                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                                                    <h4 className="font-medium text-gray-900 dark:text-gray-100 text-sm">{member.userName}</h4>
+                                                    <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
                                                         <Mail className="w-3 h-3" />
                                                         {member.userEmail}
                                                     </div>
-                                                    {member.userPhone && (
-                                                        <div className="flex items-center gap-2 text-xs text-gray-600">
-                                                            <Phone className="w-3 h-3" />
-                                                            {member.userPhone.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3")}
-                                                        </div>
-                                                    )}
                                                 </div>
                                             </div>
 
@@ -658,7 +609,7 @@ export default function CollaborativeDetailsPage() {
                                                             size="sm"
                                                             variant="outline"
                                                             onClick={() => setEditingMember(member)}
-                                                            className="p-1"
+                                                            className="p-1 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
                                                         >
                                                             <Edit className="w-3 h-3" />
                                                         </Button>
@@ -666,7 +617,7 @@ export default function CollaborativeDetailsPage() {
                                                             size="sm"
                                                             variant="outline"
                                                             onClick={() => handleRemoveMember(member.userId, member.userName)}
-                                                            className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                            className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 dark:border-gray-700"
                                                         >
                                                             <Trash2 className="w-3 h-3" />
                                                         </Button>
@@ -677,8 +628,8 @@ export default function CollaborativeDetailsPage() {
                                     ))}
 
                                     {(!profile?.members || profile.members.length === 0) && (
-                                        <div className="text-center py-8 text-gray-500">
-                                            <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                                        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                                            <Users className="w-12 h-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
                                             <p>Nenhum membro encontrado</p>
                                         </div>
                                     )}
@@ -691,9 +642,9 @@ export default function CollaborativeDetailsPage() {
                     <div className="space-y-6">
                         {/* Recent Transactions */}
                         {stats?.recentTransactions && stats.recentTransactions.length > 0 && (
-                            <Card>
+                            <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
                                 <CardHeader>
-                                    <CardTitle className="text-lg flex items-center gap-2">
+                                    <CardTitle className="text-lg flex items-center gap-2 text-gray-900 dark:text-gray-100">
                                         <Activity className="w-5 h-5" />
                                         Transações Recentes
                                     </CardTitle>
@@ -701,63 +652,38 @@ export default function CollaborativeDetailsPage() {
                                 <CardContent>
                                     <div className="space-y-3">
                                         {stats.recentTransactions.slice(0, 5).map((transaction, index) => (
-                                            <div key={index} className="flex items-center justify-between text-sm">
+                                            <div key={index} className="flex items-center justify-between text-sm border-b border-gray-100 dark:border-gray-800 last:border-0 pb-2 last:pb-0">
                                                 <div>
-                                                    <p className="font-medium">{transaction.description}</p>
-                                                    <p className="text-gray-500 text-xs">{new Date(transaction.date).toLocaleDateString()}</p>
+                                                    <p className="font-medium text-gray-900 dark:text-gray-100">{transaction.description}</p>
+                                                    <p className="text-gray-500 dark:text-gray-500 text-xs">{new Date(transaction.date).toLocaleDateString()}</p>
                                                 </div>
                                                 <span
-                                                    className={`font-medium ${transaction.type === "income" ? "text-green-600" : "text-red-600"}`}
+                                                    className={`font-medium ${transaction.type === "income" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
                                                 >
-                          {transaction.type === "income" ? "+" : "-"}
+                                                    {transaction.type === "income" ? "+" : "-"}
                                                     {formatCurrency(transaction.amount)}
-                        </span>
+                                                </span>
                                             </div>
                                         ))}
                                     </div>
                                 </CardContent>
                             </Card>
                         )}
-
-                        {/* Top Categories */}
-                        {/*{stats?.topCategories && stats.topCategories.length > 0 && (*/}
-                        {/*    <Card>*/}
-                        {/*        <CardHeader>*/}
-                        {/*            <CardTitle className="text-lg flex items-center gap-2">*/}
-                        {/*                <BarChart3 className="w-5 h-5" />*/}
-                        {/*                Top Categorias*/}
-                        {/*            </CardTitle>*/}
-                        {/*        </CardHeader>*/}
-                        {/*        <CardContent>*/}
-                        {/*            <div className="space-y-3">*/}
-                        {/*                {stats.topCategories.map((category, index) => (*/}
-                        {/*                    <div key={index} className="flex items-center justify-between text-sm">*/}
-                        {/*                        <div>*/}
-                        {/*                            <p className="font-medium">{category._id}</p>*/}
-                        {/*                            <p className="text-gray-500 text-xs">{category.count} transações</p>*/}
-                        {/*                        </div>*/}
-                        {/*                        <span className="font-medium text-red-600">{formatCurrency(category.total)}</span>*/}
-                        {/*                    </div>*/}
-                        {/*                ))}*/}
-                        {/*            </div>*/}
-                        {/*        </CardContent>*/}
-                        {/*    </Card>*/}
-                        {/*)}*/}
                     </div>
                 </div>
 
                 {/* Edit Member Modal */}
                 {editingMember && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                        <Card className="w-full max-w-md bg-white">
+                        <Card className="w-full max-w-md bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
                             <CardHeader>
-                                <CardTitle>Editar Permissão</CardTitle>
-                                <p className="text-gray-600">{editingMember.userName}</p>
+                                <CardTitle className="text-gray-900 dark:text-gray-100">Editar Permissão</CardTitle>
+                                <p className="text-gray-600 dark:text-gray-400">{editingMember.userName}</p>
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <Label>Nova Permissão</Label>
+                                        <Label className="text-gray-700 dark:text-gray-300">Nova Permissão</Label>
                                         <select
                                             value={editingMember.permission}
                                             onChange={(e) =>
@@ -766,7 +692,7 @@ export default function CollaborativeDetailsPage() {
                                                     permission: e.target.value as "ADMIN" | "COLABORATOR" | "VIEWER",
                                                 })
                                             }
-                                            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            className="w-full p-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                                         >
                                             <option value="VIEWER">Visualizador - Apenas visualizar</option>
                                             <option value="COLABORATOR">Colaborador - Adicionar e editar transações</option>
@@ -775,7 +701,7 @@ export default function CollaborativeDetailsPage() {
                                     </div>
 
                                     <div className="flex gap-2 justify-end">
-                                        <Button variant="outline" onClick={() => setEditingMember(null)}>
+                                        <Button variant="outline" onClick={() => setEditingMember(null)} className="dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800">
                                             Cancelar
                                         </Button>
                                         <Button
@@ -794,14 +720,14 @@ export default function CollaborativeDetailsPage() {
                 {/* Settings Modal */}
                 {showSettings && profile?.isUserAdmin && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                        <Card className="w-full max-w-md bg-white">
+                        <Card className="w-full max-w-md bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
                             <CardHeader>
                                 <div className="flex items-center justify-between">
-                                    <CardTitle className="flex items-center gap-2">
+                                    <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
                                         <Settings className="w-5 h-5" />
                                         Configurações da Conta
                                     </CardTitle>
-                                    <Button variant="ghost" size="sm" onClick={() => setShowSettings(false)}>
+                                    <Button variant="ghost" size="sm" onClick={() => setShowSettings(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
                                         ✕
                                     </Button>
                                 </div>
@@ -809,25 +735,27 @@ export default function CollaborativeDetailsPage() {
                             <CardContent>
                                 <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <Label>Nome da Conta</Label>
+                                        <Label className="text-gray-700 dark:text-gray-300">Nome da Conta</Label>
                                         <Input
                                             value={editName}
                                             onChange={(e) => setEditName(e.target.value)}
                                             placeholder="Nome da conta colaborativa"
+                                            className="bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
                                         />
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label>Descrição</Label>
+                                        <Label className="text-gray-700 dark:text-gray-300">Descrição</Label>
                                         <Input
                                             value={editDescription}
                                             onChange={(e) => setEditDescription(e.target.value)}
                                             placeholder="Descrição da conta (opcional)"
+                                            className="bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
                                         />
                                     </div>
 
                                     <div className="flex gap-2 pt-4 justify-end">
-                                        <Button variant="outline" onClick={() => setShowSettings(false)}>
+                                        <Button variant="outline" onClick={() => setShowSettings(false)} className="dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800">
                                             Cancelar
                                         </Button>
                                         <Button onClick={handleUpdateProfile} className="text-white bg-blue-600 hover:bg-blue-700">
