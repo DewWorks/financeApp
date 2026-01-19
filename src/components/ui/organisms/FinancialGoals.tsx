@@ -7,7 +7,7 @@ import { Target, Plus, Trash2, Edit, Trophy, Rocket, Info, TrendingUp, Wallet, C
 import { Thermometer, ThermometerSnowflake, ThermometerSun } from 'lucide-react';
 import { incomeTags, ITransaction } from '@/interfaces/ITransaction';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/atoms/select";
-import { useGoals } from '@/hooks/useGoals';
+import { useGoals } from '@/context/GoalsContext';
 import { IGoal } from "@/interfaces/IGoal";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
