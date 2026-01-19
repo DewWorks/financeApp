@@ -63,8 +63,7 @@ const itemVariants = {
 function DashboardContent() {
   const router = useRouter()
   const [user, setUser] = useState<IUser | null>(null)
-
-  // profileId is now provided via Context or available here for other widgets
+  
   const { currentProfileId, currentProfileName, isLoading: isProfileLoading } = useCurrentProfile();
 
   const {

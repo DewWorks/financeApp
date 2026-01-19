@@ -4,7 +4,7 @@ import { ObjectId } from "mongodb"
 import jwt from "jsonwebtoken"
 import { cookies } from "next/headers"
 import { sendEmail } from "@/app/functions/emails/sendEmail"
-import {IMember, IProfile } from "@/interfaces/IProfile"
+import { IMember, IProfile } from "@/interfaces/IProfile"
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key"
 
@@ -18,13 +18,18 @@ async function getUserIdFromToken() {
 }
 
 // PUT - Atualizar membro
-export async function PUT(request: Request) {
+export async function PUT(
+    request: Request,
+    { params }: { params: Promise<{ profileId: string; memberId: string }> }
+) {
     try {
         const userId = await getUserIdFromToken()
-        const { permission, profileId, memberId } = await request.json()
+        const { permission } = await request.json()
+        const resolvedParams = await params
+        const { profileId, memberId } = resolvedParams
 
-        const profileObjectId = new ObjectId(String(profileId))
-        const memberObjectId = new ObjectId(String(memberId))
+        const profileObjectId = new ObjectId(profileId)
+        const memberObjectId = new ObjectId(memberId)
         const userObjectId = new ObjectId(String(userId))
 
         console.log("PUT Request - Profile ID:", profileId)
@@ -42,7 +47,7 @@ export async function PUT(request: Request) {
         })
 
         console.log("Profile found:", profile)
-        
+
         if (!profile) {
             return NextResponse.json({ error: "Permission denied" }, { status: 403 })
         }
@@ -156,16 +161,21 @@ export async function PUT(request: Request) {
 }
 
 // DELETE - Remover membro
-export async function DELETE(request: Request) {
+export async function DELETE(
+    request: Request,
+    { params }: { params: Promise<{ profileId: string; memberId: string }> }
+) {
     try {
         const userId = await getUserIdFromToken()
-        const { profileId, memberId } = await request.json();
+        const resolvedParams = await params
+        const profileId = new ObjectId(resolvedParams.profileId)
+        const memberId = new ObjectId(resolvedParams.memberId)
 
         const client = await getMongoClient()
         const db = client.db("financeApp")
 
         // Verificar se o usuário tem permissão de ADMIN
-        const profile = await db.collection("profile").findOne({
+        const profile = await db.collection("profiles").findOne({
             _id: profileId,
             "members.userId": userId,
             "members.permission": "ADMIN",
@@ -180,6 +190,10 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ error: "Cannot remove profile creator" }, { status: 400 })
         }
 
+        // Buscar usuário para notificar
+        const memberToRemove = profile.members.find((m: IMember) => m.userId.toString() === memberId.toString())
+        const userToRemove = await db.collection("users").findOne({ _id: memberId })
+
         // Remover membro
         const profiles = db.collection<IProfile>("profiles")
         await profiles.updateOne(
@@ -187,8 +201,32 @@ export async function DELETE(request: Request) {
             {
                 $pull: { members: { userId: memberId } },
                 $set: { updatedAt: new Date() },
-            }
+            },
         )
+
+        // Enviar email de notificação (opcional, mas boa prática)
+        if (userToRemove && memberToRemove) {
+            const emailHtml = `
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="color: #e53935; margin-bottom: 10px;">🚫 Acesso Removido</h1>
+                    <h2 style="color: #333; font-weight: normal;">Você foi removido da conta colaborativa</h2>
+                </div>
+                <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <p><strong>Conta:</strong> ${profile.name}</p>
+                    <p><strong>Data:</strong> ${new Date().toLocaleDateString("pt-BR")}</p>
+                </div>
+            `;
+
+            try {
+                await sendEmail({
+                    to: userToRemove.email,
+                    subject: `🚫 Removido da conta "${profile.name}"`,
+                    htmlContent: emailHtml
+                })
+            } catch (e) {
+                console.error("Failed to send removal email", e)
+            }
+        }
 
         return NextResponse.json({ message: "Member removed successfully" })
     } catch (error) {
