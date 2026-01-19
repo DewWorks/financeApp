@@ -17,7 +17,43 @@ async function getUserIdFromToken() {
     return new ObjectId(decoded.userId)
 }
 
-// PUT - Atualizar membro
+/**
+ * @swagger
+ * /api/profiles/{profileId}/members/{memberId}:
+ *   put:
+ *     summary: Update member permissions
+ *     description: Updates the permission level of a collaborative profile member.
+ *     tags:
+ *       - Members
+ *     parameters:
+ *       - in: path
+ *         name: profileId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: memberId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               permission:
+ *                 type: string
+ *                 enum: [ADMIN, COLABORATOR, VIEWER]
+ *     responses:
+ *       200:
+ *         description: Member updated successfully
+ *       403:
+ *         description: Permission denied
+ *       404:
+ *         description: Member or User not found
+ */
 export async function PUT(
     request: Request,
     { params }: { params: Promise<{ profileId: string; memberId: string }> }
@@ -160,7 +196,38 @@ export async function PUT(
     }
 }
 
-// DELETE - Remover membro
+
+/**
+ * @swagger
+ * /api/profiles/{profileId}/members/{memberId}:
+ *   delete:
+ *     summary: Remove a member from the profile
+ *     description: Removes a member from the collaborative profile. Only admins can perform this action.
+ *     tags:
+ *       - Members
+ *     parameters:
+ *       - in: path
+ *         name: profileId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The profile ID
+ *       - in: path
+ *         name: memberId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The member ID to remove
+ *     responses:
+ *       200:
+ *         description: Member removed successfully
+ *       403:
+ *         description: Permission denied
+ *       400:
+ *         description: Cannot remove profile creator
+ *       500:
+ *         description: Internal server error
+ */
 export async function DELETE(
     request: Request,
     { params }: { params: Promise<{ profileId: string; memberId: string }> }
