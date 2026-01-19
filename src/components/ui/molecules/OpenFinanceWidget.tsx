@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/atoms/button";
 import { Wallet, DollarSign, TrendingUp, ChevronDown, ChevronUp, Eye, EyeOff, Landmark } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { getBankDetails } from "@/lib/utils";
 
 export function OpenFinanceWidget() {
     const router = useRouter();
@@ -44,23 +45,7 @@ export function OpenFinanceWidget() {
         fetchBankConnections();
     }, []);
 
-    const getBankDetails = (bankName: string) => {
-        const name = bankName.toLowerCase();
-        const defaultDetails = { color: "#1e293b", logo: "https://logo.clearbit.com/bank.com" };
 
-        if (name.includes("nubank") || name.includes("nu pagamentos")) return { color: "#820ad1", logo: "https://cdn.worldvectorlogo.com/logos/nubank-3.svg" };
-        if (name.includes("itaú") || name.includes("itau")) return { color: "#ec7000", logo: "https://logo.clearbit.com/itau.com.br" };
-        if (name.includes("bradesco")) return { color: "#cc092f", logo: "https://logo.clearbit.com/bradesco.com.br" };
-        if (name.includes("santander")) return { color: "#ec2028", logo: "https://logo.clearbit.com/santander.com.br" };
-        if (name.includes("inter")) return { color: "#ff7a00", logo: "https://logo.clearbit.com/bancointer.com.br" };
-        if (name.includes("brasil") || name.includes("bb")) return { color: "#0038a8", logo: "https://logo.clearbit.com/bb.com.br" };
-        if (name.includes("caixa")) return { color: "#0066b3", logo: "https://logo.clearbit.com/caixa.gov.br" };
-        if (name.includes("btg")) return { color: "#000000", logo: "https://logo.clearbit.com/btgpactual.com" };
-        if (name.includes("xp")) return { color: "#000000", logo: "https://logo.clearbit.com/xpi.com.br" };
-        if (name.includes("c6")) return { color: "#000000", logo: "https://logo.clearbit.com/c6bank.com.br" };
-
-        return defaultDetails;
-    };
 
     // Processamento de Contas
     const allAccounts = bankConnections.flatMap((conn) => {

@@ -126,3 +126,38 @@ export async function GET(req: NextRequest) {
     }
 
 }
+
+export async function DELETE(req: NextRequest) {
+    try {
+        const userId = await getUserId();
+        const client = await getMongoClient();
+        const db = client.db("financeApp");
+
+        if (!userId) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const { searchParams } = new URL(req.url);
+        const itemId = searchParams.get('itemId');
+
+        if (!itemId) {
+            return NextResponse.json({ error: "ItemId is required" }, { status: 400 });
+        }
+
+        logDebug(`Deleting connection: ${itemId} for user: ${userId}`);
+
+        const result = await db.collection('bankConnections').deleteOne({
+            itemId: itemId,
+            userId: userId // Ensure user owns the connection
+        });
+
+        if (result.deletedCount === 0) {
+            return NextResponse.json({ error: "Conexão não encontrada ou não pertence ao usuário" }, { status: 404 });
+        }
+
+        return NextResponse.json({ success: true });
+    } catch (error: any) {
+        console.error("Erro ao deletar conexão:", error);
+        return NextResponse.json({ error: "Erro ao deletar conexão" }, { status: 500 });
+    }
+}
