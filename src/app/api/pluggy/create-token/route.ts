@@ -1,18 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPluggyClient } from "@/lib/pluggy";
+import jwt from 'jsonwebtoken';
+import { cookies } from 'next/headers';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
+async function getUserId() {
+    const token = (await cookies()).get('auth_token')?.value
+    if (!token) return null;
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET) as { userId: string }
+        return decoded.userId
+    } catch (err) {
+        return null; // Token inválido
+    }
+}
 
 export async function POST(req: NextRequest) {
     try {
         const client = getPluggyClient();
 
-        // Em produção, isso deve ser dinâmico para cada usuário
-        // O webhook URL é onde a Pluggy vai notificar sobre novos dados
-        // Para teste local (localhost), a Pluggy não consegue chamar seu webhook
-        // Você precisará usar ferramentos como ngrok ou apenas testar o fluxo de conexão sem webhook por enquanto
+        const userId = await getUserId();
+
+        if (!userId) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
 
         const data = await client.createConnectToken(undefined, {
             webhookUrl: process.env.PLUGGY_WEBHOOK_URL,
-            clientUserId: "user-id-placeholder", // Substituir pelo ID real
+            clientUserId: userId,
         });
 
         return NextResponse.json({ accessToken: data.accessToken });
