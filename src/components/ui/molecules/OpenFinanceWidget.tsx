@@ -246,7 +246,7 @@ export function OpenFinanceWidget() {
 
                                                         <div className="z-10 relative flex justify-between items-end">
                                                             <div>
-                                                                <p className="text-[10px] text-white/80 uppercase tracking-wider font-medium mb-0.5">Fatura Atual</p>
+                                                                <p className="text-[10px] text-white/80 uppercase tracking-wider font-medium mb-0.5">Limite Atual</p>
                                                                 <h3 className="text-2xl font-bold text-white drop-shadow-md">
                                                                     {acc.currency} {acc.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                                                                 </h3>
