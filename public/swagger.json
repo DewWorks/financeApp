@@ -1,0 +1,1920 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "FinancePro API Documentation",
+    "version": "1.0",
+    "description": "Documentação oficial da API do FinancePro. Acesso restrito a administradores.",
+    "contact": {
+      "name": "Suporte FinancePro",
+      "email": "suporte@financepro.com"
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "security": [],
+  "paths": {
+    "/api/admin/reports/send-all": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Send monthly reports",
+        "description": "Triggers sending monthly financial reports to all users via email.",
+        "responses": {
+          "200": {
+            "description": "Reports sent"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/admin/users/{id}": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get user by ID",
+        "description": "Retrieves a specific user's details (Admin only).",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "User ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User found"
+          },
+          "400": {
+            "description": "Invalid ID"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/admin/users/all": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List all users",
+        "description": "Retrieves all users in the system (Admin only).",
+        "responses": {
+          "200": {
+            "description": "List of users",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/User"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/admin/users/temporary": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List temporary users",
+        "description": "Retrieves all temporary users (WhatsApp users). Requires Admin ID.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Admin User ID (for authentication)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of temporary users"
+          },
+          "400": {
+            "description": "Missing or invalid Admin ID"
+          },
+          "403": {
+            "description": "Forbidden (Not an admin)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/auth/forgot-password": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Request password reset",
+        "description": "Sends a password reset code to the user's email.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Verification code sent"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Login user",
+        "description": "Authenticates a user using email or phone number and password.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "password"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  },
+                  "cel": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "token": {
+                      "type": "string"
+                    },
+                    "userId": {
+                      "type": "string"
+                    },
+                    "tutorialGuide": {
+                      "type": "boolean"
+                    },
+                    "executeQuery": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing fields or invalid credentials"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Logout user",
+        "description": "Clears the authentication cookie.",
+        "responses": {
+          "200": {
+            "description": "Logged out successfully"
+          }
+        }
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Register a new user",
+        "description": "Creates a new user account.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "email",
+                  "cel",
+                  "password"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  },
+                  "cel": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created successfully"
+          },
+          "400": {
+            "description": "User already exists"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/auth/reset-password": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Reset password",
+        "description": "Resets the user's password using a verification token.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "token",
+                  "newPassword"
+                ],
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "description": "JWT token received from verify-code endpoint"
+                  },
+                  "newPassword": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password reset successfully"
+          },
+          "400": {
+            "description": "Invalid token or expired"
+          }
+        }
+      }
+    },
+    "/api/auth/verify-code": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Verify reset code",
+        "description": "Verifies the code sent to email for password reset.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "code"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  },
+                  "code": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Code verified, returns temporary token for reset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "token": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or expired code"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/auth/verify-whatsapp": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Verify WhatsApp code",
+        "description": "Verifies user registration/access via WhatsApp code code.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "password",
+                  "verificationCode",
+                  "cel"
+                ],
+                "properties": {
+                  "password": {
+                    "type": "string"
+                  },
+                  "verificationCode": {
+                    "type": "string"
+                  },
+                  "cel": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User verified and updated"
+          },
+          "400": {
+            "description": "Missing fields"
+          },
+          "401": {
+            "description": "Invalid verification code"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "410": {
+            "description": "Verification code expired"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/bank-connections": {
+      "post": {
+        "tags": [
+          "Bank Connections"
+        ],
+        "summary": "Save bank connection",
+        "description": "Saves or updates a Pluggy bank connection.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "item": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Connection saved"
+          },
+          "400": {
+            "description": "Invalid data"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Bank Connections"
+        ],
+        "summary": "List connections",
+        "description": "Retrieves all bank connections for the user.",
+        "responses": {
+          "200": {
+            "description": "List of connections",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BankConnection"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Bank Connections"
+        ],
+        "summary": "Delete connection",
+        "description": "Removes a bank connection.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "itemId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Connection deleted"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Connection not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/goals/{id}": {
+      "put": {
+        "tags": [
+          "Goals"
+        ],
+        "summary": "Update goal",
+        "description": "Updates an existing goal.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Goal ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "targetAmount": {
+                    "type": "number"
+                  },
+                  "currentAmount": {
+                    "type": "number"
+                  },
+                  "date": {
+                    "type": "string"
+                  },
+                  "tag": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Goal updated"
+          },
+          "404": {
+            "description": "Goal not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Goals"
+        ],
+        "summary": "Delete goal",
+        "description": "Deletes a goal by ID.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Goal ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Goal deleted"
+          },
+          "404": {
+            "description": "Goal not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/goals": {
+      "get": {
+        "tags": [
+          "Goals"
+        ],
+        "summary": "List goals",
+        "description": "Retrieves all financial goals for the authenticated user.",
+        "responses": {
+          "200": {
+            "description": "List of goals",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Goal"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Goals"
+        ],
+        "summary": "Create goal",
+        "description": "Creates a new financial goal.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "targetAmount"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "targetAmount": {
+                    "type": "number"
+                  },
+                  "date": {
+                    "type": "string"
+                  },
+                  "tag": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Goal created"
+          },
+          "400": {
+            "description": "Invalid data"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/insights": {
+      "get": {
+        "tags": [
+          "Insights"
+        ],
+        "summary": "Get daily insights",
+        "description": "Generates financial insights using AI based on user transactions.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "profileId",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Optional Profile ID for collaborative insights"
+          },
+          {
+            "in": "query",
+            "name": "scope",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "recent",
+                "all"
+              ],
+              "default": "recent"
+            },
+            "description": "Analysis scope"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Insight data"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/pluggy/create-token": {
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "Create Pluggy Token",
+        "description": "Generates a Pluggy Connect Token for bank aggregation widget.",
+        "responses": {
+          "200": {
+            "description": "Token generated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accessToken": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/profiles/{profileId}/details": {
+      "get": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Get profile details",
+        "description": "Retrieves detailed profile information including enriched member data.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "profileId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Profile ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Profile"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "isUserAdmin": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Profile not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/profiles/{profileId}/members/{memberId}": {
+      "put": {
+        "summary": "Update member permissions",
+        "description": "Updates the permission level of a collaborative profile member.",
+        "tags": [
+          "Members"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "profileId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "memberId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "permission": {
+                    "type": "string",
+                    "enum": [
+                      "ADMIN",
+                      "COLABORATOR",
+                      "VIEWER"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Member updated successfully"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Member or User not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Remove a member from the profile",
+        "description": "Removes a member from the collaborative profile. Only admins can perform this action.",
+        "tags": [
+          "Members"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "profileId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The profile ID"
+          },
+          {
+            "in": "path",
+            "name": "memberId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The member ID to remove"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Member removed successfully"
+          },
+          "400": {
+            "description": "Cannot remove profile creator"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/profiles/{profileId}/members": {
+      "post": {
+        "tags": [
+          "Members"
+        ],
+        "summary": "Add member",
+        "description": "Adds a new member to the collaborative profile. Only admins can add.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "profileId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Profile ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  },
+                  "permission": {
+                    "type": "string",
+                    "enum": [
+                      "ADMIN",
+                      "COLABORATOR",
+                      "VIEWER"
+                    ],
+                    "default": "COLABORATOR"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Member added"
+          },
+          "400": {
+            "description": "User already a member"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/profiles/{profileId}": {
+      "put": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Update profile",
+        "description": "Updates a profile's details. Only admins can update.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "profileId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Profile ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile updated"
+          },
+          "400": {
+            "description": "Missing fields"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Delete profile",
+        "description": "Soft deletes a profile. Only the creator can delete.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "profileId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Profile ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile deleted"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/profiles/{profileId}/stats": {
+      "get": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Get profile statistics",
+        "description": "Retrieves financial statistics for the profile including monthly/total stats and top categories.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "profileId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Profile ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "monthly": {
+                      "type": "object",
+                      "properties": {
+                        "income": {
+                          "type": "number"
+                        },
+                        "expense": {
+                          "type": "number"
+                        },
+                        "balance": {
+                          "type": "number"
+                        },
+                        "transactionCount": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "total": {
+                      "type": "object"
+                    },
+                    "recentTransactions": {
+                      "type": "array"
+                    },
+                    "topCategories": {
+                      "type": "array"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Profile not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/profiles": {
+      "get": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "List profiles",
+        "description": "Retrieves all active profiles where the user is a member.",
+        "responses": {
+          "200": {
+            "description": "List of profiles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "profiles": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Profile"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Create profile",
+        "description": "Creates a new collaborative profile.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "type"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "personal",
+                      "business",
+                      "family",
+                      "other"
+                    ]
+                  },
+                  "description": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Profile created"
+          },
+          "400": {
+            "description": "Missing fields"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/transactions/{id}": {
+      "put": {
+        "tags": [
+          "Transactions"
+        ],
+        "summary": "Update transaction",
+        "description": "Updates an existing transaction.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Transaction ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "description": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "tag": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transaction updated"
+          },
+          "404": {
+            "description": "Transaction not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Transactions"
+        ],
+        "summary": "Delete transaction",
+        "description": "Deletes a transaction by ID.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Transaction ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction deleted"
+          },
+          "404": {
+            "description": "Transaction not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/transactions/all": {
+      "get": {
+        "tags": [
+          "Transactions"
+        ],
+        "summary": "Get all transactions",
+        "description": "Retrieves all transactions for the authenticated user, sorted by date.",
+        "responses": {
+          "200": {
+            "description": "List of all transactions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Transaction"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/transactions/month": {
+      "get": {
+        "tags": [
+          "Transactions"
+        ],
+        "summary": "Get monthly transactions",
+        "description": "Retrieves all transactions for a specific month without pagination.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "month",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Month number (1-12)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of transactions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "transactions": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Transaction"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/transactions": {
+      "get": {
+        "tags": [
+          "Transactions"
+        ],
+        "summary": "List transactions",
+        "description": "Retrieves a paginated list of transactions for the authenticated user, filtered by month.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Page number"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            },
+            "description": "Items per page"
+          },
+          {
+            "in": "query",
+            "name": "month",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Month number (1-12)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of transactions and pagination info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "transactions": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Transaction"
+                      }
+                    },
+                    "totalPages": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Transactions"
+        ],
+        "summary": "Create transaction",
+        "description": "Adds a new transaction for the authenticated user.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "description",
+                  "amount",
+                  "type",
+                  "date"
+                ],
+                "properties": {
+                  "description": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "income",
+                      "expense"
+                    ]
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "tag": {
+                    "type": "string"
+                  },
+                  "isRecurring": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Transaction created"
+          },
+          "400": {
+            "description": "Invalid data"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/transactions/summary": {
+      "get": {
+        "tags": [
+          "Transactions"
+        ],
+        "summary": "Get financial summary",
+        "description": "Retrieves total income, expense, and balance for a specific period.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "month",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Month number (1-12)"
+          },
+          {
+            "in": "query",
+            "name": "year",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Year (e.g., 2024)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Summary data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "income": {
+                      "type": "number"
+                    },
+                    "expense": {
+                      "type": "number"
+                    },
+                    "balance": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/transactions/whatsapp": {
+      "post": {
+        "tags": [
+          "WhatsApp Integration"
+        ],
+        "summary": "Add transaction via WhatsApp",
+        "description": "Adds a transaction and creates a temporary user if not exists.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "phoneNumber",
+                  "transaction"
+                ],
+                "properties": {
+                  "phoneNumber": {
+                    "type": "string"
+                  },
+                  "transaction": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "income",
+                          "expense"
+                        ]
+                      },
+                      "amount": {
+                        "type": "number"
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                      "tag": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Transaction added"
+          },
+          "400": {
+            "description": "Missing fields"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "WhatsApp Integration"
+        ],
+        "summary": "Update temporary user",
+        "description": "Updates a temporary user's profile and converts them to a permanent user.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "phoneNumber",
+                  "userData"
+                ],
+                "properties": {
+                  "phoneNumber": {
+                    "type": "string"
+                  },
+                  "userData": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User updated"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "WhatsApp Integration"
+        ],
+        "summary": "Get/Resend credentials",
+        "description": "Resends login credentials to a user via WhatsApp.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "phoneNumber",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "User's phone number"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Credentials sent"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/users/password": {
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Update password",
+        "description": "Updates the user's password.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "currentPassword",
+                  "newPassword"
+                ],
+                "properties": {
+                  "currentPassword": {
+                    "type": "string"
+                  },
+                  "newPassword": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password updated"
+          },
+          "400": {
+            "description": "Invalid current password or weak new password"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/users": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get current user",
+        "description": "Retrieves the authenticated user's profile.",
+        "responses": {
+          "200": {
+            "description": "User profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Add phone number",
+        "description": "Adds a phone number to the user's profile.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "cel": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Phone number updated"
+          },
+          "400": {
+            "description": "Invalid phone number"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Update user profile",
+        "description": "Updates name, email, and phone numbers.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "email"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  },
+                  "cel": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User updated"
+          },
+          "400": {
+            "description": "Invalid data or email already in use"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/webhooks/whatsapp": {
+      "post": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "WhatsApp Webhook",
+        "description": "Receives messages from Twilio, parses them using AI, and records transactions.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "From": {
+                    "type": "string"
+                  },
+                  "Body": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Message processed"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    }
+  },
+  "tags": []
+}
