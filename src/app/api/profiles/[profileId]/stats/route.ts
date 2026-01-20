@@ -15,6 +15,47 @@ async function getUserIdFromToken() {
     return new ObjectId(decoded.userId)
 }
 
+/**
+ * @swagger
+ * /api/profiles/{profileId}/stats:
+ *   get:
+ *     tags:
+ *       - Profiles
+ *     summary: Get profile statistics
+ *     description: Retrieves financial statistics for the profile including monthly/total stats and top categories.
+ *     parameters:
+ *       - in: path
+ *         name: profileId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Profile ID
+ *     responses:
+ *       200:
+ *         description: Profile statistics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 monthly:
+ *                   type: object
+ *                   properties:
+ *                     income: { type: number }
+ *                     expense: { type: number }
+ *                     balance: { type: number }
+ *                     transactionCount: { type: number }
+ *                 total:
+ *                   type: object
+ *                 recentTransactions:
+ *                   type: array
+ *                 topCategories:
+ *                   type: array
+ *       404:
+ *         description: Profile not found
+ *       500:
+ *         description: Internal server error
+ */
 export async function GET(request: Request, { params }: { params: Promise<{ profileId: string }> }) {
     try {
         const userId = await getUserIdFromToken()

@@ -2,6 +2,42 @@ import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { getMongoClient } from '@/db/connectionDb';
 
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     tags:
+ *       - Auth
+ *     summary: Register a new user
+ *     description: Creates a new user account.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - cel
+ *               - password
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               cel:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: User created successfully
+ *       400:
+ *         description: User already exists
+ *       500:
+ *         description: Internal server error
+ */
 export async function POST(request: Request) {
   try {
     const { name, email, cel, password } = await request.json()

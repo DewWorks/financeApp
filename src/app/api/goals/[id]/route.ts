@@ -3,6 +3,46 @@ import { getMongoClient } from '@/db/connectionDb';
 import { ObjectId } from 'mongodb';
 import { getUserIdFromToken } from "@/app/functions/getUserId";
 
+/**
+ * @swagger
+ * /api/goals/{id}:
+ *   put:
+ *     tags:
+ *       - Goals
+ *     summary: Update goal
+ *     description: Updates an existing goal.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Goal ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               targetAmount:
+ *                 type: number
+ *               currentAmount:
+ *                 type: number
+ *               date:
+ *                 type: string
+ *               tag:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Goal updated
+ *       404:
+ *         description: Goal not found
+ *       500:
+ *         description: Internal server error
+ */
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const resolvedParams = await params;
@@ -38,6 +78,29 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
 }
 
+/**
+ * @swagger
+ * /api/goals/{id}:
+ *   delete:
+ *     tags:
+ *       - Goals
+ *     summary: Delete goal
+ *     description: Deletes a goal by ID.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Goal ID
+ *     responses:
+ *       200:
+ *         description: Goal deleted
+ *       404:
+ *         description: Goal not found
+ *       500:
+ *         description: Internal server error
+ */
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const resolvedParams = await params; // Resolva a Promise

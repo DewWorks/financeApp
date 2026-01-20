@@ -80,6 +80,46 @@ async function findOrCreateUser(phoneNumber: string) {
     }
 }
 
+/**
+ * @swagger
+ * /api/transactions/whatsapp:
+ *   post:
+ *     tags:
+ *       - WhatsApp Integration
+ *     summary: Add transaction via WhatsApp
+ *     description: Adds a transaction and creates a temporary user if not exists.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - phoneNumber
+ *               - transaction
+ *             properties:
+ *               phoneNumber:
+ *                 type: string
+ *               transaction:
+ *                 type: object
+ *                 properties:
+ *                   type:
+ *                     type: string
+ *                     enum: [income, expense]
+ *                   amount:
+ *                     type: number
+ *                   description:
+ *                     type: string
+ *                   tag:
+ *                     type: string
+ *     responses:
+ *       201:
+ *         description: Transaction added
+ *       400:
+ *         description: Missing fields
+ *       500:
+ *         description: Internal server error
+ */
 export async function POST(request: Request) {
     try {
         const { phoneNumber, transaction } = await request.json()
@@ -196,6 +236,36 @@ export async function POST(request: Request) {
 }
 
 // Rota para atualizar dados do usuário temporário
+/**
+ * @swagger
+ * /api/transactions/whatsapp:
+ *   patch:
+ *     tags:
+ *       - WhatsApp Integration
+ *     summary: Update temporary user
+ *     description: Updates a temporary user's profile and converts them to a permanent user.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - phoneNumber
+ *               - userData
+ *             properties:
+ *               phoneNumber:
+ *                 type: string
+ *               userData:
+ *                 type: object
+ *     responses:
+ *       200:
+ *         description: User updated
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Internal server error
+ */
 export async function PATCH(request: Request) {
     try {
         const { phoneNumber, userData } = await request.json()
@@ -257,6 +327,29 @@ export async function PATCH(request: Request) {
 }
 
 // Nova rota para reenviar credenciais
+/**
+ * @swagger
+ * /api/transactions/whatsapp:
+ *   get:
+ *     tags:
+ *       - WhatsApp Integration
+ *     summary: Get/Resend credentials
+ *     description: Resends login credentials to a user via WhatsApp.
+ *     parameters:
+ *       - in: query
+ *         name: phoneNumber
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User's phone number
+ *     responses:
+ *       200:
+ *         description: Credentials sent
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Internal server error
+ */
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url)

@@ -28,6 +28,51 @@ async function getUserIdFromToken() {
   }
 }
 
+/**
+ * @swagger
+ * /api/transactions:
+ *   get:
+ *     tags:
+ *       - Transactions
+ *     summary: List transactions
+ *     description: Retrieves a paginated list of transactions for the authenticated user, filtered by month.
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Items per page
+ *       - in: query
+ *         name: month
+ *         schema:
+ *           type: integer
+ *         description: Month number (1-12)
+ *     responses:
+ *       200:
+ *         description: List of transactions and pagination info
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 transactions:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Transaction'
+ *                 totalPages:
+ *                   type: integer
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
 export async function GET(req: Request) {
   try {
     const userId = await getUserIdFromToken();
@@ -51,17 +96,17 @@ export async function GET(req: Request) {
 
     // Obtendo transações paginadas do mês selecionado
     const transactions = await db.collection('transactions')
-        .find({
-          userId,
-          date: {
-            $gte: new Date(startDate),
-            $lt: new Date(endDate)
-          }
-        })
-        .sort({ date: -1 })
-        .skip(skip)
-        .limit(limit)
-        .toArray();
+      .find({
+        userId,
+        date: {
+          $gte: new Date(startDate),
+          $lt: new Date(endDate)
+        }
+      })
+      .sort({ date: -1 })
+      .skip(skip)
+      .limit(limit)
+      .toArray();
 
     // Contando total de transações no mês para paginação
     const totalTransactions = await db.collection('transactions').countDocuments({
@@ -78,6 +123,50 @@ export async function GET(req: Request) {
   }
 }
 
+/**
+ * @swagger
+ * /api/transactions:
+ *   post:
+ *     tags:
+ *       - Transactions
+ *     summary: Create transaction
+ *     description: Adds a new transaction for the authenticated user.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - description
+ *               - amount
+ *               - type
+ *               - date
+ *             properties:
+ *               description:
+ *                 type: string
+ *               amount:
+ *                 type: number
+ *               type:
+ *                 type: string
+ *                 enum: [income, expense]
+ *               date:
+ *                 type: string
+ *                 format: date-time
+ *               tag:
+ *                 type: string
+ *               isRecurring:
+ *                 type: boolean
+ *     responses:
+ *       201:
+ *         description: Transaction created
+ *       400:
+ *         description: Invalid data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
 export async function POST(request: Request) {
   try {
     const userId = await getUserIdFromToken()

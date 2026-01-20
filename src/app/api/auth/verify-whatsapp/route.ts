@@ -4,6 +4,47 @@ import bcrypt from "bcryptjs";
 import { IUser } from "@/interfaces/IUser";
 import { sendEmail } from "@/app/functions/emails/sendEmail";
 
+/**
+ * @swagger
+ * /api/auth/verify-whatsapp:
+ *   post:
+ *     tags:
+ *       - Auth
+ *     summary: Verify WhatsApp code
+ *     description: Verifies user registration/access via WhatsApp code code.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - password
+ *               - verificationCode
+ *               - cel
+ *             properties:
+ *               password:
+ *                 type: string
+ *               verificationCode:
+ *                 type: string
+ *               cel:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: User verified and updated
+ *       400:
+ *         description: Missing fields
+ *       401:
+ *         description: Invalid verification code
+ *       404:
+ *         description: User not found
+ *       410:
+ *         description: Verification code expired
+ *       500:
+ *         description: Internal server error
+ */
 export async function POST(request: Request) {
     try {
         const { password, verificationCode, email, cel } = await request.json();
@@ -88,7 +129,7 @@ export async function POST(request: Request) {
     <p style="font-size: 14px; color: #888;">Equipe FinancePro</p>
   `
         });
-        
+
         return NextResponse.json({ message: "User verified and updated successfully" }, { status: 200 });
     } catch (error) {
         console.error("Verification error:", error);

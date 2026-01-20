@@ -1,6 +1,28 @@
 import { getMongoClient } from "@/db/connectionDb"
 import { NextResponse } from "next/server"
 
+/**
+ * @swagger
+ * /api/admin/users/all:
+ *   get:
+ *     tags:
+ *       - Admin
+ *     summary: List all users
+ *     description: Retrieves all users in the system (Admin only).
+ *     responses:
+ *       200:
+ *         description: List of users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
 export async function GET() {
     try {
 

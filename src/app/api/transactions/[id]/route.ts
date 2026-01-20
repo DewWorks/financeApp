@@ -1,8 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getMongoClient } from '@/db/connectionDb'
 import { ObjectId } from 'mongodb'
-import {getUserIdFromToken} from "@/app/functions/getUserId";
+import { getUserIdFromToken } from "@/app/functions/getUserId";
 
+/**
+ * @swagger
+ * /api/transactions/{id}:
+ *   put:
+ *     tags:
+ *       - Transactions
+ *     summary: Update transaction
+ *     description: Updates an existing transaction.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Transaction ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               description:
+ *                 type: string
+ *               amount:
+ *                 type: number
+ *               date:
+ *                 type: string
+ *                 format: date-time
+ *               tag:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Transaction updated
+ *       404:
+ *         description: Transaction not found
+ *       500:
+ *         description: Internal server error
+ */
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const resolvedParams = await params;
@@ -38,6 +77,29 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
 }
 
+/**
+ * @swagger
+ * /api/transactions/{id}:
+ *   delete:
+ *     tags:
+ *       - Transactions
+ *     summary: Delete transaction
+ *     description: Deletes a transaction by ID.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Transaction ID
+ *     responses:
+ *       200:
+ *         description: Transaction deleted
+ *       404:
+ *         description: Transaction not found
+ *       500:
+ *         description: Internal server error
+ */
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const resolvedParams = await params; // Resolva a Promise

@@ -16,6 +16,29 @@ async function getUserIdFromToken() {
 }
 
 // GET - Listar profiles do usuário
+/**
+ * @swagger
+ * /api/profiles:
+ *   get:
+ *     tags:
+ *       - Profiles
+ *     summary: List profiles
+ *     description: Retrieves all active profiles where the user is a member.
+ *     responses:
+ *       200:
+ *         description: List of profiles
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 profiles:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Profile'
+ *       500:
+ *         description: Internal server error
+ */
 export async function GET() {
     try {
         const userId = await getUserIdFromToken()
@@ -38,6 +61,39 @@ export async function GET() {
 }
 
 // POST - Criar novo profile
+/**
+ * @swagger
+ * /api/profiles:
+ *   post:
+ *     tags:
+ *       - Profiles
+ *     summary: Create profile
+ *     description: Creates a new collaborative profile.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - type
+ *             properties:
+ *               name:
+ *                 type: string
+ *               type:
+ *                 type: string
+ *                 enum: [personal, business, family, other]
+ *               description:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Profile created
+ *       400:
+ *         description: Missing fields
+ *       500:
+ *         description: Internal server error
+ */
 export async function POST(request: Request) {
     try {
         const userId = await getUserIdFromToken()

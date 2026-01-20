@@ -2,6 +2,31 @@ import { NextResponse } from "next/server";
 import { getMongoClient } from "@/db/connectionDb";
 import { ObjectId } from "mongodb";
 
+/**
+ * @swagger
+ * /api/admin/users/temporary:
+ *   get:
+ *     tags:
+ *       - Admin
+ *     summary: List temporary users
+ *     description: Retrieves all temporary users (WhatsApp users). Requires Admin ID.
+ *     parameters:
+ *       - in: query
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Admin User ID (for authentication)
+ *     responses:
+ *       200:
+ *         description: List of temporary users
+ *       400:
+ *         description: Missing or invalid Admin ID
+ *       403:
+ *         description: Forbidden (Not an admin)
+ *       500:
+ *         description: Internal server error
+ */
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
