@@ -14,7 +14,7 @@ interface GoalsContextType {
     showToast: (message: string, type: 'success' | 'error' | 'warning' | 'auth') => void;
 }
 
-const GoalsContext = createContext<GoalsContextType | undefined>(undefined);
+export const GoalsContext = createContext<GoalsContextType | undefined>(undefined);
 
 export function GoalsProvider({ children }: { children: ReactNode }) {
     const [goals, setGoals] = useState<IGoal[]>([]);
