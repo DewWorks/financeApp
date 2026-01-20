@@ -13,14 +13,37 @@ const SwaggerUI = dynamic(() => import("swagger-ui-react"), { ssr: false });
 export default function ApiDocPage() {
     const router = useRouter();
     const [isMounted, setIsMounted] = useState(false);
-    const [isAuthorized, setIsAuthorized] = useState(true); // Default to true if you removed the check
+    const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
     useEffect(() => {
         setIsMounted(true);
-    }, []);
+
+        async function checkAdmin() {
+            try {
+                const response = await fetch("/api/users");
+                if (!response.ok) {
+                    throw new Error("Failed to fetch user");
+                }
+                const user = await response.json();
+
+                if (user.admin === true) {
+                    setIsAuthorized(true);
+                } else {
+                    setIsAuthorized(false);
+                    router.push("/dashboard");
+                }
+            } catch (error) {
+                console.error("Auth check failed:", error);
+                setIsAuthorized(false);
+                router.push("/dashboard");
+            }
+        }
+
+        checkAdmin();
+    }, [router]);
 
     // Don't render anything until mounted to prevent hydration mismatch
-    if (!isMounted) {
+    if (!isMounted || isAuthorized === null) {
         return <DashboardSkeleton />;
     }
 
