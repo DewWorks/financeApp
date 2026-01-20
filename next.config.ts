@@ -8,13 +8,6 @@ const nextConfig: NextConfig = {
             config.resolve.fallback = { fs: false, canvas: false };
         }
         return config;
-    },
-    typescript: {
-        ignoreBuildErrors: true,
-    },
-    // @ts-ignore
-    eslint: {
-        ignoreDuringBuilds: true,
     }
 };
 
