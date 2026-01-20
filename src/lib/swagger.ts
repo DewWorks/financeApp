@@ -1,8 +1,9 @@
 import { createSwaggerSpec } from 'next-swagger-doc';
+import path from 'path';
 
 export const getApiDocs = async () => {
     const spec = createSwaggerSpec({
-        apiFolder: 'src/app/api', // define api folder
+        apiFolder: path.join(process.cwd(), 'src/app/api'), // define api folder
         definition: {
             openapi: '3.0.0',
             info: {
