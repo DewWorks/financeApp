@@ -16,6 +16,38 @@ async function getUserIdFromToken() {
     return new ObjectId(decoded.userId)
 }
 
+/**
+ * @swagger
+ * /api/profiles/{profileId}/details:
+ *   get:
+ *     tags:
+ *       - Profiles
+ *     summary: Get profile details
+ *     description: Retrieves detailed profile information including enriched member data.
+ *     parameters:
+ *       - in: path
+ *         name: profileId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Profile ID
+ *     responses:
+ *       200:
+ *         description: Profile details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Profile'
+ *                 - type: object
+ *                   properties:
+ *                     isUserAdmin:
+ *                       type: boolean
+ *       404:
+ *         description: Profile not found
+ *       500:
+ *         description: Internal server error
+ */
 export async function GET() {
     try {
         const userId = await getUserIdFromToken()

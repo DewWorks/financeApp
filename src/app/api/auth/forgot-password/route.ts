@@ -2,6 +2,33 @@ import { getMongoClient } from '@/db/connectionDb';
 import { NextResponse } from 'next/server';
 import { sendEmail } from '@/app/functions/emails/sendEmail';
 
+/**
+ * @swagger
+ * /api/auth/forgot-password:
+ *   post:
+ *     tags:
+ *       - Auth
+ *     summary: Request password reset
+ *     description: Sends a password reset code to the user's email.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Verification code sent
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Internal server error
+ */
 export async function POST(request: Request) {
     try {
         const { email } = await request.json();

@@ -115,17 +115,15 @@ ${topExpenseTags.map((tag, index) => `${index + 1}. **${tag[0]}**: ${formatCurre
 
 ## Dicas Personalizadas
 
-${
-        balance < 0
+${balance < 0
             ? "⚠️ Suas despesas superaram suas receitas este mês. Considere revisar seus gastos nas categorias de maior impacto."
             : "✅ Parabéns! Você manteve um saldo positivo este mês. Continue com o bom trabalho!"
-    }
+        }
 
-${
-        topExpenseTags[0] && topExpenseTags[0][1] > totalIncome * 0.4
+${topExpenseTags[0] && topExpenseTags[0][1] > totalIncome * 0.4
             ? `⚠️ A categoria **${topExpenseTags[0][0]}** representa mais de 40% dos seus gastos. Considere analisar se há oportunidades de redução.`
             : ""
-    }
+        }
 
 Acesse o [FinancePro](https://financepro.vercel.app) para mais detalhes e dicas personalizadas para melhorar sua saúde financeira.
 
@@ -145,6 +143,20 @@ function createTransporter() {
     })
 }
 
+/**
+ * @swagger
+ * /api/admin/reports/send-all:
+ *   get:
+ *     tags:
+ *       - Admin
+ *     summary: Send monthly reports
+ *     description: Triggers sending monthly financial reports to all users via email.
+ *     responses:
+ *       200:
+ *         description: Reports sent
+ *       500:
+ *         description: Internal server error
+ */
 export async function GET() {
     try {
         // Get all users

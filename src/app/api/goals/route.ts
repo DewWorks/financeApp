@@ -28,6 +28,28 @@ async function getUserIdFromToken() {
     }
 }
 
+/**
+ * @swagger
+ * /api/goals:
+ *   get:
+ *     tags:
+ *       - Goals
+ *     summary: List goals
+ *     description: Retrieves all financial goals for the authenticated user.
+ *     responses:
+ *       200:
+ *         description: List of goals
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Goal'
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
 export async function GET() {
     try {
         const userId = await getUserIdFromToken()
@@ -53,6 +75,42 @@ export async function GET() {
     }
 }
 
+/**
+ * @swagger
+ * /api/goals:
+ *   post:
+ *     tags:
+ *       - Goals
+ *     summary: Create goal
+ *     description: Creates a new financial goal.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - targetAmount
+ *             properties:
+ *               name:
+ *                 type: string
+ *               targetAmount:
+ *                 type: number
+ *               date:
+ *                 type: string
+ *               tag:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Goal created
+ *       400:
+ *         description: Invalid data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
 export async function POST(request: Request) {
     try {
         const userId = await getUserIdFromToken()

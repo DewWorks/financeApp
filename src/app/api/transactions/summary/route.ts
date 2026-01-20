@@ -22,6 +22,42 @@ async function getUserIdFromToken() {
     }
 }
 
+/**
+ * @swagger
+ * /api/transactions/summary:
+ *   get:
+ *     tags:
+ *       - Transactions
+ *     summary: Get financial summary
+ *     description: Retrieves total income, expense, and balance for a specific period.
+ *     parameters:
+ *       - in: query
+ *         name: month
+ *         schema:
+ *           type: integer
+ *         description: Month number (1-12)
+ *       - in: query
+ *         name: year
+ *         schema:
+ *           type: integer
+ *         description: Year (e.g., 2024)
+ *     responses:
+ *       200:
+ *         description: Summary data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 income:
+ *                   type: number
+ *                 expense:
+ *                   type: number
+ *                 balance:
+ *                   type: number
+ *       500:
+ *         description: Internal server error
+ */
 export async function GET(req: Request) {
     try {
         const userId = await getUserIdFromToken();

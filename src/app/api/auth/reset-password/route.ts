@@ -5,6 +5,35 @@ import bcrypt from 'bcryptjs';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
+/**
+ * @swagger
+ * /api/auth/reset-password:
+ *   post:
+ *     tags:
+ *       - Auth
+ *     summary: Reset password
+ *     description: Resets the user's password using a verification token.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - newPassword
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: JWT token received from verify-code endpoint
+ *               newPassword:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password reset successfully
+ *       400:
+ *         description: Invalid token or expired
+ */
 export async function POST(request: Request) {
     try {
         const { token, newPassword } = await request.json();

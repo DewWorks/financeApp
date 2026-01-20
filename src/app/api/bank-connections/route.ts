@@ -33,6 +33,38 @@ async function getUserId() {
     }
 }
 
+/**
+ * @swagger
+ * /api/bank-connections:
+ *   post:
+ *     tags:
+ *       - Bank Connections
+ *     summary: Save bank connection
+ *     description: Saves or updates a Pluggy bank connection.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               item:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   status:
+ *                     type: string
+ *     responses:
+ *       200:
+ *         description: Connection saved
+ *       400:
+ *         description: Invalid data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
 export async function POST(req: NextRequest) {
     try {
         logDebug("Received POST request to /api/bank-connections");
@@ -107,6 +139,28 @@ export async function POST(req: NextRequest) {
 }
 // Keep POST as is... adding GET below
 
+/**
+ * @swagger
+ * /api/bank-connections:
+ *   get:
+ *     tags:
+ *       - Bank Connections
+ *     summary: List connections
+ *     description: Retrieves all bank connections for the user.
+ *     responses:
+ *       200:
+ *         description: List of connections
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/BankConnection'
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
 export async function GET(req: NextRequest) {
     try {
         const userId = await getUserId();
@@ -127,6 +181,30 @@ export async function GET(req: NextRequest) {
 
 }
 
+/**
+ * @swagger
+ * /api/bank-connections:
+ *   delete:
+ *     tags:
+ *       - Bank Connections
+ *     summary: Delete connection
+ *     description: Removes a bank connection.
+ *     parameters:
+ *       - in: query
+ *         name: itemId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Connection deleted
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Connection not found
+ *       500:
+ *         description: Internal server error
+ */
 export async function DELETE(req: NextRequest) {
     try {
         const userId = await getUserId();

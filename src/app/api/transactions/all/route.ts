@@ -8,6 +8,28 @@ class AuthError extends Error {
         this.name = 'AuthError';
     }
 }
+/**
+ * @swagger
+ * /api/transactions/all:
+ *   get:
+ *     tags:
+ *       - Transactions
+ *     summary: Get all transactions
+ *     description: Retrieves all transactions for the authenticated user, sorted by date.
+ *     responses:
+ *       200:
+ *         description: List of all transactions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Transaction'
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
 export async function GET() {
     try {
         const userId = await getUserIdFromToken()

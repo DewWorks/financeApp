@@ -16,6 +16,44 @@ async function getUserIdFromToken() {
 }
 
 // PUT - Atualizar perfil
+/**
+ * @swagger
+ * /api/profiles/{profileId}:
+ *   put:
+ *     tags:
+ *       - Profiles
+ *     summary: Update profile
+ *     description: Updates a profile's details. Only admins can update.
+ *     parameters:
+ *       - in: path
+ *         name: profileId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Profile ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Profile updated
+ *       400:
+ *         description: Missing fields
+ *       403:
+ *         description: Permission denied
+ *       500:
+ *         description: Internal server error
+ */
 export async function PUT(request: Request, { params }: { params: Promise<{ profileId: string }> }) {
     try {
         const userId = await getUserIdFromToken()
@@ -61,6 +99,29 @@ export async function PUT(request: Request, { params }: { params: Promise<{ prof
 }
 
 // DELETE - Excluir perfil
+/**
+ * @swagger
+ * /api/profiles/{profileId}:
+ *   delete:
+ *     tags:
+ *       - Profiles
+ *     summary: Delete profile
+ *     description: Soft deletes a profile. Only the creator can delete.
+ *     parameters:
+ *       - in: path
+ *         name: profileId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Profile ID
+ *     responses:
+ *       200:
+ *         description: Profile deleted
+ *       403:
+ *         description: Permission denied
+ *       500:
+ *         description: Internal server error
+ */
 export async function DELETE(request: Request, { params }: { params: Promise<{ profileId: string }> }) {
     try {
         const userId = await getUserIdFromToken()

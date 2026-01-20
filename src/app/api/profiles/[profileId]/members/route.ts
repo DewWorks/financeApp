@@ -18,6 +18,48 @@ async function getUserIdFromToken() {
 }
 
 // POST - Adicionar membro ao profile
+/**
+ * @swagger
+ * /api/profiles/{profileId}/members:
+ *   post:
+ *     tags:
+ *       - Members
+ *     summary: Add member
+ *     description: Adds a new member to the collaborative profile. Only admins can add.
+ *     parameters:
+ *       - in: path
+ *         name: profileId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Profile ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *               permission:
+ *                 type: string
+ *                 enum: [ADMIN, COLABORATOR, VIEWER]
+ *                 default: COLABORATOR
+ *     responses:
+ *       200:
+ *         description: Member added
+ *       400:
+ *         description: User already a member
+ *       403:
+ *         description: Permission denied
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Internal server error
+ */
 export async function POST(request: Request, { params }: { params: Promise<{ profileId: string }> }) {
     try {
         const userId = await getUserIdFromToken()

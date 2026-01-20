@@ -30,6 +30,28 @@ async function getUserIdFromToken() {
     }
 }
 
+/**
+ * @swagger
+ * /api/users:
+ *   get:
+ *     tags:
+ *       - Users
+ *     summary: Get current user
+ *     description: Retrieves the authenticated user's profile.
+ *     responses:
+ *       200:
+ *         description: User profile
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Internal server error
+ */
 export async function GET() {
     try {
         const userId = await getUserIdFromToken();
@@ -55,6 +77,33 @@ export async function GET() {
     }
 }
 
+/**
+ * @swagger
+ * /api/users:
+ *   patch:
+ *     tags:
+ *       - Users
+ *     summary: Add phone number
+ *     description: Adds a phone number to the user's profile.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               cel:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Phone number updated
+ *       400:
+ *         description: Invalid phone number
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Internal server error
+ */
 export async function PATCH(request: Request) {
     const userId = await getUserIdFromToken();
     const { cel } = await request.json();
@@ -175,6 +224,42 @@ export async function PATCH(request: Request) {
     }
 }
 
+/**
+ * @swagger
+ * /api/users:
+ *   put:
+ *     tags:
+ *       - Users
+ *     summary: Update user profile
+ *     description: Updates name, email, and phone numbers.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               cel:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       200:
+ *         description: User updated
+ *       400:
+ *         description: Invalid data or email already in use
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Internal server error
+ */
 export async function PUT(request: Request) {
     try {
         const userId = await getUserIdFromToken();

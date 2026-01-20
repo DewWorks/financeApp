@@ -6,6 +6,52 @@ import { cookies } from 'next/headers'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     tags:
+ *       - Auth
+ *     summary: Login user
+ *     description: Authenticates a user using email or phone number and password.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *               cel:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 token:
+ *                   type: string
+ *                 userId:
+ *                   type: string
+ *                 tutorialGuide:
+ *                   type: boolean
+ *                 executeQuery:
+ *                   type: boolean
+ *       400:
+ *         description: Missing fields or invalid credentials
+ *       500:
+ *         description: Internal server error
+ */
 export async function POST(request: Request) {
   try {
     const { email, cel, password } = await request.json()

@@ -3,6 +3,31 @@ import { ObjectId } from "mongodb";
 import { getMongoClient } from "@/db/connectionDb";
 import { IUser } from "@/interfaces/IUser";
 
+/**
+ * @swagger
+ * /api/admin/users/{id}:
+ *   get:
+ *     tags:
+ *       - Admin
+ *     summary: Get user by ID
+ *     description: Retrieves a specific user's details (Admin only).
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: User found
+ *       400:
+ *         description: Invalid ID
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Internal server error
+ */
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const resolvedParams = await params;

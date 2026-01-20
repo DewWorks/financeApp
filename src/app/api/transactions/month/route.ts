@@ -3,6 +3,35 @@ import { getMongoClient } from "@/db/connectionDb";
 import { NextResponse } from "next/server";
 import { ObjectId } from 'mongodb';
 
+/**
+ * @swagger
+ * /api/transactions/month:
+ *   get:
+ *     tags:
+ *       - Transactions
+ *     summary: Get monthly transactions
+ *     description: Retrieves all transactions for a specific month without pagination.
+ *     parameters:
+ *       - in: query
+ *         name: month
+ *         schema:
+ *           type: integer
+ *         description: Month number (1-12)
+ *     responses:
+ *       200:
+ *         description: List of transactions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 transactions:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Transaction'
+ *       500:
+ *         description: Internal server error
+ */
 export async function GET(req: Request) {
     try {
         const userId = await getUserIdFromToken();

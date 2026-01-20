@@ -8,6 +8,33 @@ const { MessagingResponse } = twilio.twiml;
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
+/**
+ * @swagger
+ * /api/webhooks/whatsapp:
+ *   post:
+ *     tags:
+ *       - Webhooks
+ *     summary: WhatsApp Webhook
+ *     description: Receives messages from Twilio, parses them using AI, and records transactions.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/x-www-form-urlencoded:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               From:
+ *                 type: string
+ *               Body:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Message processed
+ *       400:
+ *         description: Invalid request
+ *       500:
+ *         description: Internal server error
+ */
 export async function POST(request: Request) {
     try {
         const formData = await request.formData();

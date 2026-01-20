@@ -16,6 +16,38 @@ async function getUserIdFromToken() {
     return new ObjectId(decoded.userId)
 }
 
+/**
+ * @swagger
+ * /api/users/password:
+ *   put:
+ *     tags:
+ *       - Users
+ *     summary: Update password
+ *     description: Updates the user's password.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - currentPassword
+ *               - newPassword
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *               newPassword:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password updated
+ *       400:
+ *         description: Invalid current password or weak new password
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Internal server error
+ */
 export async function PUT(request: Request) {
     try {
         const userId = await getUserIdFromToken()

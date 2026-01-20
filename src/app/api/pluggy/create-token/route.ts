@@ -16,6 +16,29 @@ async function getUserId() {
     }
 }
 
+/**
+ * @swagger
+ * /api/pluggy/create-token:
+ *   post:
+ *     tags:
+ *       - Integrations
+ *     summary: Create Pluggy Token
+ *     description: Generates a Pluggy Connect Token for bank aggregation widget.
+ *     responses:
+ *       200:
+ *         description: Token generated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 accessToken:
+ *                   type: string
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
 export async function POST(req: NextRequest) {
     try {
         const client = getPluggyClient();
