@@ -1,7 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    output: "standalone",
-    distDir: ".next",
     reactStrictMode: false,
     webpack: (config, { isServer }) => {
         if (!isServer) {
