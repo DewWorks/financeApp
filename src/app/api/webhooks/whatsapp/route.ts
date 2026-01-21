@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getMongoClient } from '@/db/connectionDb';
 import twilio from 'twilio';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { FinanceAgentService } from '@/services/FinanceAgentService';
 
 const { MessagingResponse } = twilio.twiml;
 
-// Initialize Gemini
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+// Initialize Agent
+const financeAgent = new FinanceAgentService();
 
 /**
  * @swagger
@@ -15,7 +15,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
  *     tags:
  *       - Webhooks
  *     summary: WhatsApp Webhook
- *     description: Receives messages from Twilio, parses them using AI, and records transactions.
+ *     description: Receives messages from Twilio and processes them via Finance Agent.
  *     requestBody:
  *       required: true
  *       content:
@@ -46,9 +46,8 @@ export async function POST(request: Request) {
         }
 
         // 1. Clean Phone Number
-        // Twilio sends "whatsapp:+55...", we want to be able to match "+55..." or "55..."
         const rawPhone = from.replace('whatsapp:', '').trim();
-        const cleanPhone = rawPhone.replace(/\D/g, ''); // Only digits
+        const cleanPhone = rawPhone.replace(/\D/g, '');
 
         // 2. Connect to DB and Find User
         const client = await getMongoClient();
@@ -70,58 +69,11 @@ export async function POST(request: Request) {
             });
         }
 
-        // 3. AI Parsing (Gemini)
-        try {
-            // "gemini-2.0-flash" gave a quota limit of 0.
-            // "gemini-flash-latest" is the alias for the current stable flash model (usually 1.5) which has a free tier.
-            const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+        // 3. Process with Finance Agent
+        // Pass userId as string
+        const responseText = await financeAgent.processMessage(body, user._id.toString());
 
-            const prompt = `
-            Act as a financial parser. Analyze this WhatsApp message and extract transaction data.
-            Message: "${body}"
-            
-            Return ONLY a raw JSON object (no markdown, no quotes around the block) with:
-            - "amount": number (extract value).
-            - "description": string (short summary, max 5 words).
-            - "type": "income" or "expense" (default to "expense" unless key words like receives, salary, gain, +, etc are present).
-            - "tag": string (suggest a category like 'Alimentação', 'Transporte', 'Lazer', 'Casa', 'Trabalho', 'Saúde').
-            
-            If you cannot extract a valid amount, return null.
-            `;
-
-            const result = await model.generateContent(prompt);
-            const responseText = result.response.text();
-
-            // Clean markdown if present (Gemini sometimes parses ```json ... ```)
-            const cleanJson = responseText.replace(/```json|```/g, '').trim();
-            const data = JSON.parse(cleanJson);
-
-            if (!data || !data.amount) {
-                throw new Error("Invalid structure");
-            }
-
-            // 4. Create Transaction
-            const transaction = {
-                userId: user._id,
-                profileId: user._id, // Assuming same profile for main user
-                type: data.type || 'expense',
-                description: data.description || 'WhatsApp Transaction',
-                amount: parseFloat(data.amount),
-                date: new Date(),
-                tag: data.tag || 'WhatsApp',
-                createdAt: new Date(), // Important for sorting
-            };
-
-            await db.collection('transactions').insertOne(transaction);
-
-            // 5. Success Reply
-            const icon = transaction.type === 'income' ? '💰' : '💸';
-            twiml.message(`✅ Salvo: ${icon} ${transaction.type === 'income' ? 'Receita' : 'Despesa'} de R$ ${transaction.amount} \n📝 ${transaction.description} \n🏷️ ${transaction.tag}`);
-
-        } catch (aiError) {
-            console.error("AI Parse Error:", aiError);
-            twiml.message('❌ Não entendi o valor. Tente algo como: "Gastei 50 no almoço" ou "Recebi 100".');
-        }
+        twiml.message(responseText);
 
         return new NextResponse(twiml.toString(), {
             headers: { 'Content-Type': 'text/xml' },
