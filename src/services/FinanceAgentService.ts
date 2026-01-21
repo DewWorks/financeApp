@@ -7,6 +7,8 @@ import {
 import { getMongoClient } from "@/db/connectionDb";
 import { ObjectId } from "mongodb";
 import { InsightService } from "./InsightService";
+import fs from 'fs';
+import path from 'path';
 
 const SYSTEM_INSTRUCTION = `
 Você é um assistente financeiro pessoal, amigável e proativo, chamado "Fin".
@@ -96,6 +98,16 @@ export class FinanceAgentService {
         this.insightService = new InsightService();
     }
 
+    private logError(error: any) {
+        try {
+            const logPath = path.join(process.cwd(), 'agent-error.log');
+            const msg = `[${new Date().toISOString()}] ERROR: ${JSON.stringify(error, Object.getOwnPropertyNames(error), 2)}\n`;
+            fs.appendFileSync(logPath, msg);
+        } catch (e) {
+            console.error("Failed to write to log file", e);
+        }
+    }
+
     private async addTransaction(args: any, userId: string) {
         try {
             const client = await getMongoClient();
@@ -103,7 +115,7 @@ export class FinanceAgentService {
 
             const transaction = {
                 userId: new ObjectId(userId),
-                profileId: new ObjectId(userId), // Assuming main profile
+                // profileId: new ObjectId(userId), // REMOVED: InsightService expects no profileId for personal view
                 type: args.type || 'expense',
                 description: args.description || 'Transação via WhatsApp',
                 amount: Number(args.amount),
@@ -121,6 +133,7 @@ export class FinanceAgentService {
             }
         } catch (error) {
             console.error("Error adding transaction:", error);
+            this.logError(error);
             return { success: false, error: "Failed to save to database" };
         }
     }
@@ -138,6 +151,7 @@ export class FinanceAgentService {
             };
         } catch (error) {
             console.error("Error querying spending:", error);
+            this.logError(error);
             return { success: false, error: "Failed to retrieve insights" };
         }
     }
@@ -190,6 +204,7 @@ export class FinanceAgentService {
 
         } catch (error) {
             console.error("Agent Error Full:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+            this.logError(error);
             return "Opa, tive um probleminha aqui pra raciocinar. Tenta de novo? 😅";
         }
     }
