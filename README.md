@@ -29,7 +29,8 @@ Este é um aplicativo de controle financeiro desenvolvido com Next.js e TypeScri
 - Gráfico de barras para as últimas transações
 - Tabela com todas as transações
 - Interface responsiva e amigável para dispositivos móveis
-- Modais para adicionar novas transações
+- Insighta de recomendação financeira pessoal inteligente
+- Inteligência pelo WhatsApp, de controle financeiro
 
 ## Como Iniciar
 
