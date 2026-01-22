@@ -11,18 +11,17 @@ import fs from 'fs';
 import path from 'path';
 
 const SYSTEM_INSTRUCTION = `
-Você é um assistente financeiro pessoal, amigável e proativo, chamado "Fin".
-Seu objetivo é ajudar o usuário a gerenciar suas finanças de forma leve.
+Você é o "Fin", um assistente financeiro direto e eficiente.
 
-**Personalidade:**
-- Fale português do Brasil natural.
-- Seja empático.
-- Use emojis moderadamente.
+**Diretrizes de Resposta:**
+- **SEJA CONCISO**: Responda apenas o que foi perguntado. Evite explicações longas a menos que o usuário peça.
+- **Sem Redundância**: Não repita "analisei seus dados" ou "para te dar o saldo". Apenas dê o saldo.
+- **Personalidade**: Use tom natural e brasileiro, mas focado em dados.
+- **Falha**: Se a busca retornar 0 ou não houver dados, diga "Não encontrei gastos registrados neste período".
 
 **Ferramentas:**
-- Use 'addTransaction' quando o usuário relatar um gasto ou ganho.
-- Use 'querySpending' quando o usuário perguntar sobre gastos passados, status financeiro, ou pedir insights.
-- Se a pergunta for genérica, responda com seu conhecimento.
+- 'addTransaction': Para registrar.
+- 'querySpending': Para consultar saldos e totais.
 `;
 
 const tools = [
@@ -53,6 +52,33 @@ const tools = [
                         }
                     },
                     required: ["amount", "description", "type"]
+                }
+            },
+            {
+                name: "setGoal",
+                description: "Define uma meta financeira ou um limite de gastos (Budget).",
+                parameters: {
+                    type: SchemaType.OBJECT,
+                    properties: {
+                        name: {
+                            type: SchemaType.STRING,
+                            description: "Nome da meta. Ex: 'Viagem', 'Mercado Mensal'."
+                        },
+                        amount: {
+                            type: SchemaType.NUMBER,
+                            description: "Valor alvo ou limite."
+                        },
+                        type: {
+                            type: SchemaType.STRING,
+                            description: "'savings' para meta de economia (juntar dinheiro), 'spending' para limite de gastos (orçamento).",
+                            enum: ["savings", "spending"]
+                        },
+                        category: {
+                            type: SchemaType.STRING,
+                            description: "Categoria associada (obrigatório para spending). Ex: 'Alimentação'."
+                        }
+                    },
+                    required: ["name", "amount", "type"]
                 }
             },
             {
@@ -138,6 +164,32 @@ export class FinanceAgentService {
         }
     }
 
+    private async setGoal(args: any, userId: string) {
+        try {
+            const client = await getMongoClient();
+            const db = client.db('financeApp');
+
+            const goal = {
+                userId: new ObjectId(userId),
+                name: args.name,
+                targetAmount: Number(args.amount),
+                currentAmount: 0,
+                tag: args.category || 'Geral',
+                type: args.type || 'savings',
+                period: 'monthly', // Default
+                createdAt: new Date()
+            };
+
+            const result = await db.collection('goals').insertOne(goal);
+            return { success: true, message: `Goal/Budget '${args.name}' created.`, id: result.insertedId };
+
+        } catch (error) {
+            console.error("Error setting goal:", error);
+            this.logError(error);
+            return { success: false, error: "Failed to create goal" };
+        }
+    }
+
     private async querySpending(args: any, userId: string) {
         try {
             // Reusing InsightService to get processed data
@@ -146,7 +198,8 @@ export class FinanceAgentService {
 
             // Return the raw insights structure so the LLM can interpret it
             return {
-                summary_today: insightResult.dailySummary.total,
+                today_spend: insightResult.dailySummary.total,
+                month_spend: insightResult.monthSummary.total,
                 insights: insightResult.insights.map(i => `${i.text}: ${i.value} (${i.details})`).join("; ")
             };
         } catch (error) {
@@ -178,10 +231,10 @@ export class FinanceAgentService {
                     let apiResult;
 
                     if (name === "addTransaction") {
-                        // Pass userId context
                         apiResult = await this.addTransaction(args, userId);
+                    } else if (name === "setGoal") {
+                        apiResult = await this.setGoal(args, userId);
                     } else if (name === "querySpending") {
-                        // Pass userId context
                         apiResult = await this.querySpending(args, userId);
                     } else {
                         apiResult = { error: "Unknown function" };
