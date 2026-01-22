@@ -99,12 +99,12 @@ export default function LoginPage() {
 
         const fullMsg = warningText ? `${errorMsg}\n${warningText}` : errorMsg;
 
-        setErrorMessage(fullMsg.replace('\n', ' ')); // Mostra no parágrafo
+        setErrorMessage(fullMsg.replace(/\n/g, ' ')); // Mostra no parágrafo
 
         Swal.fire({
           icon: "info",
           title: "Atenção",
-          text: fullMsg.replace('\n', ' '),
+          text: fullMsg.replace(/\n/g, ' '),
           confirmButtonColor: "#0085FF"
         });
         return;
