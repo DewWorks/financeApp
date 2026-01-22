@@ -1,37 +1,31 @@
 # Documentação dos Testes de Integração
 
-### Teste de Integração com MongoDB em Memória - API
-Este teste de integração foi implementado para verificar o funcionamento de operações de banco de dados dentro de uma aplicação, utilizando o **Jest** e o **MongoDB em Memória**. O objetivo do teste é simular interações com um banco de dados MongoDB em um ambiente isolado e garantir que as funções da API, como recuperação e inserção de usuários, estejam funcionando corretamente.
-#### Objetivo do Teste
-O objetivo principal é:
-1. Inicializar um banco de dados MongoDB em memória utilizando o **MongoMemoryServer**.
-2. Mockar a conexão com o banco de dados (MongoClient) para interagir com o MongoDB em memória durante os testes.
-3. Testar a recuperação de dados de um usuário do banco de dados simulado.
-4. Garantir que a aplicação pode realizar operações de leitura e escrita com o banco de dados de forma correta.
-#### O que o Teste Faz
-1. **Inicializa o MongoDB em memória**:
-    - O teste começa criando um servidor MongoDB em memória usando o **MongoMemoryServer**. Esse servidor simula uma instância do MongoDB em um ambiente isolado, sem necessidade de uma instância real de banco de dados.
-2. **Configura mocks para as funções de banco de dados**:
-    - A função `getMongoClient`, que normalmente conecta o aplicativo ao banco de dados MongoDB, é mockada para retornar um cliente simulado (`mockMongoClient`). Esse cliente simulado é configurado para retornar operações de banco de dados mockadas, como a inserção de transações e a busca de usuários.
-3. **Testa a inicialização do MongoDB em memória**:
-    - O teste verifica se o servidor MongoDB em memória foi iniciado corretamente e se a URI de conexão contém o padrão `mongodb://127.0.0.1`, indicando que a conexão está apontando para o banco de dados local.
-4. **Testa a recuperação de um usuário do banco de dados**:
-    - O teste simula uma consulta ao banco de dados para buscar um usuário específico com o e-mail `"joaovictorpfr@gmail.com"`. O retorno do mock simula um usuário com uma senha hash. A partir disso, o teste verifica se o usuário foi recuperado com sucesso.
-#### Funções Mockadas
-- **MongoClient**: O cliente MongoDB utilizado pela aplicação foi mockado para simular a interação com o banco de dados sem a necessidade de um MongoDB real.
-    - **db.collection('users').insertOne()**: Simula a inserção de uma transação no banco de dados.
-    - **db.collection('users').findOne()**: Simula a busca de um usuário específico com base no e-mail.
-- **getMongoClient**: A função `getMongoClient`, que normalmente retorna o cliente MongoDB configurado, foi mockada para garantir que o teste utilize o cliente simulado.
-#### Ciclo de Vida do Teste
-1. **beforeAll**:
-    - Inicializa o servidor MongoDB em memória.
-    - Configura o mock do cliente MongoDB.
-2. **afterAll**:
-    - Após os testes, o servidor MongoDB em memória é interrompido, garantindo que o ambiente de testes seja limpo.
-3. **it('should initialize MongoDB in memory')**:
-    - Verifica se o MongoDB foi corretamente inicializado e se a URI de conexão está conforme o esperado.
-4. **it('should mock a user retrieval from the database')**:
-    - Testa a operação de busca de um usuário no banco de dados simulado, verificando se a consulta retorna os dados do usuário corretamente.
-#### Conclusão
-Este teste de integração verifica a interação entre a aplicação e um banco de dados simulado, utilizando o **MongoDB em Memória** para garantir que a lógica de banco de dados da aplicação funcione conforme esperado em um ambiente de teste controlado. Ao mockar a conexão com o MongoDB e simular as operações de leitura e escrita, o teste assegura que a aplicação é capaz de realizar operações básicas de banco de dados sem depender de um servidor MongoDB real durante os testes.
----
+Os testes de integração verificam o funcionamento das **Rotas da API** (`src/app/api/*`) em conjunto com um banco de dados simulado.
+
+## Tecnologias
+- **MongoMemoryServer**: Sobe um banco de dados temporário na memória RAM para cada teste. Isso garante que os testes não afetem o banco real e sejam rápidos.
+- **Mocks**:
+    - `next/headers`: Simulamos cookies de autenticação (`auth_token`) para testar rotas protegidas.
+
+## Casos de Teste
+
+### 1. Autenticação (`auth_register.test.ts`)
+Valida o fluxo de cadastro de novos usuários.
+- **Sucesso**: Envia payload válido -> Verifica se usuário foi criado no banco com senha criptografada (hash).
+- **Erro (Duplicidade)**: Tenta cadastrar email existente -> Verifica se retorna erro 400.
+
+### 2. Transações Financeiras (`transactions.test.ts`)
+Valida as operações principais do sistema financeiro.
+- **Criação (POST)**:
+    - Envia uma despesa/receita.
+    - O teste injeta um **Token JWT Válido** nos cookies.
+    - Verifica se a transação foi salva no banco vinculada ao usuário correto.
+- **Listagem (GET)**:
+    - Busca transações do mês.
+    - Verifica se a API retorna a lista correta e a paginação.
+
+## Como Rodar
+Para rodar apenas os testes de integração:
+```bash
+npx vitest run tests/jest/integration
+```
