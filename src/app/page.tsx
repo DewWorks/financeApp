@@ -63,7 +63,7 @@ const itemVariants = {
 function DashboardContent() {
   const router = useRouter()
   const [user, setUser] = useState<IUser | null>(null)
-  
+
   const { currentProfileId, currentProfileName, isLoading: isProfileLoading } = useCurrentProfile();
 
   const {
@@ -484,7 +484,7 @@ function DashboardContent() {
                   profileId={currentProfileId || undefined}
                   loading={loading}
                   compact={false}
-                  refreshTrigger={dataToUse.length}
+                  refreshTrigger={dataToUse}
                   scope={isAllTransactions ? 'all' : 'recent'}
                 />
               </div>
@@ -582,35 +582,19 @@ function DashboardContent() {
                 </div>
               </div>
               <CardContent className="p-3 sm:p-6">
-                {/* Paginação - compacta no mobile */}
-                <div className="flex justify-center items-center mt-2 sm:mt-4 space-x-2 sm:space-x-4">
-                  <Button
-                    onClick={handlePreviousPage}
-                    size="sm"
-                    className="p-1 sm:p-2 rounded-lg border dark:border-gray-600 bg-blue-600 text-white disabled:opacity-50"
-                  >
-                    <ChevronLeft className="h-4 w-4 sm:h-5 w-5" />
-                  </Button>
-                  <span className="text-xs sm:text-md font-semibold dark:text-white px-2">
-                    {currentPage}/{totalPages}
-                  </span>
-                  <Button
-                    onClick={handleNextPage}
-                    size="sm"
-                    className="p-1 sm:p-2 rounded-lg border dark:border-gray-600 disabled:opacity-50 bg-blue-600 text-white"
-                  >
-                    <ChevronRight className="h-4 w-4 sm:h-5 w-5" />
-                  </Button>
-                </div>
                 {/* Filtro por mês */}
                 <div className="flex justify-center space-x-1 sm:space-x-2 my-3 sm:my-4 overflow-x-auto w-full">
                   <TimelineMonthSelector onSelectMonth={filterTransactionsByMonth} selectedMonth={selectedMonth} />
                 </div>
 
                 <TransactionsTable
-                  transactions={selectedMonth ? transactions : transactions}
+                  transactions={transactions} // Context already handles filtering
                   onEditTransaction={handleEditTransaction}
                   onDeleteTransaction={handleDeleteTransaction}
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onNextPage={handleNextPage}
+                  onPreviousPage={handlePreviousPage}
                 />
 
                 {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}

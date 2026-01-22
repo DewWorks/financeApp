@@ -1,6 +1,6 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/atoms/table"
 import { Button } from "@/components/ui/atoms/button"
-import { AlertTriangle, Edit, Edit2, Trash2, Repeat, ArrowUpCircle, ArrowDownCircle } from 'lucide-react'
+import { AlertTriangle, Edit, Edit2, Trash2, Repeat, ArrowUpCircle, ArrowDownCircle, ChevronLeft, ChevronRight } from 'lucide-react'
 import { ITransaction } from "@/interfaces/ITransaction"
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/atoms/dialog"
@@ -13,13 +13,25 @@ interface TransactionsTableProps {
     transactions: ITransaction[]
     onEditTransaction?: (transaction: ITransaction) => void
     onDeleteTransaction?: (transactionId: string) => void
+    currentPage: number
+    totalPages: number
+    onNextPage: () => void
+    onPreviousPage: () => void
 }
 
 function getRandomColor() {
     return `#${Math.floor(Math.random() * 16777215).toString(16)}`;
 }
 
-export function TransactionsTable({ transactions, onEditTransaction, onDeleteTransaction }: TransactionsTableProps) {
+export function TransactionsTable({
+    transactions,
+    onEditTransaction,
+    onDeleteTransaction,
+    currentPage,
+    totalPages,
+    onNextPage,
+    onPreviousPage
+}: TransactionsTableProps) {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [transactionToDelete, setTransactionToDelete] = useState<ITransaction | null>(null)
     const [editDialogOpen, setEditDialogOpen] = useState(false)
@@ -60,10 +72,35 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
         return <EmptyStateAction />
     }
 
+    const PaginationControls = () => (
+        <div className="flex justify-center items-center py-2 space-x-2">
+            <Button
+                onClick={onPreviousPage}
+                size="sm"
+                disabled={currentPage <= 1}
+                className="p-1 sm:p-2 rounded-lg border dark:border-gray-600 bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700"
+            >
+                <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm font-semibold dark:text-gray-200 px-2 min-w-[60px] text-center">
+                Pág {currentPage} de {totalPages}
+            </span>
+            <Button
+                onClick={onNextPage}
+                size="sm"
+                disabled={currentPage >= totalPages}
+                className="p-1 sm:p-2 rounded-lg border dark:border-gray-600 bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700"
+            >
+                <ChevronRight className="h-4 w-4" />
+            </Button>
+        </div>
+    );
+
     return (
         <>
             {/* Desktop view */}
             <div className="hidden md:block">
+                <PaginationControls />
                 {transactions.length > 0 && (
                     <p className="text-center text-md text-muted-foreground font-semibold mt-2">
                         Total de transações: {transactions.length}
@@ -128,15 +165,27 @@ export function TransactionsTable({ transactions, onEditTransaction, onDeleteTra
                         })}
                     </TableBody>
                 </Table>
+
+                {/* Pagination Controls */}
+                <PaginationControls />
             </div>
 
             {/* Mobile view */}
             <div className="md:hidden space-y-4">
+                {/* Pagination Top Mobile */}
+                <div className="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-sm">
+                    <PaginationControls />
+                </div>
+
                 <TransactionListMobile
                     transactions={transactions}
                     onEdit={handleEditClick}
                     onDelete={handleDeleteClick}
                 />
+                {/* Pagination Bottom Mobile */}
+                <div className="pb-4">
+                    <PaginationControls />
+                </div>
             </div>
 
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

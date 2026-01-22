@@ -85,39 +85,39 @@ export function TransactionCardMobile({ transaction, onEdit, onDelete }: Transac
                 className="relative bg-white dark:bg-gray-800 z-10"
             >
                 <Card className={`border-l-4 ${borderColor} ${statusBg} dark:bg-gray-800 dark:border-l-4 dark:border-gray-700 shadow-sm`}>
-                    <CardContent className="p-4 select-none touch-pan-y">
-                        <div className="flex justify-between items-start mb-2">
+                    <CardContent className="p-3 select-none touch-pan-y">
+                        <div className="flex justify-between items-start mb-1">
                             <div className="flex items-center space-x-3">
-                                <div className={`p-2 rounded-full ${iconBg} dark:bg-gray-700`}>
+                                <div className={`p-1.5 rounded-full ${iconBg} dark:bg-gray-700`}>
                                     {isIncome ? (
-                                        <ArrowUpCircle className={`w-5 h-5 ${statusColor}`} />
+                                        <ArrowUpCircle className={`w-4 h-4 ${statusColor}`} />
                                     ) : (
-                                        <ArrowDownCircle className={`w-5 h-5 ${statusColor}`} />
+                                        <ArrowDownCircle className={`w-4 h-4 ${statusColor}`} />
                                     )}
                                 </div>
-                                <div>
-                                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 line-clamp-1">{transaction.description}</h3>
-                                    <p className={`text-sm font-bold ${statusColor}`}>
+                                <div className="max-w-[160px] xs:max-w-[200px]">
+                                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm line-clamp-1">{transaction.description}</h3>
+                                    <p className={`text-xs font-bold ${statusColor}`}>
                                         R$ {transaction.amount.toFixed(2)}
                                     </p>
                                 </div>
                             </div>
-                            {/* Explicit Actions (Requirement: "Tanto o botão") */}
-                            <div className="flex space-x-1" onPointerDownCapture={(e) => e.stopPropagation()}>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-blue-500" onClick={() => onEdit(transaction)}>
-                                    <Edit className="h-4 w-4" />
+                            {/* Actions */}
+                            <div className="flex space-x-0" onPointerDownCapture={(e) => e.stopPropagation()}>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400 hover:text-blue-500" onClick={() => onEdit(transaction)}>
+                                    <Edit className="h-3.5 w-3.5" />
                                 </Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-red-500" onClick={() => onDelete(transaction)}>
-                                    <Trash2 className="h-4 w-4" />
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400 hover:text-red-500" onClick={() => onDelete(transaction)}>
+                                    <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-between mt-3 text-xs text-gray-500 dark:text-gray-400">
-                            <div className="flex items-center space-x-3">
-                                <div className="flex items-center space-x-1">
+                        <div className="flex items-center justify-between mt-1 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
+                            <div className="flex items-center space-x-2">
+                                <div className="flex items-center space-x-1 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">
                                     <Tag className="w-3 h-3" />
-                                    <span>{transaction.tag}</span>
+                                    <span className="truncate max-w-[80px]">{transaction.tag}</span>
                                 </div>
                                 {transaction.isRecurring && (
                                     <div className="flex items-center space-x-1 text-blue-500">
