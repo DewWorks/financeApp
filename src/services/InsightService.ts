@@ -18,6 +18,8 @@ export interface InsightItem {
             breakdown?: {
                 fixed: number;
                 variable: number;
+                fixedItems: string[];
+                variableItems: string[];
             }
         };
         comparison?: {
@@ -116,38 +118,59 @@ export class InsightService {
         let monthIncome = 0;
         let fixedTotal = 0;
         let variableTotal = 0;
+        const fixedItemsSet = new Set<string>();
+        const variableItemsSet = new Set<string>();
         const categoryMap: { [key: string]: number } = {};
 
         // DYNAMIC FIXED COST DETECTION
-        // 1. Group by description (normalized)
-        const recurrenceMap: { [desc: string]: { amounts: number[], months: Set<string> } } = {};
+        // 1. Group by description AND category
+        const recurrenceDescMap: { [key: string]: { amounts: number[], months: Set<string> } } = {};
+        const recurrenceCatMap: { [key: string]: { amounts: number[], months: Set<string> } } = {};
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         transactions.forEach((t: any) => {
             if (t.type !== 'expense') return;
-            const desc = (t.description || t.title || "").toLowerCase().trim();
             const date = parseDate(t.date);
-            if (!date || !desc) return;
-
+            if (!date) return;
             const monthKey = `${date.getMonth()}/${date.getFullYear()}`;
-            if (!recurrenceMap[desc]) recurrenceMap[desc] = { amounts: [], months: new Set() };
-            recurrenceMap[desc].amounts.push(Number(t.amount));
-            recurrenceMap[desc].months.add(monthKey);
-        });
+            const amount = Number(t.amount);
 
-        // 2. Identify Fixed Patterns (Present in >1 month, Variance < 10%)
-        const detectedFixedDescriptions = new Set<string>();
-        Object.entries(recurrenceMap).forEach(([desc, data]) => {
-            if (data.months.size >= 2) { // Appears in at least 2 different months
-                const avg = data.amounts.reduce((a, b) => a + b, 0) / data.amounts.length;
-                const variance = data.amounts.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / data.amounts.length;
-                const stdDev = Math.sqrt(variance);
-                // Coefficient of variation < 0.1 (10%)
-                if ((stdDev / avg) < 0.1) {
-                    detectedFixedDescriptions.add(desc);
-                }
+            // By Description
+            const desc = (t.description || t.title || "").toLowerCase().trim();
+            if (desc) {
+                if (!recurrenceDescMap[desc]) recurrenceDescMap[desc] = { amounts: [], months: new Set() };
+                recurrenceDescMap[desc].amounts.push(amount);
+                recurrenceDescMap[desc].months.add(monthKey);
+            }
+
+            // By Category
+            const cat = (t.category || t.tag || "").toLowerCase().trim();
+            if (cat && cat !== "outros") {
+                if (!recurrenceCatMap[cat]) recurrenceCatMap[cat] = { amounts: [], months: new Set() };
+                recurrenceCatMap[cat].amounts.push(amount);
+                recurrenceCatMap[cat].months.add(monthKey);
             }
         });
+
+        // 2. Identify Fixed Patterns
+        const detectedFixedDescriptions = new Set<string>();
+        const detectedFixedCategories = new Set<string>();
+
+        const checkConsistency = (map: typeof recurrenceDescMap, targetSet: Set<string>, varianceThreshold = 0.15) => {
+            Object.entries(map).forEach(([key, data]) => {
+                if (data.months.size >= 2) {
+                    const avg = data.amounts.reduce((a, b) => a + b, 0) / data.amounts.length;
+                    const variance = data.amounts.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / data.amounts.length;
+                    const stdDev = Math.sqrt(variance);
+                    if ((stdDev / avg) < varianceThreshold) {
+                        targetSet.add(key);
+                    }
+                }
+            });
+        }
+
+        checkConsistency(recurrenceDescMap, detectedFixedDescriptions, 0.1);
+        checkConsistency(recurrenceCatMap, detectedFixedCategories, 0.2);
 
         // Agregadores Deep Analysis
         let totalIncome12M = 0;
@@ -194,13 +217,19 @@ export class InsightService {
 
                     const isFixedKeyword = fixedKeywords.some(k => normalizedCat.includes(k));
                     const isFixedPattern = detectedFixedDescriptions.has(desc);
+                    const isFixedCategory = detectedFixedCategories.has(normalizedCat);
 
-                    const isFixed = isFixedKeyword || isFixedPattern;
+                    const isFixed = isFixedKeyword || isFixedPattern || isFixedCategory;
 
                     if (isFixed) {
                         fixedTotal += amount;
+                        // Use category for fixed unless it's "Outros"
+                        const displayName = (t.category && t.category !== "Outros") ? t.category : (t.description || "Fixo");
+                        fixedItemsSet.add(displayName);
                     } else {
                         variableTotal += amount;
+                        // For variable, we group by category mainly
+                        if (cat !== "Outros") variableItemsSet.add(cat);
                     }
                 }
                 if (tDate.getMonth() === lastMonth && (tDate.getFullYear() === todayDate.getFullYear() || (currentMonth === 0 && tDate.getFullYear() === todayDate.getFullYear() - 1))) {
@@ -505,7 +534,9 @@ export class InsightService {
                         daysRemaining: daysInMonth - daysPassed,
                         breakdown: {
                             fixed: fixedTotal,
-                            variable: variableTotal
+                            variable: variableTotal,
+                            fixedItems: Array.from(fixedItemsSet).slice(0, 5),
+                            variableItems: Array.from(variableItemsSet).slice(0, 5)
                         }
                     },
                     comparison: {
@@ -518,7 +549,7 @@ export class InsightService {
             });
         }
 
-        // 2. Weekly Analysis (Priority: High)
+        // 2. Weekly Analysis (Refined Text)
         if (weekTotal > 0) {
             if (lastWeekTotal > 50) {
                 const diff = weekTotal - lastWeekTotal;
@@ -531,7 +562,7 @@ export class InsightService {
                         text: "Atenção na Semana",
                         value: `+${percentage.toFixed(0)}%`,
                         trend: "negative",
-                        details: `Gasto semanal subiu. Atual: R$ ${weekTotal.toFixed(0)} vs Anterior: R$ ${lastWeekTotal.toFixed(0)}.`,
+                        details: `Seus gastos subiram. Atual: R$ ${weekTotal.toFixed(0)} vs Anterior: R$ ${lastWeekTotal.toFixed(0)}.`,
                     });
                 } else if (percentage < -15) {
                     insights.push({
@@ -539,8 +570,8 @@ export class InsightService {
                         type: "weekly",
                         text: "Economia Semanal",
                         value: `${percentage.toFixed(0)}%`,
-                        trend: "positive",
-                        details: "Você gastou menos esta semana comparado à anterior.",
+                        trend: "positive", // Use positive for savings (green)
+                        details: `Você gastou R$ ${Math.abs(diff).toFixed(0)} a menos que na semana passada (R$ ${lastWeekTotal.toFixed(0)}).`,
                     });
                 } else {
                     insights.push({

@@ -25,6 +25,8 @@ interface InsightItem {
             breakdown?: {
                 fixed: number;
                 variable: number;
+                fixedItems: string[];
+                variableItems: string[];
             };
         };
         comparison?: {
@@ -349,13 +351,27 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
                                                 <span className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full text-[9px] font-bold">Total: {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(currentInsight.richData.projection.projected)}</span>
                                             </div>
                                             <div className="flex gap-4">
-                                                <div className="flex-1 bg-white dark:bg-gray-800 p-2 rounded border border-gray-100 dark:border-gray-700">
+                                                <div className="flex-1 bg-white dark:bg-gray-800 p-2 rounded border border-gray-100 dark:border-gray-700 flex flex-col max-h-[80px]">
                                                     <span className="block text-[9px] text-gray-400 mb-0.5">Custos Fixos</span>
-                                                    <span className="font-bold text-gray-700 dark:text-gray-200 text-sm">{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(currentInsight.richData.projection.breakdown.fixed)}</span>
+                                                    <span className="font-bold text-gray-700 dark:text-gray-200 text-sm block mb-1">{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(currentInsight.richData.projection.breakdown.fixed)}</span>
+                                                    {currentInsight.richData.projection.breakdown.fixedItems && currentInsight.richData.projection.breakdown.fixedItems.length > 0 && (
+                                                        <div className="overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700">
+                                                            <p className="text-[9px] text-gray-500 leading-tight">
+                                                                {currentInsight.richData.projection.breakdown.fixedItems.join(", ")}
+                                                            </p>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <div className="flex-1 bg-white dark:bg-gray-800 p-2 rounded border border-gray-100 dark:border-gray-700">
+                                                <div className="flex-1 bg-white dark:bg-gray-800 p-2 rounded border border-gray-100 dark:border-gray-700 flex flex-col max-h-[80px]">
                                                     <span className="block text-[9px] text-gray-400 mb-0.5">Variáveis (Est.)</span>
-                                                    <span className="font-bold text-blue-600 dark:text-blue-400 text-sm">{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(currentInsight.richData.projection.breakdown.variable)}</span>
+                                                    <span className="font-bold text-blue-600 dark:text-blue-400 text-sm block mb-1">{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(currentInsight.richData.projection.breakdown.variable)}</span>
+                                                    {currentInsight.richData.projection.breakdown.variableItems && currentInsight.richData.projection.breakdown.variableItems.length > 0 && (
+                                                        <div className="overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700">
+                                                            <p className="text-[9px] text-gray-500 leading-tight">
+                                                                {currentInsight.richData.projection.breakdown.variableItems.join(", ")}
+                                                            </p>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
