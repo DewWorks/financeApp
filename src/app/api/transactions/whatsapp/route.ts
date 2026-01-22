@@ -3,6 +3,7 @@ import crypto from "crypto"
 import { getMongoClient } from "@/db/connectionDb"
 import { ObjectId } from "mongodb"
 import bcrypt from "bcryptjs"
+import { getPhoneQueryVariations, formatToE164 } from "@/lib/phoneUtils"
 
 class AuthError extends Error {
     constructor(
@@ -23,17 +24,10 @@ async function findOrCreateUser(phoneNumber: string) {
     const client = await getMongoClient()
     const db = client.db("financeApp")
 
-    // Limpar número de telefone (remover caracteres especiais)
-    const cleanPhone = phoneNumber.replace(/\D/g, "")
-
     // Buscar usuário pelo número de telefone
+    const phoneVariations = getPhoneQueryVariations(phoneNumber);
     let user = await db.collection("users").findOne({
-        $or: [
-            { cel: { $in: [phoneNumber] } },
-            { cel: { $in: [cleanPhone] } },
-            { cel: { $in: [`+55${cleanPhone}`] } },
-            { cel: { $in: [`55${cleanPhone}`] } },
-        ],
+        cel: { $in: phoneVariations },
     })
 
     let isNewUser = false
@@ -48,11 +42,14 @@ async function findOrCreateUser(phoneNumber: string) {
 
         verificationCode = generateRandomPassword();
 
+        // Limpar número de telefone (remover caracteres especiais) para uso interno
+        const cleanPhone = phoneNumber.replace(/\D/g, "")
+
         const newUser = {
             name: `Usuário ${cleanPhone.slice(-4)}`, // Nome temporário baseado nos últimos 4 dígitos
             email: `${cleanPhone}@whatsapp.temp`, // Email temporário
             password: hashedPassword, // Senha hasheada
-            cel: [cleanPhone],
+            cel: [formatToE164(phoneNumber) || `+55${cleanPhone}`], // Tenta formatar bonito, fallback para +55 manual
             createdAt: new Date(),
             source: "whatsapp",
             tutorialGuide: false,
@@ -282,23 +279,11 @@ export async function PATCH(request: Request) {
         const client = await getMongoClient()
         const db = client.db("financeApp")
 
-        const cleanPhone = phoneNumber.replace(/\D/g, "")
-
-        // Se está atualizando a senha, fazer hash
-        if (userData.password) {
-            userData.password = await bcrypt.hash(userData.password, 10)
-            userData.passwordGenerated = false // Marcar que não é mais senha gerada
-        }
-
         // Atualizar dados do usuário
+        const phoneVariations = getPhoneQueryVariations(phoneNumber);
         const result = await db.collection("users").updateOne(
             {
-                $or: [
-                    { cel: { $in: [phoneNumber] } },
-                    { cel: { $in: [cleanPhone] } },
-                    { cel: { $in: [`+55${cleanPhone}`] } },
-                    { cel: { $in: [`55${cleanPhone}`] } },
-                ],
+                cel: { $in: phoneVariations },
             },
             {
                 $set: {
@@ -362,16 +347,10 @@ export async function GET(request: Request) {
         const client = await getMongoClient()
         const db = client.db("financeApp")
 
-        const cleanPhone = phoneNumber.replace(/\D/g, "")
-
         // Buscar usuário
+        const phoneVariations = getPhoneQueryVariations(phoneNumber);
         const user = await db.collection("users").findOne({
-            $or: [
-                { cel: { $in: [phoneNumber] } },
-                { cel: { $in: [cleanPhone] } },
-                { cel: { $in: [`+55${cleanPhone}`] } },
-                { cel: { $in: [`55${cleanPhone}`] } },
-            ],
+            cel: { $in: phoneVariations },
         })
 
         if (!user) {

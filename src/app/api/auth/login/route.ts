@@ -5,6 +5,7 @@ import { getMongoClient } from '@/db/connectionDb'
 import { cookies } from 'next/headers'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+import { getPhoneQueryVariations } from '@/lib/phoneUtils'
 
 /**
  * @swagger
@@ -64,12 +65,16 @@ export async function POST(request: Request) {
     const db = client.db("financeApp");
 
     // Find user
-    const normalizedPhone = cel?.replace(/\D/g, '');
-
     // Busca usuário por email ou número de celular
-    const user = await db.collection('users').findOne(
-      email ? { email } : { cel: { $in: [normalizedPhone] } }
-    );
+    let query = {};
+    if (email) {
+      query = { email };
+    } else if (cel) {
+      const phoneVariations = getPhoneQueryVariations(cel);
+      query = { cel: { $in: phoneVariations } };
+    }
+
+    const user = await db.collection('users').findOne(query);
 
     if (!user) {
       return NextResponse.json({ error: 'Usuário não encontrado. Verifique se o email ou telefone estão corretos.' }, { status: 400 })

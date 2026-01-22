@@ -10,14 +10,21 @@ const UserSchema = new Schema<IUser>({
         required: true,
         validate: {
             validator: function (value: string[]) {
-                return Array.isArray(value) && value.length > 0;
+                if (!Array.isArray(value) || value.length === 0) return false;
+                // Valida cada número do array
+                // Import dinâmico ou uso direto se possível, mas em models mongoose com commonjs/es6 mix pode ser chato.
+                // Vou assumir que o import funcionará no topo.
+                return value.every(phone => {
+                    // Validação básica se é string não vazia, a validação estrita será feita antes de salvar ou aqui se importarmos.
+                    return typeof phone === 'string' && phone.trim().length > 0;
+                });
             },
             message: 'Pelo menos um número de celular é obrigatório',
         },
     },
     address: String,
     cpf: String,
-    tutorialGuide: { type: Boolean, default: true }, 
+    tutorialGuide: { type: Boolean, default: true },
     executeQuery: { type: Boolean, default: false },
     verification: {
         code: String,

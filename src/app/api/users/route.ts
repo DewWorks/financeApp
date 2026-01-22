@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken'
 import { cookies } from 'next/headers'
 import { sendEmail } from '@/app/functions/emails/sendEmail';
 import { IUser } from '@/interfaces/IUser';
+import { formatToE164 } from '@/lib/phoneUtils';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
@@ -119,11 +120,12 @@ export async function PATCH(request: Request) {
         return NextResponse.json({ error: 'Número de celular inválido' }, { status: 400 });
     }
 
-    // Normalização do telefone para formato +55
-    const cleanNum = phoneToProcess.replace(/\D/g, '');
-    const normalizedPhone = cleanNum.startsWith('55') && cleanNum.length > 11
-        ? `+${cleanNum}`
-        : `+55${cleanNum}`;
+    // Normalização do telefone para formato +55 (E.164)
+    const normalizedPhone = formatToE164(phoneToProcess);
+
+    if (!normalizedPhone) {
+        return NextResponse.json({ error: 'Número de celular inválido. Verifique o DDD e o número.' }, { status: 400 });
+    }
 
     const client = await getMongoClient();
     const db = client.db('financeApp');
@@ -292,13 +294,8 @@ export async function PUT(request: Request) {
 
         if (cel && Array.isArray(cel)) {
             updateData.cel = cel
-                .filter((phone) => phone.trim())
-                .map(phone => {
-                    const cleanNum = phone.replace(/\D/g, '');
-                    return cleanNum.startsWith('55') && cleanNum.length > 11
-                        ? `+${cleanNum}`
-                        : `+55${cleanNum}`;
-                });
+                .map((phone) => formatToE164(phone))
+                .filter((phone): phone is string => phone !== null);
         }
 
         const result = await db.collection("users").updateOne({ _id: userId }, { $set: updateData })
