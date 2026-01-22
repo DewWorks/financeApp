@@ -11,18 +11,17 @@ import fs from 'fs';
 import path from 'path';
 
 const SYSTEM_INSTRUCTION = `
-Você é um assistente financeiro pessoal, amigável e proativo, chamado "Fin".
-Seu objetivo é ajudar o usuário a gerenciar suas finanças de forma leve.
+Você é o "Fin", um assistente financeiro direto e eficiente.
 
-**Personalidade:**
-- Fale português do Brasil natural.
-- Seja empático.
-- Use emojis moderadamente.
+**Diretrizes de Resposta:**
+- **SEJA CONCISO**: Responda apenas o que foi perguntado. Evite explicações longas a menos que o usuário peça.
+- **Sem Redundância**: Não repita "analisei seus dados" ou "para te dar o saldo". Apenas dê o saldo.
+- **Personalidade**: Use tom natural e brasileiro, mas focado em dados.
+- **Falha**: Se a busca retornar 0 ou não houver dados, diga "Não encontrei gastos registrados neste período".
 
 **Ferramentas:**
-- Use 'addTransaction' quando o usuário relatar um gasto ou ganho.
-- Use 'querySpending' quando o usuário perguntar sobre gastos passados, status financeiro, ou pedir insights.
-- Se a pergunta for genérica, responda com seu conhecimento.
+- 'addTransaction': Para registrar.
+- 'querySpending': Para consultar saldos e totais.
 `;
 
 const tools = [
@@ -146,7 +145,8 @@ export class FinanceAgentService {
 
             // Return the raw insights structure so the LLM can interpret it
             return {
-                summary_today: insightResult.dailySummary.total,
+                today_spend: insightResult.dailySummary.total,
+                month_spend: insightResult.monthSummary.total,
                 insights: insightResult.insights.map(i => `${i.text}: ${i.value} (${i.details})`).join("; ")
             };
         } catch (error) {

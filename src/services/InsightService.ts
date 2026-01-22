@@ -17,6 +17,9 @@ export interface InsightResult {
     dailySummary: {
         total: number;
     };
+    monthSummary: {
+        total: number;
+    };
 }
 
 export class InsightService {
@@ -39,7 +42,8 @@ export class InsightService {
             query.profileId = new ObjectId(profileId);
         } else {
             query.userId = new ObjectId(userId);
-            query.profileId = { $exists: false };
+            // REMOVED: query.profileId = { $exists: false }; 
+            // We want ALL transactions for the user if no profile is specified, so the Agent sees everything.
         }
 
         const now = new Date();
@@ -280,89 +284,126 @@ export class InsightService {
         // STANDARD STRATEGIES (Standard)
         // =========================================================
 
-        if (lastWeekTotal > 50) {
-            const diff = weekTotal - lastWeekTotal;
-            const percentage = (diff / lastWeekTotal) * 100;
-            const threshold = scope === 'all' ? 30 : 20;
+        // =========================================================
+        // STANDARD STRATEGIES (Standard)
+        // =========================================================
 
-            if (percentage > threshold) {
+        // 1. Monthly Snapshot (Priority: High)
+        if (monthTotal > 0) {
+            const monthName = todayDate.toLocaleString('pt-BR', { month: 'long' });
+            insights.push({
+                id: "monthly-status",
+                type: "monthly",
+                text: `Resumo de ${monthName}`,
+                value: `R$ ${monthTotal.toFixed(0)}`,
+                trend: "neutral",
+                details: `Total acumulado neste mês: R$ ${monthTotal.toFixed(2)}.`,
+                recommendation: "Acompanhe para não estourar o orçamento."
+            });
+        }
+
+        // 2. Weekly Analysis (Priority: High)
+        if (weekTotal > 0) {
+            if (lastWeekTotal > 50) {
+                const diff = weekTotal - lastWeekTotal;
+                const percentage = (diff / lastWeekTotal) * 100;
+
+                if (percentage > 20) {
+                    insights.push({
+                        id: "weekly-rise",
+                        type: "weekly",
+                        text: "Atenção na Semana",
+                        value: `+${percentage.toFixed(0)}%`,
+                        trend: "negative",
+                        details: `Gasto semanal subiu. Atual: R$ ${weekTotal.toFixed(0)} vs Anterior: R$ ${lastWeekTotal.toFixed(0)}.`,
+                    });
+                } else if (percentage < -15) {
+                    insights.push({
+                        id: "weekly-drop",
+                        type: "weekly",
+                        text: "Economia Semanal",
+                        value: `${percentage.toFixed(0)}%`,
+                        trend: "positive",
+                        details: "Você gastou menos esta semana comparado à anterior.",
+                    });
+                } else {
+                    insights.push({
+                        id: "weekly-stable",
+                        type: "weekly",
+                        text: "Semana Estável",
+                        value: `R$ ${weekTotal.toFixed(0)}`,
+                        trend: "neutral",
+                        details: `Gasto semanal dentro da média. Total: R$ ${weekTotal.toFixed(0)}.`,
+                    });
+                }
+            } else {
+                // New: Standalone Weekly (No history)
                 insights.push({
-                    id: "weekly-rise",
+                    id: "weekly-status",
                     type: "weekly",
-                    text: "Gastos da semana subiram",
-                    value: `+${percentage.toFixed(0)}%`,
-                    trend: "negative",
-                    details: `Esta semana: R$ ${weekTotal.toFixed(0)} vs Semana passada: R$ ${lastWeekTotal.toFixed(0)}.`,
-                    recommendation: "Atenção com gastos impulsivos no fim de semana."
-                });
-            } else if (percentage < -15) {
-                insights.push({
-                    id: "weekly-drop",
-                    type: "weekly",
-                    text: "Economia na semana",
-                    value: `${percentage.toFixed(0)}%`,
-                    trend: "positive",
-                    details: "Você gastou menos esta semana comparado à anterior.",
-                    recommendation: "Excelente resultado semanal!"
+                    text: "Gasto Semanal",
+                    value: `R$ ${weekTotal.toFixed(0)}`,
+                    trend: "neutral",
+                    details: `Nesta semana você já registrou R$ ${weekTotal.toFixed(2)} em gastos.`,
                 });
             }
         }
 
+        // 3. Category (Priority: Medium)
         if (Object.keys(categoryMap).length > 0) {
             const topCategory = Object.entries(categoryMap).reduce((a, b) => a[1] > b[1] ? a : b);
             const catAmount = topCategory[1];
 
-            if (monthTotal > 0 && catAmount > (monthTotal * 0.4)) { // 40%
+            if (monthTotal > 0 && catAmount > (monthTotal * 0.3)) { // Lowered to 30% to appear more often
                 insights.push({
                     id: "top-category",
                     type: "category",
                     text: `Foco em ${topCategory[0]}`,
                     value: `${((catAmount / monthTotal) * 100).toFixed(0)}%`,
                     trend: "neutral",
-                    details: `${topCategory[0]} consome ${((catAmount / monthTotal) * 100).toFixed(0)}% do seu orçamento mensal.`,
-                    recommendation: "Avalie se é possível reduzir custos nesta categoria específica."
+                    details: `${topCategory[0]} representa a maior fatia (${((catAmount / monthTotal) * 100).toFixed(0)}%) dos seus gastos.`,
                 });
             }
         }
 
-        const h = new Date().getHours();
-        const currentHourBR = new Date().getUTCHours() - 3;
+        // 4. Filler: Daily Average (If needed to reach 3)
+        if (monthTotal > 0 && insights.length < 3) {
+            const dayOfMont = todayDate.getDate() || 1;
+            const avg = monthTotal / dayOfMont;
+            insights.push({
+                id: "daily-avg",
+                type: "general",
+                text: "Média Diária",
+                value: `R$ ${avg.toFixed(0)}`,
+                trend: "neutral",
+                details: `Você está gastando em média R$ ${avg.toFixed(2)} por dia este mês.`
+            });
+        }
 
+        // 5. Zero Spend (Bonus)
+        const currentHourBR = new Date().getUTCHours() - 3;
         if (todayTotal === 0 && currentHourBR >= 16) {
             insights.push({
                 id: "zero-spend",
                 type: "zero_spend",
-                text: "Dia sem gastos! 👏",
+                text: "Dia Zero Gastos! 👏",
                 value: "R$ 0",
                 trend: "positive",
-                details: "Você não registrou nenhuma despesa hoje.",
-                recommendation: "Dias off ajudam a equilibrar contas pesadas."
+                details: "Parabéns! Nenhuma despesa registrada hoje.",
             });
         }
 
-        // Fallbacks
+        // Fallbacks (If still < 2, add generics)
         if (insights.length < 2) {
-            if (scope === 'all') {
-                insights.push({
-                    id: "deep-info",
-                    type: "general",
-                    text: "Análise Histórica",
-                    value: "12 meses",
-                    trend: "neutral",
-                    details: "Base de dados analisada: últimos 365 dias de transações.",
-                    recommendation: "Continue registrando receitas e despesas para diagnósticos precisos."
-                });
-            } else {
-                insights.push({
-                    id: "general-tip",
-                    type: "tip",
-                    text: "Dica Rápida",
-                    value: "💡",
-                    trend: "neutral",
-                    details: "Para começar a investir, o primeiro passo é quitar dívidas de juros altos.",
-                    recommendation: "Revise faturas de cartão e cheque especial."
-                });
-            }
+            insights.push({
+                id: "general-tip",
+                type: "tip",
+                text: "Dica Financeira",
+                value: "💡",
+                trend: "neutral",
+                details: "Para começar a investir, o primeiro passo é quitar dívidas de juros altos.",
+                recommendation: "Revise faturas de cartão e cheque especial."
+            });
         }
 
         // Garante que temos algo
@@ -383,6 +424,9 @@ export class InsightService {
             insights,
             dailySummary: {
                 total: todayTotal
+            },
+            monthSummary: {
+                total: monthTotal
             }
         };
     }
