@@ -12,6 +12,7 @@ import { Title } from "@/components/ui/molecules/Title"
 import { Mail, Phone, Eye, EyeOff, Loader2 } from "lucide-react"
 import Swal from "sweetalert2"
 import { ThemeToggle } from "@/components/ui/atoms/ThemeToggle"
+import { validatePhoneDetails } from "@/lib/phoneUtils"
 
 export default function LoginPage() {
   const [emailOrPhone, setEmailOrPhone] = useState("")
@@ -19,6 +20,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [inputType, setInputType] = useState<"email" | "phone" | "unknown">("unknown")
   const [isLoading, setIsLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
   const router = useRouter()
 
   useEffect(() => {
@@ -33,17 +35,16 @@ export default function LoginPage() {
   const handleEmailOrPhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setEmailOrPhone(value)
+    setErrorMessage("") // Limpa erro ao digitar
 
     // Detectar tipo de input
     if (value.includes("@")) {
       setInputType("email")
-    } else if (/^\(?\d{2}\)?\s?\d{4,5}-?\d{4}$/.test(value) || /^\d+$/.test(value)) {
+    } else if (/^\(?\d{2}\)?\s?\d{4,5}-?\d{4}$/.test(value) || /^\d+$/.test(value) || value.startsWith('+')) {
       setInputType("phone")
-      // Auto-formatar telefone
-      const formatted = formatPhoneNumber(value)
-      if (formatted !== value) {
-        setEmailOrPhone(formatted)
-      }
+      // Auto-formatar telefone apenas se estiver "limpo" (não complexo com DDI +55 explicitado pelo usuário)
+      // Se usuario digitar +55, deixamos ele controlar ou aplicamos mascara depois.
+      // Por enquanto, validação visual.
     } else if (value === "") {
       setInputType("unknown")
     }
@@ -66,15 +67,57 @@ export default function LoginPage() {
         title: "Erro!",
         text: "Preencha todos os campos.",
       })
-      return
+      return;
+    }
+
+    // Validação específica de telefone antes do envio
+    // Se não tem @ e tem números (ou +), assumimos que é telefone
+    if (!emailOrPhone.includes("@") && (/\d/.test(emailOrPhone) || emailOrPhone.startsWith('+'))) {
+      const validation = validatePhoneDetails(emailOrPhone);
+      if (!validation.isValid) {
+        let errorMsg = "Número inválido.";
+        let warningText = "";
+
+        switch (validation.error) {
+          case 'TOO_SHORT':
+            errorMsg = "O número digitado é muito curto.";
+            warningText = "Verifique o DDD e o 9º dígito.";
+            break;
+          case 'TOO_LONG':
+            errorMsg = "O número digitado é muito longo.";
+            break;
+          case 'INVALID_COUNTRY':
+            errorMsg = "Código de país inválido.";
+            break;
+          case 'NOT_A_NUMBER':
+            errorMsg = "Caracteres inválidos.";
+            break;
+          default:
+            errorMsg = "Verifique o número digitado.";
+            warningText = "Formato esperado: (DDD) 99999-9999";
+        }
+
+        const fullMsg = warningText ? `${errorMsg}\n${warningText}` : errorMsg;
+
+        setErrorMessage(fullMsg.replace('\n', ' ')); // Mostra no parágrafo
+
+        Swal.fire({
+          icon: "info",
+          title: "Atenção",
+          text: fullMsg.replace('\n', ' '),
+          confirmButtonColor: "#0085FF"
+        });
+        return;
+      }
     }
 
     setIsLoading(true)
 
     try {
       // Detectar se é telefone ou email
-      const isPhone =
-        /^\(?\d{2}\)?\s?\d{4,5}-?\d{4}$/.test(emailOrPhone) || /^\d{10,11}$/.test(emailOrPhone.replace(/\D/g, ""))
+      // Detectar se é telefone ou email logicamente
+      // Se tiver @ é email. Se não tiver @ e tiver digitos, é telefone.
+      const isPhone = !emailOrPhone.includes("@") && /\d/.test(emailOrPhone);
 
       const response = await fetch("/api/auth/login", {
         method: "POST",
@@ -104,10 +147,12 @@ export default function LoginPage() {
         })
       } else {
         console.error("Login API Error:", data)
+        const msg = data.error || data.message || "Erro ao processar login.";
+        setErrorMessage(msg);
         Swal.fire({
           icon: "error",
           title: "Erro!",
-          text: data.error || data.message || "Erro ao processar login.",
+          text: msg,
         })
       }
     } catch (error) {
@@ -183,6 +228,16 @@ export default function LoginPage() {
                   required
                 />
               </div>
+              {/* Helper Text para Telefone ou Erro */}
+              <p className={`text-xs ml-1 ${errorMessage ? "text-red-500 font-semibold" : "text-muted-foreground"}`}>
+                {errorMessage
+                  ? errorMessage
+                  : inputType === 'phone'
+                    ? 'Digite DDD + Número (Ex: 63 99999-9999)'
+                    : inputType === 'email'
+                      ? 'Digite seu e-mail cadastrado'
+                      : 'Digite seu e-mail ou celular com DDD'}
+              </p>
 
               {/* Indicador visual do tipo detectado */}
               {inputType !== "unknown" && (

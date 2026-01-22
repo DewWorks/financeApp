@@ -3,10 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --webpack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "cypress": "cypress open",
+    "cypress:run": "cypress run",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },
@@ -26,6 +30,7 @@
     "html2canvas": "^1.4.1",
     "jsonwebtoken": "^9.0.2",
     "jspdf": "^4.0.0",
+    "libphonenumber-js": "^1.12.35",
     "lucide-react": "^0.454.0",
     "mongodb": "^6.21.0",
     "mongoose": "^8.9.5",
