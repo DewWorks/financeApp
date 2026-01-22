@@ -9,6 +9,24 @@ export interface InsightItem {
     trend: "positive" | "negative" | "neutral";
     details?: string;
     recommendation?: string;
+    richData?: {
+        projection?: {
+            current: number;
+            projected: number;
+            dailyAvg: number;
+            daysRemaining: number;
+            breakdown?: {
+                fixed: number;
+                variable: number;
+            }
+        };
+        comparison?: {
+            expense: number;
+            income: number;
+            ratio: number;
+        };
+        status?: "good" | "warning" | "critical" | "excellent";
+    };
 }
 
 export interface InsightResult {
@@ -42,17 +60,15 @@ export class InsightService {
             query.profileId = new ObjectId(profileId);
         } else {
             query.userId = new ObjectId(userId);
-            // REMOVED: query.profileId = { $exists: false }; 
-            // We want ALL transactions for the user if no profile is specified, so the Agent sees everything.
         }
 
         const now = new Date();
         now.setHours(now.getHours() - 3); // Ajuste GMT-3
-        const todayStr = now.toISOString().split('T')[0];
+        // const todayStr = now.toISOString().split('T')[0];
 
         // 3. Determinar limite
-        const daysToFetch = scope === 'all' ? 365 : 60;
-        const limit = scope === 'all' ? 2000 : 300; // Aumentar limite para pegar income também
+        const daysToFetch = scope === 'all' ? 365 : 120; // 4 months for trend analysis
+        const limit = scope === 'all' ? 2000 : 800;
 
         const transactions = await collection.find({
             ...query,
@@ -97,7 +113,41 @@ export class InsightService {
         let lastWeekTotal = 0;
         let monthTotal = 0;
         let lastMonthTotal = 0;
+        let monthIncome = 0;
+        let fixedTotal = 0;
+        let variableTotal = 0;
         const categoryMap: { [key: string]: number } = {};
+
+        // DYNAMIC FIXED COST DETECTION
+        // 1. Group by description (normalized)
+        const recurrenceMap: { [desc: string]: { amounts: number[], months: Set<string> } } = {};
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        transactions.forEach((t: any) => {
+            if (t.type !== 'expense') return;
+            const desc = (t.description || t.title || "").toLowerCase().trim();
+            const date = parseDate(t.date);
+            if (!date || !desc) return;
+
+            const monthKey = `${date.getMonth()}/${date.getFullYear()}`;
+            if (!recurrenceMap[desc]) recurrenceMap[desc] = { amounts: [], months: new Set() };
+            recurrenceMap[desc].amounts.push(Number(t.amount));
+            recurrenceMap[desc].months.add(monthKey);
+        });
+
+        // 2. Identify Fixed Patterns (Present in >1 month, Variance < 10%)
+        const detectedFixedDescriptions = new Set<string>();
+        Object.entries(recurrenceMap).forEach(([desc, data]) => {
+            if (data.months.size >= 2) { // Appears in at least 2 different months
+                const avg = data.amounts.reduce((a, b) => a + b, 0) / data.amounts.length;
+                const variance = data.amounts.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / data.amounts.length;
+                const stdDev = Math.sqrt(variance);
+                // Coefficient of variation < 0.1 (10%)
+                if ((stdDev / avg) < 0.1) {
+                    detectedFixedDescriptions.add(desc);
+                }
+            }
+        });
 
         // Agregadores Deep Analysis
         let totalIncome12M = 0;
@@ -136,24 +186,51 @@ export class InsightService {
                     monthTotal += amount;
                     const cat = t.tag || t.category || "Outros";
                     categoryMap[cat] = (categoryMap[cat] || 0) + amount;
+
+                    // Split Fixed vs Variable
+                    const fixedKeywords = ["aluguel", "condominio", "internet", "netflix", "spotify", "energia", "luz", "agua", "mensalidade", "faculdade", "assinatura"];
+                    const normalizedCat = cat.toLowerCase();
+                    const desc = (t.description || t.title || "").toLowerCase().trim();
+
+                    const isFixedKeyword = fixedKeywords.some(k => normalizedCat.includes(k));
+                    const isFixedPattern = detectedFixedDescriptions.has(desc);
+
+                    const isFixed = isFixedKeyword || isFixedPattern;
+
+                    if (isFixed) {
+                        fixedTotal += amount;
+                    } else {
+                        variableTotal += amount;
+                    }
                 }
                 if (tDate.getMonth() === lastMonth && (tDate.getFullYear() === todayDate.getFullYear() || (currentMonth === 0 && tDate.getFullYear() === todayDate.getFullYear() - 1))) {
                     lastMonthTotal += amount;
                 }
             }
 
-            // --- Cálculos Deep (Scope = All) ---
-            if (scope === 'all') {
-                const monthKey = `${tDate.getMonth()}/${tDate.getFullYear()}`; // 0/2024
+            if (isIncome) {
+                if (tDate.getMonth() === currentMonth && tDate.getFullYear() === todayDate.getFullYear()) {
+                    monthIncome += amount;
+                }
+            }
 
-                if (isExpense) {
-                    totalExpense12M += amount;
+            // --- Cálculos Deep / History (Always run for trend context) ---
+            const monthKey = `${tDate.getMonth()}/${tDate.getFullYear()}`; // 0/2024
+
+            if (isExpense) {
+                // Only count for history if it's NOT the current month
+                if (monthKey !== `${todayDate.getMonth()}/${todayDate.getFullYear()}`) {
                     monthlyExpenses[monthKey] = (monthlyExpenses[monthKey] || 0) + amount;
+                }
 
+                if (scope === 'all') {
+                    totalExpense12M += amount;
                     if (!biggestExpense || amount > biggestExpense.amount) {
                         biggestExpense = { ...t, dateObj: tDate };
                     }
-                } else if (isIncome) {
+                }
+            } else if (isIncome) {
+                if (scope === 'all') {
                     totalIncome12M += amount;
                     monthlyIncomes[monthKey] = (monthlyIncomes[monthKey] || 0) + amount;
                 }
@@ -324,35 +401,120 @@ export class InsightService {
         // STANDARD STRATEGIES (Standard)
         // =========================================================
 
-        // =========================================================
-        // STANDARD STRATEGIES (Standard)
-        // =========================================================
-
         // 1. Monthly Snapshot (Priority: High)
         if (monthTotal > 0) {
             const monthName = todayDate.toLocaleString('pt-BR', { month: 'long' });
 
-            // PROJECTION LOGIC
+            // PROJECTION LOGIC (Refined Fixed vs Variable)
             const daysInMonth = new Date(todayDate.getFullYear(), todayDate.getMonth() + 1, 0).getDate();
             const daysPassed = todayDate.getDate();
-            const dailyAvg = monthTotal / Math.max(daysPassed, 1);
-            const projectedTotal = dailyAvg * daysInMonth;
+
+            // Variable Projection
+            const variableAvg = variableTotal / Math.max(daysPassed, 1);
+            const variableProjected = variableAvg * daysInMonth;
+
+            // Total = Variable Projected + Fixed (Actuals only, assuming single payment)
+            // Note: If fixed costs are paid early (day 5), simple addition is correct. 
+            // If they are late (day 25), they won't be in fixedTotal yet, so projection might be low?
+            // BETTER STRATEGY: 
+            // If history exists, we should probably know "Expected Fixed Total". 
+            // But for now, sticking to the "Don't extrapolate Rent" request is safer to reduce over-projection.
+            const projectedTotal = variableProjected + fixedTotal;
+            const dailyAvg = monthTotal / Math.max(daysPassed, 1); // Keep for reference if needed
 
             // Only project if we are at least on day 5 to avoid wild swings
             let projectionText = "";
             if (daysPassed >= 5) {
                 // DIDACTIC EXPLANATION
-                projectionText = ` 🔮 Projeção: R$ ${projectedTotal.toFixed(0)}. Cálculo: Você gastou R$ ${monthTotal.toFixed(0)} em ${daysPassed} dias (Média: R$ ${dailyAvg.toFixed(0)}/dia). Multiplicando pelos ${daysInMonth} dias do mês, chegamos a esse valor.`;
+                projectionText = ` 🔮 Projeção: R$ ${projectedTotal.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}. Cálculo: Variável (R$ ${variableProjected.toFixed(0)}) + Fixo (R$ ${fixedTotal.toFixed(0)}).`;
+            }
+
+            // SMART BLEND LOGIC (Historical vs Current)
+            // Calculate average of previous 3 months
+            const last3Months = Object.keys(monthlyExpenses)
+                .sort((a, b) => {
+                    const [ma, ya] = a.split('/').map(Number);
+                    const [mb, yb] = b.split('/').map(Number);
+                    return new Date(yb, mb).getTime() - new Date(ya, ma).getTime();
+                })
+                .filter(k => k !== `${todayDate.getMonth()}/${todayDate.getFullYear()}`) // Exclude current
+                .slice(0, 3);
+
+            let historicalAvg = 0;
+            if (last3Months.length > 0) {
+                const sumHistory = last3Months.reduce((sum, key) => sum + monthlyExpenses[key], 0);
+                historicalAvg = sumHistory / last3Months.length;
+            }
+
+            // Weighted Average: 40% Current Pace + 60% History (if history exists)
+            // If > day 20, trust current pace more (80%).
+            let weightCurrent = 0.4;
+            if (daysPassed > 20) weightCurrent = 0.8;
+            else if (daysPassed < 10) weightCurrent = 0.2;
+            if (historicalAvg === 0) weightCurrent = 1.0; // No history, full trust current
+
+            let finalProjection = (projectedTotal * weightCurrent) + (historicalAvg * (1 - weightCurrent));
+
+            // Precision Fix & Rounding
+            finalProjection = Math.round(finalProjection);
+
+            if (historicalAvg > 0) {
+                const p1 = Math.round(weightCurrent * 100);
+                const p2 = Math.round((1 - weightCurrent) * 100);
+                projectionText += ` (Base: ${p1}% Ritmo Atual + ${p2}% Histórico)`;
+            }
+
+            // Determine Rhythm Status and Comparison
+            let status: "good" | "warning" | "critical" | "excellent" = "good";
+
+            // USE REAL INCOME IF AVAILABLE, otherwise use 12M Avg, otherwise fallback
+            let comparedIncome = monthIncome;
+            if (comparedIncome === 0 && totalIncome12M > 0) {
+                const monthsCount = Object.keys(monthlyExpenses).length || 1;
+                comparedIncome = totalIncome12M / Math.max(monthsCount, 1);
+            }
+            if (comparedIncome === 0) comparedIncome = monthTotal * 1.2; // Last resort fallback
+
+            const ratio = finalProjection / (comparedIncome || 1);
+
+            if (ratio > 1.0) status = "critical";
+            else if (ratio > 0.85) status = "warning";
+            else if (ratio < 0.6) status = "excellent";
+
+            // Smart Recommendation
+            let recommendation = "Para reduzir a projeção, tente passar alguns dias sem compras (Days Off).";
+            if (status === 'critical') {
+                recommendation = "Atenção Crítica: Sua projeção ultrapassa sua renda. Corte gastos não essenciais imediatamente.";
+            } else if (historicalAvg > 0 && finalProjection > historicalAvg * 1.2) {
+                recommendation = "Você está gastando 20% acima do seu histórico. Verifique se houve algum imprevisto.";
             }
 
             insights.push({
                 id: "monthly-status",
                 type: "monthly",
                 text: `Resumo de ${monthName}`,
-                value: `R$ ${monthTotal.toFixed(0)}`,
+                value: `R$ ${monthTotal.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
                 trend: "neutral",
-                details: `${projectionText} ${daysPassed >= 5 && projectedTotal > (monthTotal * 1.5) ? "O ritmo está alto." : "Ritmo controlado."}`,
-                recommendation: daysPassed >= 5 && projectedTotal > (monthTotal * 1.5) ? "Se continuar nesse ritmo, o valor subirá muito. Tente reduzir o gasto diário." : "Acompanhe para não estourar o orçamento."
+                details: `${projectionText} ${daysPassed >= 5 && finalProjection > (monthTotal * 1.5) ? "O ritmo está alto." : "Ritmo controlado."}`,
+                recommendation: recommendation,
+                richData: {
+                    projection: {
+                        current: monthTotal,
+                        projected: finalProjection,
+                        dailyAvg: dailyAvg,
+                        daysRemaining: daysInMonth - daysPassed,
+                        breakdown: {
+                            fixed: fixedTotal,
+                            variable: variableTotal
+                        }
+                    },
+                    comparison: {
+                        expense: finalProjection,
+                        income: Number(comparedIncome.toFixed(0)),
+                        ratio: ratio
+                    },
+                    status: status
+                }
             });
         }
 
@@ -407,21 +569,40 @@ export class InsightService {
         if (Object.keys(categoryMap).length > 0) {
             const topCategory = Object.entries(categoryMap).reduce((a, b) => a[1] > b[1] ? a : b);
             const catAmount = topCategory[1];
+            const catName = topCategory[0].toLowerCase();
+
+            // FIXED COST DETECTION
+            const fixedKeywords = ["aluguel", "condominio", "internet", "netflix", "spotify", "energia", "luz", "agua", "mensalidade", "faculdade", "assinatura"];
+            const isFixed = fixedKeywords.some(k => catName.includes(k));
 
             // Project Category Specific
             const daysInMonth = new Date(todayDate.getFullYear(), todayDate.getMonth() + 1, 0).getDate();
             const daysPassed = todayDate.getDate();
-            const catAvg = catAmount / Math.max(daysPassed, 1);
-            const catProj = catAvg * daysInMonth;
+
+            let catProj = 0;
+            if (isFixed) {
+                // If fixed, do not extrapolate daily. Assume what is paid is paid.
+                catProj = catAmount;
+            } else {
+                const catAvg = catAmount / Math.max(daysPassed, 1);
+                catProj = catAvg * daysInMonth;
+            }
 
             if (monthTotal > 0 && catAmount > (monthTotal * 0.3)) {
+                let detailsText = `Você já gastou R$ ${catAmount.toFixed(0)} com ${topCategory[0]}. `;
+                if (isFixed) {
+                    detailsText += `Como é um custo fixo, consideramos esse valor para o fechamento.`;
+                } else {
+                    detailsText += `Nesse ritmo, fechará o mês gastando R$ ${catProj.toFixed(0)} só nessa categoria.`;
+                }
+
                 insights.push({
                     id: "top-category-proj",
                     type: "category",
                     text: `Projeção: ${topCategory[0]}`,
                     value: `R$ ${catProj.toFixed(0)} (Est.)`,
                     trend: "neutral",
-                    details: `Você já gastou R$ ${catAmount.toFixed(0)} com ${topCategory[0]}. Nesse ritmo, fechará o mês gastando R$ ${catProj.toFixed(0)} só nessa categoria.`,
+                    details: detailsText,
                 });
             }
         }
