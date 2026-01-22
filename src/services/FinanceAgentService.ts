@@ -55,6 +55,33 @@ const tools = [
                 }
             },
             {
+                name: "setGoal",
+                description: "Define uma meta financeira ou um limite de gastos (Budget).",
+                parameters: {
+                    type: SchemaType.OBJECT,
+                    properties: {
+                        name: {
+                            type: SchemaType.STRING,
+                            description: "Nome da meta. Ex: 'Viagem', 'Mercado Mensal'."
+                        },
+                        amount: {
+                            type: SchemaType.NUMBER,
+                            description: "Valor alvo ou limite."
+                        },
+                        type: {
+                            type: SchemaType.STRING,
+                            description: "'savings' para meta de economia (juntar dinheiro), 'spending' para limite de gastos (orçamento).",
+                            enum: ["savings", "spending"]
+                        },
+                        category: {
+                            type: SchemaType.STRING,
+                            description: "Categoria associada (obrigatório para spending). Ex: 'Alimentação'."
+                        }
+                    },
+                    required: ["name", "amount", "type"]
+                }
+            },
+            {
                 name: "querySpending",
                 description: "Busca o status financeiro, total gasto ou insights do usuário.",
                 parameters: {
@@ -137,6 +164,32 @@ export class FinanceAgentService {
         }
     }
 
+    private async setGoal(args: any, userId: string) {
+        try {
+            const client = await getMongoClient();
+            const db = client.db('financeApp');
+
+            const goal = {
+                userId: new ObjectId(userId),
+                name: args.name,
+                targetAmount: Number(args.amount),
+                currentAmount: 0,
+                tag: args.category || 'Geral',
+                type: args.type || 'savings',
+                period: 'monthly', // Default
+                createdAt: new Date()
+            };
+
+            const result = await db.collection('goals').insertOne(goal);
+            return { success: true, message: `Goal/Budget '${args.name}' created.`, id: result.insertedId };
+
+        } catch (error) {
+            console.error("Error setting goal:", error);
+            this.logError(error);
+            return { success: false, error: "Failed to create goal" };
+        }
+    }
+
     private async querySpending(args: any, userId: string) {
         try {
             // Reusing InsightService to get processed data
@@ -178,10 +231,10 @@ export class FinanceAgentService {
                     let apiResult;
 
                     if (name === "addTransaction") {
-                        // Pass userId context
                         apiResult = await this.addTransaction(args, userId);
+                    } else if (name === "setGoal") {
+                        apiResult = await this.setGoal(args, userId);
                     } else if (name === "querySpending") {
-                        // Pass userId context
                         apiResult = await this.querySpending(args, userId);
                     } else {
                         apiResult = { error: "Unknown function" };

@@ -281,6 +281,46 @@ export class InsightService {
         }
 
         // =========================================================
+        // GOAL & BUDGET STRATEGY (High Priority)
+        // =========================================================
+        const goals = await db.collection("goals").find({
+            userId: new ObjectId(userId),
+            type: 'spending' // We only monitor budgets here for now
+        }).toArray();
+
+        goals.forEach((goal: any) => {
+            const cat = goal.tag || goal.category;
+            const limit = goal.targetAmount || 0;
+            const spent = categoryMap[cat] || 0;
+
+            if (limit > 0 && spent > 0) {
+                const percentage = (spent / limit) * 100;
+
+                if (percentage > 100) {
+                    insights.push({
+                        id: `budget-exceeded-${goal._id}`,
+                        type: "category", // or 'alert'
+                        text: `Meta Estourada: ${cat}`,
+                        value: `${percentage.toFixed(0)}%`,
+                        trend: "negative",
+                        details: `Você gastou R$ ${spent.toFixed(2)} de um limite de R$ ${limit.toFixed(2)}.`,
+                        recommendation: "Pare de gastar nessa categoria imediatamente."
+                    });
+                } else if (percentage >= 80) {
+                    insights.push({
+                        id: `budget-warning-${goal._id}`,
+                        type: "category",
+                        text: `Alerta: ${cat}`,
+                        value: `${percentage.toFixed(0)}%`,
+                        trend: "neutral",
+                        details: `Você já consumiu ${percentage.toFixed(0)}% da sua meta para ${cat}.`,
+                        recommendation: "Restam poucos recursos, economize."
+                    });
+                }
+            }
+        });
+
+        // =========================================================
         // STANDARD STRATEGIES (Standard)
         // =========================================================
 
@@ -291,14 +331,28 @@ export class InsightService {
         // 1. Monthly Snapshot (Priority: High)
         if (monthTotal > 0) {
             const monthName = todayDate.toLocaleString('pt-BR', { month: 'long' });
+
+            // PROJECTION LOGIC
+            const daysInMonth = new Date(todayDate.getFullYear(), todayDate.getMonth() + 1, 0).getDate();
+            const daysPassed = todayDate.getDate();
+            const dailyAvg = monthTotal / Math.max(daysPassed, 1);
+            const projectedTotal = dailyAvg * daysInMonth;
+
+            // Only project if we are at least on day 5 to avoid wild swings
+            let projectionText = "";
+            if (daysPassed >= 5) {
+                // DIDACTIC EXPLANATION
+                projectionText = ` 🔮 Projeção: R$ ${projectedTotal.toFixed(0)}. Cálculo: Você gastou R$ ${monthTotal.toFixed(0)} em ${daysPassed} dias (Média: R$ ${dailyAvg.toFixed(0)}/dia). Multiplicando pelos ${daysInMonth} dias do mês, chegamos a esse valor.`;
+            }
+
             insights.push({
                 id: "monthly-status",
                 type: "monthly",
                 text: `Resumo de ${monthName}`,
                 value: `R$ ${monthTotal.toFixed(0)}`,
                 trend: "neutral",
-                details: `Total acumulado neste mês: R$ ${monthTotal.toFixed(2)}.`,
-                recommendation: "Acompanhe para não estourar o orçamento."
+                details: `${projectionText} ${daysPassed >= 5 && projectedTotal > (monthTotal * 1.5) ? "O ritmo está alto." : "Ritmo controlado."}`,
+                recommendation: daysPassed >= 5 && projectedTotal > (monthTotal * 1.5) ? "Se continuar nesse ritmo, o valor subirá muito. Tente reduzir o gasto diário." : "Acompanhe para não estourar o orçamento."
             });
         }
 
@@ -349,7 +403,30 @@ export class InsightService {
             }
         }
 
-        // 3. Category (Priority: Medium)
+        // 3. Category Projection (NEW REQUEST: "Categorizado")
+        if (Object.keys(categoryMap).length > 0) {
+            const topCategory = Object.entries(categoryMap).reduce((a, b) => a[1] > b[1] ? a : b);
+            const catAmount = topCategory[1];
+
+            // Project Category Specific
+            const daysInMonth = new Date(todayDate.getFullYear(), todayDate.getMonth() + 1, 0).getDate();
+            const daysPassed = todayDate.getDate();
+            const catAvg = catAmount / Math.max(daysPassed, 1);
+            const catProj = catAvg * daysInMonth;
+
+            if (monthTotal > 0 && catAmount > (monthTotal * 0.3)) {
+                insights.push({
+                    id: "top-category-proj",
+                    type: "category",
+                    text: `Projeção: ${topCategory[0]}`,
+                    value: `R$ ${catProj.toFixed(0)} (Est.)`,
+                    trend: "neutral",
+                    details: `Você já gastou R$ ${catAmount.toFixed(0)} com ${topCategory[0]}. Nesse ritmo, fechará o mês gastando R$ ${catProj.toFixed(0)} só nessa categoria.`,
+                });
+            }
+        }
+
+        // 4. Category (Priority: Medium)
         if (Object.keys(categoryMap).length > 0) {
             const topCategory = Object.entries(categoryMap).reduce((a, b) => a[1] > b[1] ? a : b);
             const catAmount = topCategory[1];
