@@ -143,6 +143,65 @@ export default function BankConnectPage() {
         }
     };
 
+    const handleForceSync = async (itemId: string) => {
+        Swal.fire({
+            title: 'Sincronizando...',
+            text: 'Buscando atualizações no banco.',
+            didOpen: () => {
+                Swal.showLoading();
+            },
+            allowOutsideClick: false
+        });
+
+        try {
+            const response = await fetch(`/api/bank-connections/sync?itemId=${itemId}`, {
+                method: 'POST'
+            });
+
+            if (response.ok) {
+                await fetchConnections();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Atualizado!',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            } else {
+                const data = await response.json();
+
+                // Connection Broken / Invalid
+                if (response.status === 400 || response.status === 404) {
+                    const result = await Swal.fire({
+                        title: 'Conexão Expirada',
+                        text: 'O banco recusou a conexão (pode ter sido removida ou expirada). É necessário reconectar.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Remover e Reconectar',
+                        cancelButtonText: 'Cancelar'
+                    });
+
+                    if (result.isConfirmed) {
+                        // Find the bank name for the delete function
+                        const conn = connections.find(c => c.itemId === itemId);
+                        const bankName = conn?.accounts?.[0]?.name || "Banco";
+                        await handleDeleteConnection(itemId, bankName);
+                        // Open new connection modal
+                        handleStartConnection();
+                    }
+                    return; // Exit
+                }
+
+                throw new Error(data.error || 'Falha na sincronização');
+            }
+        } catch (error: any) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Erro',
+                text: error.message || 'Não foi possível atualizar. Tente novamente.'
+            });
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-background p-4 sm:p-8">
             <div className="max-w-4xl mx-auto space-y-6">
@@ -236,7 +295,7 @@ export default function BankConnectPage() {
                                                     <Button
                                                         variant="outline"
                                                         size="sm"
-                                                        onClick={fetchConnections}
+                                                        onClick={() => handleForceSync(conn.itemId)}
                                                         className="flex-1 sm:flex-none gap-2 bg-blue-600 text-white hover:bg-blue-800"
                                                     >
                                                         <RefreshCw className="h-3.5 w-3.5" />

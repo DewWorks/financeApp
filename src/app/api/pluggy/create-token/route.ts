@@ -49,16 +49,30 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const data = await client.createConnectToken(undefined, {
-            webhookUrl: process.env.PLUGGY_WEBHOOK_URL,
+        const webhookUrl = process.env.PLUGGY_WEBHOOK_URL;
+        const isLocal = webhookUrl?.includes("localhost") || webhookUrl?.includes("127.0.0.1");
+
+        const options: any = {
             clientUserId: userId,
-        });
+        };
+
+        // DEBUG: Force disable webhook to isolate cause
+        if (webhookUrl && !isLocal && webhookUrl.startsWith("http")) {
+            options.webhookUrl = webhookUrl;
+        }
+        console.log(`[CreateToken] Options:`, JSON.stringify(options));
+
+        const data = await client.createConnectToken(undefined, options);
 
         return NextResponse.json({ accessToken: data.accessToken });
     } catch (error: any) {
         console.error("Erro ao criar connect token:", error);
+
+        // Extract detailed error from Pluggy SDK if available
+        const details = error.response?.data || error.message;
+
         return NextResponse.json(
-            { error: "Erro ao criar token de conexão", details: error.message },
+            { error: "Erro ao criar token de conexão", details: details },
             { status: 500 }
         );
     }

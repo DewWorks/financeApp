@@ -8,7 +8,13 @@ const TransactionSchema = new Schema<ITransaction>({
     description: { type: String, required: true },
     amount: { type: Number, required: true },
     date: { type: String, required: true },
-    tag: { type: String, required: true }
-});
+    tag: { type: String, required: true },
+    // Open Finance Fields
+    pluggyTransactionId: { type: String, unique: true, sparse: true }, // sparse allows null/undefined for manual transactions
+    provider: { type: String, enum: ['manual', 'pluggy', 'belvo'], default: 'manual' },
+    accountId: { type: String },
+    category: { type: String },
+    status: { type: String, enum: ['PENDING', 'POSTED'] }
+}, { timestamps: true });
 
 export const Transaction = mongoose.model<ITransaction>("Transaction", TransactionSchema);

@@ -94,7 +94,41 @@ export function OpenFinanceWidget() {
 
     const totalCheckingBalance = checkingAccounts.reduce((sum: number, acc: any) => sum + acc.balance, 0);
 
-    if (!loading && bankConnections.length === 0) return null;
+    // if (!loading && bankConnections.length === 0) return null; // Logic removed to allow adding first account
+
+    // Empty State
+    if (!loading && bankConnections.length === 0) {
+        return (
+            <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-8 bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden"
+            >
+                <div className="px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="flex items-center gap-4">
+                        <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-2xl">
+                            <Landmark className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                                Open Finance
+                            </h2>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-sm">
+                                Conecte suas contas bancárias para sincronização automática de transações e saldos.
+                            </p>
+                        </div>
+                    </div>
+                    <Button
+                        onClick={() => router.push("/bank")}
+                        size="lg"
+                        className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg w-full md:w-auto"
+                    >
+                        Conectar Conta
+                    </Button>
+                </div>
+            </motion.div>
+        );
+    }
 
     return (
         <motion.div

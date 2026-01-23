@@ -11,6 +11,12 @@ export interface ITransaction {
   tag: string
   isRecurring?: boolean,
   recurrenceCount?: number,
+  // Open Finance Fields
+  pluggyTransactionId?: string;
+  provider?: 'manual' | 'pluggy' | 'belvo';
+  accountId?: string;
+  category?: string; // Original category from provider
+  status?: 'PENDING' | 'POSTED';
   createdAt: string | Date;
 }
 
