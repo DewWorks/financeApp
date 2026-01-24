@@ -123,32 +123,60 @@ export function TransactionsTable({
                             return (
                                 <TableRow key={transaction._id?.toString()} className={transaction.type === 'income' ? 'bg-green-50/50 dark:bg-green-900/10 hover:bg-green-100/50 dark:hover:bg-green-900/20' : 'bg-red-50/50 dark:bg-red-900/10 hover:bg-red-100/50 dark:hover:bg-red-900/20'}>
                                     <TableCell className="font-medium">{new Date(transaction.date).toLocaleDateString()}</TableCell>
-                                    <TableCell>{transaction.description}</TableCell>
+                                    <TableCell>
+                                        <div className="flex flex-col">
+                                            <span className="font-medium text-gray-900 dark:text-gray-100">
+                                                {transaction.merchantName || transaction.description}
+                                            </span>
+                                            {transaction.merchantName && (
+                                                <span className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
+                                                    {transaction.description}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </TableCell>
                                     <TableCell className={transaction.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                                        R$ {transaction.amount !== undefined && transaction.amount !== null ? transaction.amount.toFixed(2) : 'N/A'}
+                                        <div className="flex flex-col">
+                                            <span className="font-semibold">
+                                                R$ {transaction.amount !== undefined && transaction.amount !== null ? transaction.amount.toFixed(2) : 'N/A'}
+                                            </span>
+                                            {transaction.paymentType && (
+                                                <span className="text-[10px] uppercase text-gray-400 mt-0.5">
+                                                    {transaction.paymentType === 'CREDIT_CARD' ? 'Crédito' : 'Débito'}
+                                                </span>
+                                            )}
+                                        </div>
                                         {transaction.isRecurring && transaction.recurrenceCount && (
-                                            <span className={`ml-1 text-xs flex items-center ${transaction.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                            <span className={`block text-xs flex items-center mt-1 opacity-80 ${transaction.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                                 <Repeat className="h-3 w-3 mr-1" />
                                                 {transaction.recurrenceCount}x
                                             </span>
                                         )}
                                     </TableCell>
-                                    <TableCell className={transaction.type === 'income' ? 'text-green-600 font-bold dark:text-green-400' : 'text-red-600 font-bold dark:text-red-400'}>{transaction.type === "income" ? (
-                                        <ArrowUpCircle className="w-4 h-4 text-green-500" />
-                                    ) : (
-                                        <ArrowDownCircle className="w-4 h-4 text-red-500" />
-                                    )}</TableCell>
+                                    <TableCell className="text-center">
+                                        {transaction.type === "income" ? (
+                                            <ArrowUpCircle className="w-5 h-5 text-green-500 mx-auto" />
+                                        ) : (
+                                            <ArrowDownCircle className="w-5 h-5 text-red-500 mx-auto" />
+                                        )}</TableCell>
                                     <TableCell>
-                                        <span
-                                            className="px-2 py-1 rounded-full text-xs font-semibold"
-                                            style={{
-                                                backgroundColor: `${tagColor}20`,
-                                                color: tagColor,
-                                                border: `1px solid ${tagColor}`
-                                            }}
-                                        >
-                                            {transaction.tag}
-                                        </span>
+                                        <div className="flex flex-col gap-1 items-start">
+                                            {transaction.category && transaction.category !== transaction.tag && (
+                                                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-600 border border-blue-100 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-900/30">
+                                                    {transaction.category}
+                                                </span>
+                                            )}
+                                            <span
+                                                className="px-2 py-1 rounded-full text-xs font-semibold"
+                                                style={{
+                                                    backgroundColor: `${tagColor}20`,
+                                                    color: tagColor,
+                                                    border: `1px solid ${tagColor}`
+                                                }}
+                                            >
+                                                {transaction.tag}
+                                            </span>
+                                        </div>
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex space-x-2">

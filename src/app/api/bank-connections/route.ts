@@ -126,6 +126,18 @@ export async function POST(req: NextRequest) {
 
         logDebug(`DB Update Result: ${JSON.stringify(result)}`);
 
+        // Trigger Initial Transaction Sync
+        try {
+            logDebug(`Triggering Initial Transaction Sync for Item: ${item.id}`);
+            // Dynamic import to avoid circular dep issues if any, though likely fine here
+            const { TransactionSyncService } = await import("@/services/TransactionSyncService");
+            await TransactionSyncService.syncTransactions(userId, item.id);
+            logDebug("Initial Sync Completed Successfully");
+        } catch (syncError) {
+            logDebug(`Initial Sync Failed (Non-blocking): ${syncError}`);
+            // We don't block the response, just log the error
+        }
+
         return NextResponse.json({ success: true, data: result });
 
     } catch (error: any) {

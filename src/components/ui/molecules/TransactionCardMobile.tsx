@@ -96,10 +96,19 @@ export function TransactionCardMobile({ transaction, onEdit, onDelete }: Transac
                                     )}
                                 </div>
                                 <div className="max-w-[160px] xs:max-w-[200px]">
-                                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm line-clamp-1">{transaction.description}</h3>
-                                    <p className={`text-xs font-bold ${statusColor}`}>
-                                        R$ {transaction.amount.toFixed(2)}
-                                    </p>
+                                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm line-clamp-1">
+                                        {transaction.merchantName || transaction.description}
+                                    </h3>
+                                    <div className="flex items-center gap-2">
+                                        <p className={`text-xs font-bold ${statusColor}`}>
+                                            R$ {transaction.amount.toFixed(2)}
+                                        </p>
+                                        {transaction.provider === 'pluggy' && transaction.paymentType && (
+                                            <span className="text-[9px] text-gray-400 uppercase border border-gray-100 dark:border-gray-700 px-1 rounded">
+                                                {transaction.paymentType === 'CREDIT_CARD' ? 'Crédito' : 'Débito'}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                             {/* Actions */}
@@ -114,19 +123,25 @@ export function TransactionCardMobile({ transaction, onEdit, onDelete }: Transac
                         </div>
 
                         <div className="flex items-center justify-between mt-1 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
-                            <div className="flex items-center space-x-2">
-                                <div className="flex items-center space-x-1 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">
+                            <div className="flex items-center space-x-2 overflow-hidden">
+                                {transaction.category && transaction.category !== transaction.tag && (
+                                    <div className="hidden xs:flex items-center space-x-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300 px-1.5 py-0.5 rounded ml-0 shrink-0">
+                                        <span className="truncate max-w-[80px]">{transaction.category}</span>
+                                    </div>
+                                )}
+                                <div className="flex items-center space-x-1 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded shrink-0">
                                     <Tag className="w-3 h-3" />
                                     <span className="truncate max-w-[80px]">{transaction.tag}</span>
                                 </div>
+
                                 {transaction.isRecurring && (
-                                    <div className="flex items-center space-x-1 text-blue-500">
+                                    <div className="flex items-center space-x-1 text-blue-500 shrink-0">
                                         <RepeatIcon className="w-3 h-3" />
                                         <span>{transaction.recurrenceCount}x</span>
                                     </div>
                                 )}
                             </div>
-                            <div className="flex items-center space-x-1">
+                            <div className="flex items-center space-x-1 shrink-0 ml-2">
                                 <Calendar className="w-3 h-3" />
                                 <span>{new Date(transaction.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</span>
                             </div>
