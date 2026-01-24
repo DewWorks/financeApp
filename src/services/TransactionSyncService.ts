@@ -91,6 +91,9 @@ export class TransactionSyncService {
     /**
      * Syncs transactions for a specific Item (Bank Connection)
      */
+    /**
+     * Syncs transactions for a specific Item (Bank Connection)
+     */
     static async syncTransactions(userId: string | ObjectId, itemId: string) {
         console.log(`[SyncService] Starting sync for user ${userId} and item ${itemId}`);
 
@@ -101,22 +104,18 @@ export class TransactionSyncService {
 
         try {
             // 1. Fetch transactions from Pluggy
-            // Fetching last 60 days by default to capture any updates
             const fromDate = new Date();
             fromDate.setDate(fromDate.getDate() - 60);
 
-            // 1. Fetch Accounts to determine types (Credit Card vs Checking)
+            // Fetch Accounts
             const accountsRes = await client.fetchAccounts(itemId);
             const accountTypeMap = new Map<string, string>(); // accountId -> type
             accountsRes.results.forEach(acc => accountTypeMap.set(acc.id, acc.type));
 
             let pluggyTransactions: any[] = [];
 
-            // Try fetching by item first to be safe, or just skip if we know it fails. 
-            // Better to keep the attempt but handle the variable scope.
-            let response;
             try {
-                response = await client.fetchTransactions(itemId, {
+                const response = await client.fetchTransactions(itemId, {
                     from: fromDate.toISOString().split('T')[0],
                     pageSize: 500
                 });
@@ -125,11 +124,9 @@ export class TransactionSyncService {
                 console.warn("[SyncService] Failed to fetch by ItemId, will try accounts.");
             }
 
-            // Fallback: If 0 transactions found by ItemId, try fetching by AccountId
             if (pluggyTransactions.length === 0) {
                 console.log(`[SyncService] No transactions found for Item ${itemId}. Trying per-account fetch...`);
                 for (const account of accountsRes.results) {
-                    console.log(`[SyncService] Fetching tx for Account ${account.id}`);
                     const accResponse = await client.fetchTransactions(account.id, {
                         from: fromDate.toISOString().split('T')[0],
                         pageSize: 500
@@ -140,26 +137,47 @@ export class TransactionSyncService {
                 }
             }
 
-            console.log(`[SyncService] Found ${pluggyTransactions.length} transactions in Pluggy (Total).`);
+            console.log(`[SyncService] Found ${pluggyTransactions.length} transactions in Pluggy.`);
 
-            let newCount = 0;
-            let updatedCount = 0;
+            // =========================================================
+            // OPTIMIZATION: DELTA SYNC & BULK WRITE
+            // =========================================================
 
-            // 2. Process transactions for AI Enrichment (Batch)
-            // Increased limit to 300 to cover the typical 60-day volume (~250 txs)
-            const transactionsToEnrich = pluggyTransactions.slice(0, 300);
-            console.log(`[SyncService] Enriching ${transactionsToEnrich.length} transactions with AI...`);
+            const db = mongoClient.db("financeApp");
+            const collection = db.collection("transactions");
 
-            // Import AiService dynamically or expected to be at top
+            // A. Identify NEW vs EXISTING
+            const pluggyIds = pluggyTransactions.map(t => t.id);
+            if (pluggyIds.length === 0) return { success: true, new: 0, updated: 0 };
+
+            const existingDocs = await collection.find(
+                { pluggyTransactionId: { $in: pluggyIds } }
+            ).project({ pluggyTransactionId: 1 }).toArray();
+
+            const existingIds = new Set(existingDocs.map(d => d.pluggyTransactionId));
+            const newTransactions = pluggyTransactions.filter(t => !existingIds.has(t.id));
+
+            console.log(`[SyncService] Analysis: ${existingIds.size} existing, ${newTransactions.length} new.`);
+
+            // B. Enrich ONLY New Transactions
+            // Import AiService dynamically
             const { AiService } = await import("./AiService");
-            const enrichedData = await AiService.enrichTransactions(transactionsToEnrich);
-            const enrichedMap = new Map(enrichedData.map(e => [e.pluggyTransactionId, e]));
+            let enrichedMap = new Map();
 
-            // 3. Upsert into MongoDB
-            for (const pt of pluggyTransactions) {
+            if (newTransactions.length > 0) {
+                console.log(`[SyncService] Enriching ${newTransactions.length} new transactions with AI...`);
+                // Process in chunks if too many new ones (rare in incremental sync)
+                const enrichedData = await AiService.enrichTransactions(newTransactions.slice(0, 50));
+                enrichedMap = new Map(enrichedData.map(e => [e.pluggyTransactionId, e]));
+            }
+
+            // C. Build Bulk Operations
+            const bulkOps = pluggyTransactions.map(pt => {
+                const isNew = !existingIds.has(pt.id);
                 const accountType = accountTypeMap.get(pt.accountId) || 'BANK';
                 const isCreditCard = accountType === 'CREDIT' || accountType === 'CREDIT_CARD';
 
+                // Basic Logic for type/amount
                 let type: 'income' | 'expense' | 'transfer';
                 let amount = Math.abs(pt.amount);
                 const descriptionLower = pt.description ? pt.description.toLowerCase() : "";
@@ -178,46 +196,67 @@ export class TransactionSyncService {
                     type = pt.amount < 0 ? 'expense' : 'income';
                 }
 
-                // AI Enrichment Data
-                const enriched = enrichedMap.get(pt.id);
-                const finalDescription = enriched ? enriched.cleanDescription : pt.description;
-                const finalTag = enriched ? enriched.category : this.mapCategoryToTag(pt.category || undefined);
-
                 const transactionDate = pt.date instanceof Date ? pt.date : new Date(pt.date);
+                let status: 'PENDING' | 'POSTED' = pt.status === 'PENDING' ? 'PENDING' : 'POSTED';
 
-                let status: 'PENDING' | 'POSTED' = 'POSTED';
-                if (pt.status === 'PENDING') status = 'PENDING';
-
-                const transactionData = {
-                    userId: new ObjectId(userId),
-                    provider: 'pluggy',
-                    pluggyTransactionId: pt.id,
-                    accountId: pt.accountId,
-                    description: finalDescription, // AI Cleaned Description
-                    amount: amount,
-                    type: type,
-                    date: transactionDate,
-                    tag: finalTag, // AI Categorized Tag
-                    category: pt.category || undefined,
+                // Common fields update (Status, Amount sync)
+                const commonUpdate = {
                     status: status,
                     paymentType: pt.paymentData?.paymentMethod || undefined,
                     merchantName: pt.merchant ? pt.merchant.name : undefined,
-                    descriptionRaw: pt.description, // Keep original in raw
+                    // Optionally update amount/date if bank changed it? usually safe.
+                    amount: amount,
+                    date: transactionDate,
+                    updatedAt: new Date()
                 };
 
-                const db = mongoClient.db("financeApp");
-                const result = await db.collection("transactions").updateOne(
-                    { pluggyTransactionId: pt.id },
-                    { $set: transactionData, $setOnInsert: { createdAt: new Date() } },
-                    { upsert: true }
-                );
+                if (isNew) {
+                    // NEW: Full Insert with AI Data
+                    const enriched = enrichedMap.get(pt.id);
+                    const finalDescription = enriched ? enriched.cleanDescription : pt.description;
+                    const finalTag = enriched ? enriched.category : this.mapCategoryToTag(pt.category || undefined);
 
-                if (result.upsertedCount > 0) newCount++;
-                if (result.modifiedCount > 0) updatedCount++;
+                    return {
+                        updateOne: {
+                            filter: { pluggyTransactionId: pt.id },
+                            update: {
+                                $set: {
+                                    ...commonUpdate,
+                                    userId: new ObjectId(userId),
+                                    provider: 'pluggy',
+                                    accountId: pt.accountId,
+                                    description: finalDescription,
+                                    tag: finalTag,
+                                    category: pt.category || undefined,
+                                    type: type,
+                                    descriptionRaw: pt.description,
+                                },
+                                $setOnInsert: { createdAt: new Date() }
+                            },
+                            upsert: true
+                        }
+                    };
+                } else {
+                    // EXISTING: Update only Status/Metadata (Protect User Edits)
+                    return {
+                        updateOne: {
+                            filter: { pluggyTransactionId: pt.id },
+                            update: {
+                                $set: commonUpdate
+                            }
+                        }
+                    };
+                }
+            });
+
+            // D. Execute Bulk
+            if (bulkOps.length > 0) {
+                const res = await collection.bulkWrite(bulkOps);
+                console.log(`[SyncService] Bulk Write Result: ${res.upsertedCount} inserted, ${res.modifiedCount} updated.`);
+                return { success: true, new: res.upsertedCount, updated: res.modifiedCount };
             }
 
-            console.log(`[SyncService] Sync Complete. New: ${newCount}, Updated: ${updatedCount}`);
-            return { success: true, new: newCount, updated: updatedCount };
+            return { success: true, new: 0, updated: 0 };
 
         } catch (error) {
             console.error(`[SyncService] Error syncing transactions:`, error);
