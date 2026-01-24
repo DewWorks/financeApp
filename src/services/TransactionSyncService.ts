@@ -145,7 +145,17 @@ export class TransactionSyncService {
             let newCount = 0;
             let updatedCount = 0;
 
-            // 2. Process and Upsert into MongoDB
+            // 2. Process transactions for AI Enrichment (Batch)
+            // Increased limit to 300 to cover the typical 60-day volume (~250 txs)
+            const transactionsToEnrich = pluggyTransactions.slice(0, 300);
+            console.log(`[SyncService] Enriching ${transactionsToEnrich.length} transactions with AI...`);
+
+            // Import AiService dynamically or expected to be at top
+            const { AiService } = await import("./AiService");
+            const enrichedData = await AiService.enrichTransactions(transactionsToEnrich);
+            const enrichedMap = new Map(enrichedData.map(e => [e.pluggyTransactionId, e]));
+
+            // 3. Upsert into MongoDB
             for (const pt of pluggyTransactions) {
                 const accountType = accountTypeMap.get(pt.accountId) || 'BANK';
                 const isCreditCard = accountType === 'CREDIT' || accountType === 'CREDIT_CARD';
@@ -155,7 +165,6 @@ export class TransactionSyncService {
                 const descriptionLower = pt.description ? pt.description.toLowerCase() : "";
                 const categoryLower = pt.category ? pt.category.toLowerCase() : "";
 
-                // Logic to identify TRANSFERS (Internal money movement, Bill payments)
                 const isBillPayment = descriptionLower.includes("pagamento recebido") ||
                     descriptionLower.includes("pagamento de fatura") ||
                     descriptionLower.includes("valor adicionado na conta") ||
@@ -164,20 +173,18 @@ export class TransactionSyncService {
                 if (isBillPayment) {
                     type = 'transfer';
                 } else if (isCreditCard) {
-                    // Credit Card: Positive = Expense, Negative = Income (Refunds)
-                    // Note: Bill payments are already caught above as 'transfer'
                     type = pt.amount > 0 ? 'expense' : 'income';
                 } else {
-                    // Checking Account: Negative = Expense, Positive = Income
                     type = pt.amount < 0 ? 'expense' : 'income';
                 }
 
-                // Map Tag
-                const tag = this.mapCategoryToTag(pt.category || undefined);
+                // AI Enrichment Data
+                const enriched = enrichedMap.get(pt.id);
+                const finalDescription = enriched ? enriched.cleanDescription : pt.description;
+                const finalTag = enriched ? enriched.category : this.mapCategoryToTag(pt.category || undefined);
 
                 const transactionDate = pt.date instanceof Date ? pt.date : new Date(pt.date);
 
-                // Map Status
                 let status: 'PENDING' | 'POSTED' = 'POSTED';
                 if (pt.status === 'PENDING') status = 'PENDING';
 
@@ -186,20 +193,18 @@ export class TransactionSyncService {
                     provider: 'pluggy',
                     pluggyTransactionId: pt.id,
                     accountId: pt.accountId,
-                    description: pt.description,
+                    description: finalDescription, // AI Cleaned Description
                     amount: amount,
                     type: type,
                     date: transactionDate,
-                    tag: tag,
+                    tag: finalTag, // AI Categorized Tag
                     category: pt.category || undefined,
                     status: status,
                     paymentType: pt.paymentData?.paymentMethod || undefined,
                     merchantName: pt.merchant ? pt.merchant.name : undefined,
-                    descriptionRaw: pt.descriptionRaw || undefined,
-                    // We don't overwrite createdAt on update
+                    descriptionRaw: pt.description, // Keep original in raw
                 };
 
-                // Native Driver Upsert
                 const db = mongoClient.db("financeApp");
                 const result = await db.collection("transactions").updateOne(
                     { pluggyTransactionId: pt.id },

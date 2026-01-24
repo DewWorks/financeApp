@@ -144,13 +144,58 @@ export default function BankConnectPage() {
     };
 
     const handleForceSync = async (itemId: string) => {
+        let timerInterval: NodeJS.Timeout;
+
         Swal.fire({
-            title: 'Sincronizando...',
-            text: 'Buscando atualizações no banco.',
+            title: '<span class="text-xl font-bold">Sincronizando...</span>',
+            html: `
+                <div class="flex flex-col items-center gap-4 py-4">
+                    <div class="relative">
+                        <div class="w-16 h-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="text-xs font-bold text-blue-600">AI</span>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-center">
+                        <b id="swal-step" class="text-lg text-gray-700">Conectando ao banco...</b>
+                        <p id="swal-progress" class="text-sm text-gray-500">Iniciando protocolo de segurança</p>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2 overflow-hidden">
+                        <div id="swal-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-500" style="width: 5%"></div>
+                    </div>
+                </div>
+            `,
+            showConfirmButton: false,
+            allowOutsideClick: false,
             didOpen: () => {
-                Swal.showLoading();
+                const b = Swal.getHtmlContainer()?.querySelector('#swal-step');
+                const p = Swal.getHtmlContainer()?.querySelector('#swal-progress');
+                const bar = Swal.getHtmlContainer()?.querySelector('#swal-bar') as HTMLElement;
+
+                let progress = 5;
+                const steps = [
+                    { pct: 20, msg: "Buscando transações...", sub: "Acessando dados criptografados" },
+                    { pct: 45, msg: "Analisando dados...", sub: "Identificando padrões de consumo" },
+                    { pct: 60, msg: "Inteligência Artificial...", sub: "Categorizando e limpando descrições com Gemini" },
+                    { pct: 80, msg: "Quase lá...", sub: "Salvando no banco de dados seguro" },
+                    { pct: 90, msg: "Finalizando...", sub: "Atualizando dashboard" }
+                ];
+                let stepIndex = 0;
+
+                timerInterval = setInterval(() => {
+                    if (stepIndex < steps.length) {
+                        const step = steps[stepIndex];
+                        progress = step.pct;
+                        if (b) b.textContent = step.msg;
+                        if (p) p.textContent = step.sub;
+                        if (bar) bar.style.width = `${progress}%`;
+                        stepIndex++;
+                    }
+                }, 1500); // Update every 1.5s to simulate work
             },
-            allowOutsideClick: false
+            willClose: () => {
+                clearInterval(timerInterval);
+            }
         });
 
         try {
@@ -159,11 +204,25 @@ export default function BankConnectPage() {
             });
 
             if (response.ok) {
+                const data = await response.json();
                 await fetchConnections();
+
+                const newCount = data.transactions?.new || 0;
+                const updatedCount = data.transactions?.updated || 0;
+
                 Swal.fire({
                     icon: 'success',
-                    title: 'Atualizado!',
-                    timer: 1500,
+                    title: '<span class="text-xl font-bold">Atualizado!</span>',
+                    html: `
+                        <div class="space-y-2 mt-2">
+                            <p class="text-gray-600">Sincronização concluída com sucesso.</p>
+                            <div class="flex justify-center gap-4 text-sm">
+                                <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full font-medium">+${newCount} Novas</span>
+                                <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-medium">${updatedCount} Atualizadas</span>
+                            </div>
+                        </div>
+                    `,
+                    timer: 3000,
                     showConfirmButton: false
                 });
             } else {
