@@ -4,7 +4,7 @@ export interface ITransaction {
   _id: ObjectId
   userId: ObjectId
   profileId?: ObjectId,
-  type: 'income' | 'expense'
+  type: 'income' | 'expense' | 'transfer'
   description: string
   amount: number
   date: string
@@ -17,6 +17,9 @@ export interface ITransaction {
   accountId?: string;
   category?: string; // Original category from provider
   status?: 'PENDING' | 'POSTED';
+  paymentType?: string;
+  merchantName?: string;
+  descriptionRaw?: string;
   createdAt: string | Date;
 }
 

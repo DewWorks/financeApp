@@ -15,17 +15,75 @@ export class TransactionSyncService {
 
         const lowerCat = pluggyCategory.toLowerCase();
 
-        // Mapping Logic
-        if (lowerCat.includes("food") || lowerCat.includes("alimentação") || lowerCat.includes("restaurante")) return "Alimentação";
-        if (lowerCat.includes("transport") || lowerCat.includes("uber") || lowerCat.includes("combustível")) return "Transporte";
-        if (lowerCat.includes("health") || lowerCat.includes("saúde") || lowerCat.includes("farmácia")) return "Saúde";
-        if (lowerCat.includes("shop") || lowerCat.includes("compra") || lowerCat.includes("varejo")) return "Outros";
-        if (lowerCat.includes("entertainment") || lowerCat.includes("lazer") || lowerCat.includes("cinema")) return "Lazer";
-        if (lowerCat.includes("education") || lowerCat.includes("educação")) return "Educação";
-        if (lowerCat.includes("bill") || lowerCat.includes("conta") || lowerCat.includes("luz") || lowerCat.includes("água")) return "Custos de Vida";
-        if (lowerCat.includes("rent") || lowerCat.includes("aluguel")) return "Aluguel";
+        // 1. Alimentação
+        if (lowerCat.includes("food") ||
+            lowerCat.includes("alimentação") ||
+            lowerCat.includes("restaurante") ||
+            lowerCat.includes("groceries") ||
+            lowerCat.includes("supermarket") ||
+            lowerCat.includes("eating out") ||
+            lowerCat.includes("bakery") ||
+            lowerCat.includes("delivery")) return "Alimentação";
+
+        // 2. Transporte
+        if (lowerCat.includes("transport") ||
+            lowerCat.includes("uber") ||
+            lowerCat.includes("taxi") ||
+            lowerCat.includes("ride-hailing") ||
+            lowerCat.includes("parking") ||
+            lowerCat.includes("fuel") ||
+            lowerCat.includes("combustível") ||
+            lowerCat.includes("posto")) return "Transporte";
+
+        // 3. Saúde
+        if (lowerCat.includes("health") ||
+            lowerCat.includes("saúde") ||
+            lowerCat.includes("farmácia") ||
+            lowerCat.includes("drugstore") ||
+            lowerCat.includes("doctor") ||
+            lowerCat.includes("hospital") ||
+            lowerCat.includes("dentist")) return "Saúde";
+
+        // 4. Lazer
+        if (lowerCat.includes("entertainment") ||
+            lowerCat.includes("lazer") ||
+            lowerCat.includes("cinema") ||
+            lowerCat.includes("streaming") ||
+            lowerCat.includes("video") ||
+            lowerCat.includes("music") ||
+            lowerCat.includes("games") ||
+            lowerCat.includes("bar")) return "Lazer";
+
+        // 5. Educação
+        if (lowerCat.includes("education") ||
+            lowerCat.includes("educação") ||
+            lowerCat.includes("school") ||
+            lowerCat.includes("college") ||
+            lowerCat.includes("course") ||
+            lowerCat.includes("book")) return "Educação";
+
+        // 6. Aluguel/Moradia
+        if (lowerCat.includes("rent") ||
+            lowerCat.includes("aluguel") ||
+            lowerCat.includes("condo") ||
+            lowerCat.includes("condomínio")) return "Aluguel";
+
+        // 7. Custos de Vida / Serviços / Outros
+        if (lowerCat.includes("bill") ||
+            lowerCat.includes("conta") ||
+            lowerCat.includes("utilities") ||
+            lowerCat.includes("electricity") ||
+            lowerCat.includes("water") ||
+            lowerCat.includes("internet") ||
+            lowerCat.includes("telephone") ||
+            lowerCat.includes("insurance") ||
+            lowerCat.includes("seguro") ||
+            lowerCat.includes("services")) return "Custos de Vida";
+
+        // 8. Renda/Investimentos
         if (lowerCat.includes("salary") || lowerCat.includes("salário")) return "Salário";
-        if (lowerCat.includes("transfer")) return "Outros";
+        if (lowerCat.includes("investment") || lowerCat.includes("investimento")) return "Investimentos";
+        if (lowerCat.includes("interest") || lowerCat.includes("rendimento")) return "Investimentos";
 
         return "Outros";
     }
@@ -47,33 +105,81 @@ export class TransactionSyncService {
             const fromDate = new Date();
             fromDate.setDate(fromDate.getDate() - 60);
 
-            const response = await client.fetchTransactions(itemId, {
-                from: fromDate.toISOString().split('T')[0], // YYYY-MM-DD
-                pageSize: 500 // Reasonable batch size
-            });
+            // 1. Fetch Accounts to determine types (Credit Card vs Checking)
+            const accountsRes = await client.fetchAccounts(itemId);
+            const accountTypeMap = new Map<string, string>(); // accountId -> type
+            accountsRes.results.forEach(acc => accountTypeMap.set(acc.id, acc.type));
 
-            const pluggyTransactions = response.results;
-            console.log(`[SyncService] Found ${pluggyTransactions.length} transactions in Pluggy.`);
+            let pluggyTransactions: any[] = [];
+
+            // Try fetching by item first to be safe, or just skip if we know it fails. 
+            // Better to keep the attempt but handle the variable scope.
+            let response;
+            try {
+                response = await client.fetchTransactions(itemId, {
+                    from: fromDate.toISOString().split('T')[0],
+                    pageSize: 500
+                });
+                pluggyTransactions = response.results;
+            } catch (e) {
+                console.warn("[SyncService] Failed to fetch by ItemId, will try accounts.");
+            }
+
+            // Fallback: If 0 transactions found by ItemId, try fetching by AccountId
+            if (pluggyTransactions.length === 0) {
+                console.log(`[SyncService] No transactions found for Item ${itemId}. Trying per-account fetch...`);
+                for (const account of accountsRes.results) {
+                    console.log(`[SyncService] Fetching tx for Account ${account.id}`);
+                    const accResponse = await client.fetchTransactions(account.id, {
+                        from: fromDate.toISOString().split('T')[0],
+                        pageSize: 500
+                    });
+                    if (accResponse.results.length > 0) {
+                        pluggyTransactions = [...pluggyTransactions, ...accResponse.results];
+                    }
+                }
+            }
+
+            console.log(`[SyncService] Found ${pluggyTransactions.length} transactions in Pluggy (Total).`);
 
             let newCount = 0;
             let updatedCount = 0;
 
             // 2. Process and Upsert into MongoDB
             for (const pt of pluggyTransactions) {
-                // Determine Type (Pluggy: negative = expense, positive = income)
-                // BUT Pluggy sometimes returns positive for credit card expenses. 
-                // We typically check the account type. 
-                // For safety: if amount < 0 it is expense. if amount > 0 it is income.
-                // However, credit card expenses appear as positive in some views, but usually negative in API.
-                // Let's assume standard signed values: -100 = Expense, +100 = Income.
+                const accountType = accountTypeMap.get(pt.accountId) || 'BANK';
+                const isCreditCard = accountType === 'CREDIT' || accountType === 'CREDIT_CARD';
 
-                const amount = Math.abs(pt.amount);
-                const type = pt.amount < 0 ? 'expense' : 'income';
+                let type: 'income' | 'expense' | 'transfer';
+                let amount = Math.abs(pt.amount);
+                const descriptionLower = pt.description ? pt.description.toLowerCase() : "";
+                const categoryLower = pt.category ? pt.category.toLowerCase() : "";
+
+                // Logic to identify TRANSFERS (Internal money movement, Bill payments)
+                const isBillPayment = descriptionLower.includes("pagamento recebido") ||
+                    descriptionLower.includes("pagamento de fatura") ||
+                    descriptionLower.includes("valor adicionado na conta") ||
+                    categoryLower.includes("transfer - internal");
+
+                if (isBillPayment) {
+                    type = 'transfer';
+                } else if (isCreditCard) {
+                    // Credit Card: Positive = Expense, Negative = Income (Refunds)
+                    // Note: Bill payments are already caught above as 'transfer'
+                    type = pt.amount > 0 ? 'expense' : 'income';
+                } else {
+                    // Checking Account: Negative = Expense, Positive = Income
+                    type = pt.amount < 0 ? 'expense' : 'income';
+                }
 
                 // Map Tag
                 const tag = this.mapCategoryToTag(pt.category || undefined);
 
-                const transactionDate = pt.date instanceof Date ? pt.date.toISOString().split('T')[0] : (pt.date as string).split('T')[0];
+                const transactionDate = pt.date instanceof Date ? pt.date : new Date(pt.date);
+
+                // Map Status
+                let status: 'PENDING' | 'POSTED' = 'POSTED';
+                if (pt.status === 'PENDING') status = 'PENDING';
 
                 const transactionData = {
                     userId: new ObjectId(userId),
@@ -86,7 +192,10 @@ export class TransactionSyncService {
                     date: transactionDate,
                     tag: tag,
                     category: pt.category || undefined,
-                    status: pt.status,
+                    status: status,
+                    paymentType: pt.paymentData?.paymentMethod || undefined,
+                    merchantName: pt.merchant ? pt.merchant.name : undefined,
+                    descriptionRaw: pt.descriptionRaw || undefined,
                     // We don't overwrite createdAt on update
                 };
 
