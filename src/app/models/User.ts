@@ -32,6 +32,21 @@ const UserSchema = new Schema<IUser>({
         channels: [String],
         expiresAt: Date,
         verified: { type: Boolean, default: false }
+    },
+    subscription: {
+        plan: {
+            type: String,
+            enum: ['FREE', 'PRO', 'MAX'],
+            default: 'FREE'
+        },
+        status: {
+            type: String,
+            enum: ['ACTIVE', 'CANCELED', 'PAST_DUE', 'TRIAL'],
+            default: 'ACTIVE'
+        },
+        providerId: String,    // Stripe Customer ID
+        subscriptionId: String, // Stripe Sub ID
+        expiresAt: Date
     }
 });
 
