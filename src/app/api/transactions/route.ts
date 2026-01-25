@@ -167,9 +167,25 @@ export async function GET(req: Request) {
  *       500:
  *         description: Internal server error
  */
+// ... imports
+import { PlanService } from '@/services/PlanService';
+
+// ... existing code
+
 export async function POST(request: Request) {
   try {
     const userId = await getUserIdFromToken()
+
+    // Check SaaS Limits
+    try {
+      await PlanService.validate(userId, 'CREATE_TRANSACTION');
+    } catch (error: any) {
+      if (error.name === 'PlanRestrictionError') {
+        return NextResponse.json({ error: error.message }, { status: 403 });
+      }
+      throw error;
+    }
+
     const client = await getMongoClient();
     const db = client.db("financeApp");
     const transaction = await request.json()

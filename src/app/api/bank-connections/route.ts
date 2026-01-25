@@ -6,6 +6,7 @@ import { cookies } from 'next/headers';
 import { ObjectId } from 'mongodb';
 import fs from 'fs';
 import path from 'path';
+import { PlanService } from '@/services/PlanService';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -77,6 +78,16 @@ export async function POST(req: NextRequest) {
         if (!userId) {
             logDebug("Unauthorized - No User ID");
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        // Feature Gating: Open Finance (SaaS)
+        try {
+            await PlanService.validate(userId, 'CONNECT_BANK');
+        } catch (error: any) {
+            if (error.name === 'PlanRestrictionError') {
+                return NextResponse.json({ error: error.message }, { status: 403 });
+            }
+            throw error;
         }
 
         const body = await req.json();

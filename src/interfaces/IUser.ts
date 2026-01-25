@@ -11,8 +11,23 @@ export interface IUser {
     tutorialGuide?: boolean;
     executeQuery?: boolean;
     verification?: IUserVerification;
+    subscription?: ISubscription;
     updatedAt?: Date;
     createdAt: Date;
+}
+
+export enum PlanType {
+    FREE = 'FREE',
+    PRO = 'PRO',
+    MAX = 'MAX'
+}
+
+export interface ISubscription {
+    plan: PlanType;
+    status: 'ACTIVE' | 'CANCELED' | 'PAST_DUE' | 'TRIAL';
+    providerId?: string;
+    subscriptionId?: string;
+    expiresAt?: Date;
 }
 
 export interface IUserVerification {

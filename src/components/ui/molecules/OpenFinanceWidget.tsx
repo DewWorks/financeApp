@@ -7,12 +7,14 @@ import { Wallet, DollarSign, TrendingUp, ChevronDown, ChevronUp, Eye, EyeOff, La
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { getBankDetails } from "@/lib/utils";
+import { usePlanGate } from "@/context/PlanGateContext";
 
 export function OpenFinanceWidget() {
     const router = useRouter();
     const [bankConnections, setBankConnections] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isVisible, setIsVisible] = useState(true);
+    const { checkFeature, openUpgradeModal } = usePlanGate();
 
     // Carregar preferência do usuário (opcional - persistência)
     useEffect(() => {
@@ -119,7 +121,13 @@ export function OpenFinanceWidget() {
                         </div>
                     </div>
                     <Button
-                        onClick={() => router.push("/bank")}
+                        onClick={() => {
+                            if (checkFeature('OPEN_FINANCE')) {
+                                router.push("/bank");
+                            } else {
+                                openUpgradeModal("Conecte seus bancos automaticamente com o Open Finance no plano MAX.", 'MAX');
+                            }
+                        }}
                         size="lg"
                         className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg w-full md:w-auto"
                     >
@@ -165,7 +173,11 @@ export function OpenFinanceWidget() {
                             size="sm"
                             onClick={(e) => {
                                 e.stopPropagation();
-                                router.push("/bank");
+                                if (checkFeature('OPEN_FINANCE')) {
+                                    router.push("/bank");
+                                } else {
+                                    openUpgradeModal("Gerencie suas contas com o Open Finance no plano MAX.", 'MAX');
+                                }
                             }}
                             className="text-white bg-blue-600 hover:bg-blue-50 dark:hover:bg-blue-800 h-8 px-3 text-xs font-medium uppercase tracking-wide"
                         >

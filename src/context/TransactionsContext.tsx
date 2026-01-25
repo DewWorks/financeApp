@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, Rea
 import { ITransaction } from "@/interfaces/ITransaction";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import { usePlanGate } from "@/context/PlanGateContext";
 
 interface TransactionsContextType {
     transactions: ITransaction[];
@@ -50,6 +51,7 @@ export function TransactionsProvider({ children, profileId }: { children: ReactN
     const [summaryData, setSummaryData] = useState<{ income: number; expense: number; balance: number }>({ income: 0, expense: 0, balance: 0 });
 
     const router = useRouter();
+    const { openUpgradeModal } = usePlanGate();
 
     const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'auth') => {
         setToast({ message, type });
@@ -232,6 +234,9 @@ export function TransactionsProvider({ children, profileId }: { children: ReactN
             if (axios.isAxiosError(error)) {
                 if (error.response?.status === 401) {
                     showToast('Erro de autenticação', 'auth');
+                } else if (error.response?.status === 403) {
+                    const errorMsg = error.response?.data?.error;
+                    openUpgradeModal(errorMsg, 'PRO');
                 } else {
                     const errorMsg = error.response?.data?.error || 'Falha desconhecida';
                     console.error('Failed to add transaction:', errorMsg);
