@@ -3,6 +3,8 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { AuthPopup } from "@/components/ui/molecules/AuthPopup";
 import { ThemeProvider } from "@/components/ui/organisms/ThemeContext"
+import { UserProvider } from "@/context/UserContext";
+import { PlanGateProvider } from "@/context/PlanGateContext";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -21,20 +23,24 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({
-                                     children,
-                                   }: Readonly<{
+  children,
+}: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-      <html lang="en">
+    <html lang="en">
       <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-      <ThemeProvider>
-      {children}
-      </ThemeProvider>
-      <AuthPopup />
+        <ThemeProvider>
+          <UserProvider>
+            <PlanGateProvider>
+              {children}
+            </PlanGateProvider>
+          </UserProvider>
+        </ThemeProvider>
+        <AuthPopup />
       </body>
-      </html>
+    </html>
   );
 }

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { TrendingUp, TrendingDown, Sun, Moon, Lightbulb, CheckCircle, ArrowRight, Info } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/atoms/dialog"
 import { Button } from "@/components/ui/atoms/button"
+import { usePlanGate } from "@/context/PlanGateContext"
 
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine, Area, ComposedChart } from 'recharts';
 
@@ -78,6 +79,7 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
     const [isPaused, setIsPaused] = useState(false)
     const [isModalOpen, setIsModalOpen] = useState(false)
     const timerRef = useRef<NodeJS.Timeout | null>(null)
+    const { checkFeature, openUpgradeModal } = usePlanGate()
 
     useEffect(() => {
         const fetchInsights = async () => {
@@ -399,6 +401,25 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
                             </div>
                         )}
                     </div>
+
+                    {!checkFeature('DEEP_INSIGHTS') && (
+                        <div className="bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-900/40 dark:to-indigo-900/40 p-3 rounded-lg border border-purple-200 dark:border-purple-800 mb-2 cursor-pointer transition-transform hover:scale-[1.02]" onClick={() => openUpgradeModal("Tenha projeções financeiras detalhadas com Inteligência Artificial no plano MAX.", 'MAX')}>
+                            <div className="flex items-center gap-3">
+                                <div className="bg-purple-200 dark:bg-purple-800 p-2 rounded-full">
+                                    <Lightbulb className="w-5 h-5 text-purple-700 dark:text-purple-300" />
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="text-sm font-bold text-purple-900 dark:text-purple-100">Desbloquear IA Financeira</h4>
+                                    <p className="text-xs text-purple-700 dark:text-purple-300 leading-tight mt-0.5">
+                                        Veja projeções futuras e recomendações avançadas.
+                                    </p>
+                                </div>
+                                <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white h-7 text-xs">
+                                    Ver MAX
+                                </Button>
+                            </div>
+                        </div>
+                    )}
 
                     <DialogFooter className="sm:justify-between flex-row gap-2">
                         {data.insights.length > 1 && (

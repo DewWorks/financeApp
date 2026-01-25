@@ -4,6 +4,7 @@ import { MessageCircle, Send, CheckCheck, Bell } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { useState, useEffect } from "react"
+import { usePlanGate } from "@/context/PlanGateContext"
 
 interface WhatsAppButtonProps {
     className?: string
@@ -50,7 +51,14 @@ export function WhatsAppButton({ className = "" }: WhatsAppButtonProps) {
         }, 5000)
     }
 
+    const { checkFeature, openUpgradeModal } = usePlanGate()
+
     const handleClick = async () => {
+        if (!checkFeature('WHATSAPP')) {
+            openUpgradeModal("Automatize suas finanças com o Bot de WhatsApp Inteligente. Exclusivo para PRO e MAX.", 'PRO');
+            return;
+        }
+
         setIsTransitioning(true)
         setTimeout(() => {
             router.push("/whatsapp-connect")

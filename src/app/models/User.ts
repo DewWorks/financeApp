@@ -28,7 +28,7 @@ const UserSchema = new Schema<IUser>({
     executeQuery: { type: Boolean, default: false },
     verification: {
         code: String,
-        type: { type: IUserTypesVerification }, // 'reset-password' | 'verify-number' | 'mfa-login'
+        type: { type: String, enum: Object.values(IUserTypesVerification) },
         channels: [String],
         expiresAt: Date,
         verified: { type: Boolean, default: false }
