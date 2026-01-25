@@ -3,20 +3,26 @@ import { getMongoClient } from "@/db/connectionDb";
 import { ObjectId } from "mongodb";
 import { PlanType } from "@/interfaces/IUser";
 
-type FeatureKey = 'WHATSAPP_BOT' | 'OPEN_FINANCE' | 'DEEP_INSIGHTS' | 'UNLIMITED_TRANSACTIONS';
+// Intent Types for cleaner validation
+export type PlanIntent =
+    | 'CREATE_TRANSACTION'
+    | 'CONNECT_BANK'
+    | 'USE_WHATSAPP'
+    | 'USE_DEEP_INSIGHTS';
 
-// Hierarchy Definition: Free < Pro < Max
+// Errors
+export class PlanRestrictionError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "PlanRestrictionError";
+    }
+}
+
+// Hierarchy Definition
 const PLAN_LEVELS: Record<PlanType, number> = {
     [PlanType.FREE]: 0,
     [PlanType.PRO]: 1,
     [PlanType.MAX]: 2
-};
-
-const FEATURE_REQUIREMENTS: Record<FeatureKey, number> = {
-    'WHATSAPP_BOT': 1,         // Requires Pro (1) or higher
-    'UNLIMITED_TRANSACTIONS': 1, // Requires Pro (1) or higher
-    'DEEP_INSIGHTS': 1,        // Requires Pro (1) or higher (Basic), MAX for full but let's stick to Pro for access
-    'OPEN_FINANCE': 2          // Requires Max (2)
 };
 
 const TRANSACTION_LIMIT_FREE = 200;
@@ -24,69 +30,104 @@ const TRANSACTION_LIMIT_FREE = 200;
 export class PlanService {
 
     /**
-     * Checks if a user has permission to use a specific feature based on their plan hierarchy.
-     * @param userId The User ID
-     * @param feature The feature to check
-     * @returns true if allowed
+     * Unified Validation Method.
+     * Delegates to specific validators based on intent.
+     * Throws PlanRestrictionError if not allowed.
      */
-    static async canUseFeature(userId: string | ObjectId, feature: FeatureKey): Promise<boolean> {
+    static async validate(userId: string | ObjectId, intent: PlanIntent): Promise<void> {
         const user = await User.findById(userId).select('subscription.plan').lean();
+        if (!user) throw new Error("User not found");
 
-        if (!user || !user.subscription) return false; // Default to blocked if no data
+        const userPlan = (user.subscription?.plan as PlanType) || PlanType.FREE;
+        const level = PLAN_LEVELS[userPlan];
 
-        const userPlan = (user.subscription.plan as PlanType) || PlanType.FREE;
-        const userLevel = PLAN_LEVELS[userPlan];
-        const requiredLevel = FEATURE_REQUIREMENTS[feature];
-
-        return userLevel >= requiredLevel;
+        switch (intent) {
+            case 'CREATE_TRANSACTION':
+                await this.validateCreateTransaction(userId, level);
+                break;
+            case 'CONNECT_BANK':
+                this.validateConnectBank(level);
+                break;
+            case 'USE_WHATSAPP':
+                this.validateUseWhatsapp(level);
+                break;
+            case 'USE_DEEP_INSIGHTS':
+                this.validateUseDeepInsights(level);
+                break;
+            default:
+                throw new Error(`Intent ${intent} validation not implemented`);
+        }
     }
 
-    /**
-     * Checks if the user can add a new transaction.
-     * Returns true if allowed, or throws error if limit reached.
-     */
-    static async checkTransactionLimit(userId: string | ObjectId): Promise<boolean> {
-        const user = await User.findById(userId).select('subscription.plan').lean();
-        const userPlan = (user?.subscription?.plan as PlanType) || PlanType.FREE;
+    // --- Specific Validators ---
 
-        // If Pro or Max, unlimited
-        if (PLAN_LEVELS[userPlan] >= PLAN_LEVELS[PlanType.PRO]) {
-            return true;
+    private static async validateCreateTransaction(userId: string | ObjectId, level: number): Promise<void> {
+        // Free users (Level 0) are limited. Pro+ (Level 1+) are unlimited.
+        if (level === 0) {
+            const isOverLimit = await this.isOverTransactionLimit(userId);
+            if (isOverLimit) {
+                throw new PlanRestrictionError(
+                    `Limite de ${TRANSACTION_LIMIT_FREE} transações atingido no plano FREE. Faça upgrade para continuar.`
+                );
+            }
         }
+    }
 
-        // If Free, check count
-        // We use a raw count for performance
+    private static validateConnectBank(level: number): void {
+        // Only MAX (Level 2)
+        if (level < 2) {
+            throw new PlanRestrictionError("Conexão Bancária (Open Finance) disponível apenas no plano MAX.");
+        }
+    }
+
+    private static validateUseWhatsapp(level: number): void {
+        // Only PRO+ (Level 1+)
+        if (level < 1) {
+            throw new PlanRestrictionError("Bot de WhatsApp disponível apenas no plano PRO ou superior.");
+        }
+    }
+
+    private static validateUseDeepInsights(level: number): void {
+        // Only MAX (Level 2) for Deep Analysis
+        if (level < 2) {
+            throw new PlanRestrictionError("Insights Profundos disponíveis apenas no plano MAX.");
+        }
+    }
+
+    // --- Helpers ---
+
+    /**
+     * Optimized Check: Does the 201st transaction exist?
+     * Uses skip() instead of countDocuments() to satisfy "less costly than counting all".
+     */
+    private static async isOverTransactionLimit(userId: string | ObjectId): Promise<boolean> {
         const client = await getMongoClient();
         const db = client.db("financeApp");
 
-        // Count transactions for current month? Or total? 
-        // Roadmap says "200/mês". Let's filter by current month.
-        const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        // We check if there are MORE than the limit.
+        // If we find 1 document after skipping 200, it means they have at least 201.
+        // This is O(offset + limit) = O(200 + 1) -> Very fast constant time.
+        const cursor = db.collection('transactions')
+            .find({ userId: new ObjectId(userId) })
+            .project({ _id: 1 }) // Fetch only ID
+            .skip(TRANSACTION_LIMIT_FREE)
+            .limit(1);
 
-        const count = await db.collection('transactions').countDocuments({
-            userId: new ObjectId(userId),
-            date: { $gte: startOfMonth }
-        });
-
-        if (count >= TRANSACTION_LIMIT_FREE) {
-            return false;
-        }
-
-        return true;
+        const hasMore = await cursor.hasNext();
+        return hasMore; // If true, they have > 200 items.
     }
 
-    /**
-     * Helper to get strict plan details
-     */
-    static async getSubscriptionDetails(userId: string | ObjectId) {
+    // Helper for Frontend/API to get status without throwing
+    static async getPermissions(userId: string | ObjectId) {
         const user = await User.findById(userId).select('subscription').lean();
-        if (!user) throw new Error("User not found");
+        const plan = (user?.subscription?.plan as PlanType) || PlanType.FREE;
+        const level = PLAN_LEVELS[plan];
 
         return {
-            plan: (user.subscription?.plan as PlanType) || PlanType.FREE,
-            status: user.subscription?.status || 'ACTIVE',
-            isProOrAbove: (PLAN_LEVELS[(user.subscription?.plan as PlanType) || PlanType.FREE]) >= PLAN_LEVELS[PlanType.PRO]
+            plan,
+            canConnectBank: level >= 2,
+            canUseWhatsapp: level >= 1,
+            isTransactionUnlimited: level >= 1
         };
     }
 }

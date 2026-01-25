@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { InsightService } from "@/services/InsightService";
+import { PlanService } from "@/services/PlanService";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 
@@ -56,6 +57,18 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const profileId = searchParams.get("profileId") || undefined;
         const scope = (searchParams.get("scope") as 'recent' | 'all') || 'recent';
+
+        // Gating for Deep Analysis
+        if (scope === 'all') {
+            try {
+                await PlanService.validate(userId, 'USE_DEEP_INSIGHTS');
+            } catch (error: any) {
+                if (error.name === 'PlanRestrictionError') {
+                    return NextResponse.json({ error: error.message }, { status: 403 });
+                }
+                throw error;
+            }
+        }
 
         const service = new InsightService();
         const insight = await service.generateDailyInsight(userId, profileId, scope);

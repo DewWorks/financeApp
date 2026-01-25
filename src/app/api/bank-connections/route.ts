@@ -81,12 +81,13 @@ export async function POST(req: NextRequest) {
         }
 
         // Feature Gating: Open Finance (SaaS)
-        const canUseOpenFinance = await PlanService.canUseFeature(userId, 'OPEN_FINANCE');
-        if (!canUseOpenFinance) {
-            return NextResponse.json(
-                { error: "Open Finance disponível apenas no plano MAX." },
-                { status: 403 }
-            );
+        try {
+            await PlanService.validate(userId, 'CONNECT_BANK');
+        } catch (error: any) {
+            if (error.name === 'PlanRestrictionError') {
+                return NextResponse.json({ error: error.message }, { status: 403 });
+            }
+            throw error;
         }
 
         const body = await req.json();

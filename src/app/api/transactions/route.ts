@@ -177,12 +177,13 @@ export async function POST(request: Request) {
     const userId = await getUserIdFromToken()
 
     // Check SaaS Limits
-    const withinLimit = await PlanService.checkTransactionLimit(userId);
-    if (!withinLimit) {
-      return NextResponse.json(
-        { error: "Limite do plano FREE atingido (200 transações/mês). Faça upgrade para continuar." },
-        { status: 403 }
-      );
+    try {
+      await PlanService.validate(userId, 'CREATE_TRANSACTION');
+    } catch (error: any) {
+      if (error.name === 'PlanRestrictionError') {
+        return NextResponse.json({ error: error.message }, { status: 403 });
+      }
+      throw error;
     }
 
     const client = await getMongoClient();
