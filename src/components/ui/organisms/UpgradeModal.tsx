@@ -43,7 +43,7 @@ export function UpgradeModal({ isOpen, onClose, message, requiredPlan = 'PRO' }:
                             </li>
                             {isMax && (
                                 <li className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                                    <Check className="w-4 h-4 text-green-500" /> Conexão Bancária Automática (Open Finance)
+                                    <Check className="w-4 h-4 text-green-500" /> Sincronização Bancária Automática (Open Finance)
                                 </li>
                             )}
                             {isMax && (
