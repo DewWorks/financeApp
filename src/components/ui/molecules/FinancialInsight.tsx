@@ -153,6 +153,10 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
     const trendTextColor = isPositive ? "text-green-600 dark:text-green-400" : (isNegative ? "text-red-600 dark:text-red-400" : "text-gray-600 dark:text-gray-400");
 
     const handleCardClick = () => {
+        if (!checkFeature('DEEP_INSIGHTS')) {
+            openUpgradeModal("Tenha projeções financeiras detalhadas com Inteligência Artificial no plano MAX.", 'MAX');
+            return;
+        }
         setIsModalOpen(true);
     }
 
@@ -170,7 +174,7 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
                 {/* Background Gradient Effect */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
 
-                <div className="flex flex-row items-center justify-between p-4">
+                <div className="flex flex-row items-center justify-between p-3 sm:p-4">
                     {/* Left: Dynamic Content (Carousel) */}
                     <div className="flex-1 mr-4 min-w-0"> {/* min-w-0 prevents flex overflow */}
                         <div className="flex items-center gap-2 mb-1">
@@ -402,24 +406,7 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
                         )}
                     </div>
 
-                    {!checkFeature('DEEP_INSIGHTS') && (
-                        <div className="bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-900/40 dark:to-indigo-900/40 p-3 rounded-lg border border-purple-200 dark:border-purple-800 mb-2 cursor-pointer transition-transform hover:scale-[1.02]" onClick={() => openUpgradeModal("Tenha projeções financeiras detalhadas com Inteligência Artificial no plano MAX.", 'MAX')}>
-                            <div className="flex items-center gap-3">
-                                <div className="bg-purple-200 dark:bg-purple-800 p-2 rounded-full">
-                                    <Lightbulb className="w-5 h-5 text-purple-700 dark:text-purple-300" />
-                                </div>
-                                <div className="flex-1">
-                                    <h4 className="text-sm font-bold text-purple-900 dark:text-purple-100">Desbloquear IA Financeira</h4>
-                                    <p className="text-xs text-purple-700 dark:text-purple-300 leading-tight mt-0.5">
-                                        Veja projeções futuras e recomendações avançadas.
-                                    </p>
-                                </div>
-                                <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white h-7 text-xs">
-                                    Ver MAX
-                                </Button>
-                            </div>
-                        </div>
-                    )}
+                    {/* Internal Upsell Removed - Gated on Entry */}
 
                     <DialogFooter className="sm:justify-between flex-row gap-2">
                         {data.insights.length > 1 && (
