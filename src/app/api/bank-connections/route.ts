@@ -6,6 +6,7 @@ import { cookies } from 'next/headers';
 import { ObjectId } from 'mongodb';
 import fs from 'fs';
 import path from 'path';
+import { PlanService } from '@/services/PlanService';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -77,6 +78,15 @@ export async function POST(req: NextRequest) {
         if (!userId) {
             logDebug("Unauthorized - No User ID");
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        // Feature Gating: Open Finance (SaaS)
+        const canUseOpenFinance = await PlanService.canUseFeature(userId, 'OPEN_FINANCE');
+        if (!canUseOpenFinance) {
+            return NextResponse.json(
+                { error: "Open Finance disponível apenas no plano MAX." },
+                { status: 403 }
+            );
         }
 
         const body = await req.json();

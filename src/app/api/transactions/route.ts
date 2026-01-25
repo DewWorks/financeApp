@@ -167,9 +167,24 @@ export async function GET(req: Request) {
  *       500:
  *         description: Internal server error
  */
+// ... imports
+import { PlanService } from '@/services/PlanService';
+
+// ... existing code
+
 export async function POST(request: Request) {
   try {
     const userId = await getUserIdFromToken()
+
+    // Check SaaS Limits
+    const withinLimit = await PlanService.checkTransactionLimit(userId);
+    if (!withinLimit) {
+      return NextResponse.json(
+        { error: "Limite do plano FREE atingido (200 transações/mês). Faça upgrade para continuar." },
+        { status: 403 }
+      );
+    }
+
     const client = await getMongoClient();
     const db = client.db("financeApp");
     const transaction = await request.json()
