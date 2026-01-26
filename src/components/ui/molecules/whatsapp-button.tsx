@@ -54,10 +54,8 @@ export function WhatsAppButton({ className = "" }: WhatsAppButtonProps) {
     const { checkFeature, openUpgradeModal } = usePlanGate()
 
     const handleClick = async () => {
-        if (!checkFeature('WHATSAPP')) {
-            openUpgradeModal("Automatize suas finanças com o Bot de WhatsApp Inteligente. Exclusivo para PRO e MAX.", 'PRO');
-            return;
-        }
+        // Gate removed: allow all users to access the page (page itself handles the lock state)
+        // if (!checkFeature('WHATSAPP')) { ... }
 
         setIsTransitioning(true)
         setTimeout(() => {
