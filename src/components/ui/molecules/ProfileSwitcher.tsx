@@ -19,9 +19,11 @@ interface Profile {
 
 interface ProfileSwitcherProps {
     onProfileSwitch: (profileId: string | null) => void
+    userName?: string
+    userEmail?: string
 }
 
-export function ProfileSwitcher({ onProfileSwitch }: ProfileSwitcherProps) {
+export function ProfileSwitcher({ onProfileSwitch, userName, userEmail }: ProfileSwitcherProps) {
     const [profiles, setProfiles] = useState<Profile[]>([])
     const [currentProfile, setCurrentProfile] = useState<Profile | null>(null)
     const [isOpen, setIsOpen] = useState(false)
@@ -91,8 +93,14 @@ export function ProfileSwitcher({ onProfileSwitch }: ProfileSwitcherProps) {
         }
     }
 
+    const getFirstName = (fullName: string) => {
+        return fullName.split(' ')[0]
+    }
+
     const getCurrentDisplayName = () => {
-        if (!currentProfile) return "Conta Pessoal"
+        if (!currentProfile) {
+            return userName ? `Olá, ${getFirstName(userName)}` : "Conta Pessoal"
+        }
         return profiles.find((p) => p._id === currentProfile._id)?.name || currentProfile.name || "Profile"
     }
 
@@ -138,31 +146,22 @@ export function ProfileSwitcher({ onProfileSwitch }: ProfileSwitcherProps) {
             {isOpen && (
                 <Card className="absolute bg-white dark:bg-zinc-950 top-12 left-0 w-80 z-50 shadow-xl border-2 animate-in slide-in-from-top-2 duration-200">
                     <CardContent className="p-4">
-                        <div className="mb-4">
-                            <h4 className="font-semibold text-foreground text-sm">Trocar Conta</h4>
+                        <div className="mb-3">
+                            <h4 className="font-semibold text-foreground text-sm">Minha Conta</h4>
                         </div>
 
-                        {/* Conta Pessoal */}
-                        <Button
-                            variant="ghost"
-                            className={`w-full justify-between mb-3 h-auto p-3 rounded-lg transition-all duration-200 ${isCurrentProfile(null) ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 shadow-sm" : "hover:bg-accent"
-                                }`}
-                            onClick={() => switchToProfile(null)}
-                            disabled={switching}
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className={`p-2 rounded-full ${isCurrentProfile(null) ? "bg-green-100 dark:bg-green-900/40" : "bg-muted"}`}>
-                                    <User className={`w-4 h-4 ${isCurrentProfile(null) ? "text-green-600" : "text-gray-600 dark:text-gray-400"}`} />
-                                </div>
-                                <div className="flex flex-col items-start">
-                                    <span className="font-medium text-foreground">Conta Pessoal</span>
-                                    <span className="text-xs text-muted-foreground">Suas transações individuais</span>
-                                </div>
+                        {/* User Info Card */}
+                        <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border/50">
+                            <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center border border-blue-200 dark:border-blue-800">
+                                <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                             </div>
-                            {isCurrentProfile(null) && <Check className="w-4 h-4 text-green-600" />}
-                        </Button>
+                            <div className="overflow-hidden">
+                                <p className="font-medium text-sm text-foreground truncate" title={userName}>{userName || "Usuário"}</p>
+                                <p className="text-xs text-muted-foreground truncate" title={userEmail}>{userEmail || "email@exemplo.com"}</p>
+                            </div>
+                        </div>
 
-                        {/* Profiles Colaborativos */}
+                        {/* Profiles Colaborativos - TEMPORARILY DISABLED
                         {profiles.length > 0 && (
                             <>
                                 <div className="border-t border-border my-4"></div>
@@ -196,8 +195,9 @@ export function ProfileSwitcher({ onProfileSwitch }: ProfileSwitcherProps) {
                                 </div>
                             </>
                         )}
+                        */}
 
-                        {/* Criar Nova Conta */}
+                        {/* Criar Nova Conta - TEMPORARILY DISABLED
                         <div className="border-t border-border my-4"></div>
                         <Button
                             variant="ghost"
@@ -215,6 +215,7 @@ export function ProfileSwitcher({ onProfileSwitch }: ProfileSwitcherProps) {
                                 <span className="font-medium">Criar Conta Colaborativa</span>
                             </div>
                         </Button>
+                        */}
                     </CardContent>
                 </Card>
             )}

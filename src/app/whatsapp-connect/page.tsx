@@ -451,7 +451,7 @@ export default function WhatsAppConnectPage() {
                             <div className="grid gap-3 max-w-xs mx-auto text-left text-sm text-gray-300 py-2 relative z-10">
                                 <div className="flex items-center gap-3 bg-white/5 p-2 rounded-lg border border-white/5">
                                     <div className="bg-green-500/20 p-1 rounded-full"><CheckCircle size={14} className="text-green-400" /></div>
-                                    <span>Lançamentos por Áudio/Texto</span>
+                                    <span>Lançamentos por mensagens</span>
                                 </div>
                                 <div className="flex items-center gap-3 bg-white/5 p-2 rounded-lg border border-white/5">
                                     <div className="bg-blue-500/20 p-1 rounded-full"><CheckCircle size={14} className="text-blue-400" /></div>

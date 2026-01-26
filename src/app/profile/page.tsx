@@ -286,7 +286,7 @@ export default function ProfilePage() {
                     </CardHeader>
                 </Card>
 
-                {/* Quick Actions */}
+                {/* Quick Actions - COLLABORATIVE DISABLED
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <Card className="cursor-pointer hover:shadow-md transition-shadow hover:bg-accent/50" onClick={goToCollaborative}>
                         <CardContent className="p-4">
@@ -300,6 +300,7 @@ export default function ProfilePage() {
                         </CardContent>
                     </Card>
                 </div>
+                */}
 
                 {/* Profile Information */}
                 <Card className="mb-6">

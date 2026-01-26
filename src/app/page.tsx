@@ -405,13 +405,13 @@ function DashboardContent() {
           <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
             <div className="flex justify-between items-center h-16">
               {/* Logo */}
-              <div className="hidden sm:flex-shrink-0 sm:block">
+              <div className="flex-shrink-0 flex items-center">
                 <Title size="md" />
               </div>
 
-              {/* Profile Switcher - Centro no mobile */}
-              <div className="flex-1 flex justify-center sm:justify-start sm:ml-8" id="profile-switcher">
-                <ProfileSwitcher onProfileSwitch={handleProfileSwitch} />
+              {/* Profile Switcher - Align left next to logo */}
+              <div className="flex-1 flex justify-start ml-4 sm:ml-8" id="profile-switcher">
+                <ProfileSwitcher onProfileSwitch={handleProfileSwitch} userName={user?.name} userEmail={user?.email} />
               </div>
 
               {/* Área direita - User Info, Logout, Theme */}
