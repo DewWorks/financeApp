@@ -12,6 +12,8 @@ import { Title } from "@/components/ui/molecules/Title"
 import { MessageCircle, Bot, CheckCircle, Phone, Wifi, ChevronLeft } from "lucide-react"
 import Swal from "sweetalert2"
 import { ThemeToggle } from "@/components/ui/atoms/ThemeToggle"
+import { usePlanGate } from "@/context/PlanGateContext"
+import { PlanType } from "@/interfaces/IUser"
 
 interface Message {
     id: number
@@ -36,6 +38,7 @@ export default function WhatsAppConnectPage() {
     const [messages, setMessages] = useState<Message[]>([])
     const [showDemo, setShowDemo] = useState(false)
     const [showModal, setShowModal] = useState(false)
+    const { checkFeature, openUpgradeModal } = usePlanGate()
 
     const router = useRouter()
 
@@ -295,130 +298,178 @@ export default function WhatsAppConnectPage() {
                         </div>
                     )}
 
-                    {/* Formulário */}
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="phone" className="text-base font-medium flex items-center gap-2 text-foreground">
-                                <Phone className="w-4 h-4" />
-                                Número do WhatsApp
-                                {isConnected && <CheckCircle className="w-4 h-4 text-green-500" />}
-                            </Label>
-                            <div className="relative">
-                                <Input
-                                    id="phone"
-                                    type="tel"
-                                    value={cel}
-                                    onChange={handlePhoneChange}
-                                    className={`border-2 pr-10 ${isConnected
-                                        ? "border-green-300 bg-green-50 dark:bg-green-900/20 focus:border-green-500"
-                                        : "border-border focus:border-blue-500"
-                                        }`}
-                                    placeholder="(11) 99999-9999"
-                                    maxLength={15}
-                                    required
-                                />
+                    {/* Formulário ou Call to Action para Upgrade */}
+                    {checkFeature('WHATSAPP') ? (
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="phone" className="text-base font-medium flex items-center gap-2 text-foreground">
+                                    <Phone className="w-4 h-4" />
+                                    Número do WhatsApp
+                                    {isConnected && <CheckCircle className="w-4 h-4 text-green-500" />}
+                                </Label>
+                                <div className="relative">
+                                    <Input
+                                        id="phone"
+                                        type="tel"
+                                        value={cel}
+                                        onChange={handlePhoneChange}
+                                        className={`border-2 pr-10 ${isConnected
+                                            ? "border-green-300 bg-green-50 dark:bg-green-900/20 focus:border-green-500"
+                                            : "border-border focus:border-blue-500"
+                                            }`}
+                                        placeholder="(11) 99999-9999"
+                                        maxLength={15}
+                                        required
+                                    />
+                                    {isConnected && (
+                                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                            <CheckCircle className="w-5 h-5 text-green-500" />
+                                        </div>
+                                    )}
+                                </div>
                                 {isConnected && (
-                                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                        <CheckCircle className="w-5 h-5 text-green-500" />
+                                    <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
+                                        <Wifi className="w-3 h-3" />
+                                        Conectado
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <Button
+                                    type="button"
+                                    onClick={() => (isConnected ? router.push("/") : setShowModal(true))}
+                                    variant="outline"
+                                    className="border-border text-foreground hover:bg-accent"
+                                >
+                                    {isConnected ? "Voltar" : "Pular por Agora"}
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    className={`${isConnected ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"
+                                        } text-white`}
+                                    disabled={loading}
+                                >
+                                    {loading ? "Processando..." : isConnected ? "Atualizar WhatsApp" : "Conectar WhatsApp"}
+                                </Button>
+
+                                {showModal && (
+                                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                                        <div className="bg-white dark:bg-card border border-border rounded-xl max-w-md w-full p-6 transform animate-scale-in">
+                                            <div className="text-center mb-6">
+                                                <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+                                                    <MessageCircle className="w-8 h-8 text-white" />
+                                                </div>
+                                                <h3 className="text-2xl font-bold text-foreground mb-2">Tem certeza?</h3>
+                                                <p className="text-muted-foreground">Você está perdendo benefícios incríveis!</p>
+                                            </div>
+
+                                            <div className="space-y-4 mb-6">
+                                                <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg transform hover:scale-105 transition-transform duration-200">
+                                                    <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                                                        <span className="text-white text-sm font-bold">⚡</span>
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-semibold text-green-800 dark:text-green-400">Controle Instantâneo</h4>
+                                                        <p className="text-sm text-green-600 dark:text-green-300">Lance gastos em segundos pelo WhatsApp</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg transform hover:scale-105 transition-transform duration-200">
+                                                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                                                        <Bot className="w-4 h-4 text-white" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-semibold text-blue-800 dark:text-blue-400">IA Inteligente</h4>
+                                                        <p className="text-sm text-blue-600 dark:text-blue-300">Categorização automática dos seus gastos</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-3 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg transform hover:scale-105 transition-transform duration-200">
+                                                    <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                                                        <span className="text-white text-sm font-bold">📊</span>
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-semibold text-purple-800 dark:text-purple-400">Relatórios Automáticos</h4>
+                                                        <p className="text-sm text-purple-600 dark:text-purple-300">Receba resumos semanais por WhatsApp</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-3">
+                                                <Button
+                                                    onClick={() => setShowModal(false)}
+                                                    className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-semibold py-3 transform hover:scale-105 transition-all duration-200 shadow-lg"
+                                                >
+                                                    🚀 Voltar e Conectar WhatsApp
+                                                </Button>
+                                                <Button
+                                                    onClick={() => {
+                                                        setShowModal(false)
+                                                        router.push("/")
+                                                    }}
+                                                    variant="outline"
+                                                    className="w-full border-border text-muted-foreground hover:bg-accent"
+                                                >
+                                                    Continuar sem conectar
+                                                </Button>
+                                            </div>
+
+                                            <p className="text-xs text-center text-muted-foreground mt-4">
+                                                💡 Você pode conectar depois nas configurações
+                                            </p>
+                                        </div>
                                     </div>
                                 )}
                             </div>
-                            {isConnected && (
-                                <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
-                                    <Wifi className="w-3 h-3" />
-                                    Conectado
-                                </p>
-                            )}
-                        </div>
+                        </form>
+                    ) : (
+                        // BLOQUEIO PARA PLANO FREE - CTA DE UPGRADE
+                        <div className="border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-900/10 rounded-xl p-6 text-center space-y-4 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-4 opacity-10">
+                                <Bot size={100} />
+                            </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <Button
-                                type="button"
-                                onClick={() => (isConnected ? router.push("/") : setShowModal(true))}
-                                variant="outline"
-                                className="border-border text-foreground hover:bg-accent"
-                            >
-                                {isConnected ? "Voltar" : "Pular por Agora"}
-                            </Button>
-                            <Button
-                                type="submit"
-                                className={`${isConnected ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"
-                                    } text-white`}
-                                disabled={loading}
-                            >
-                                {loading ? "Processando..." : isConnected ? "Atualizar WhatsApp" : "Conectar WhatsApp"}
-                            </Button>
+                            <div className="flex justify-center">
+                                <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 text-xs font-bold uppercase tracking-wider">
+                                    Funcionalidade PRO
+                                </span>
+                            </div>
 
-                            {showModal && (
-                                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                                    <div className="bg-white dark:bg-card border border-border rounded-xl max-w-md w-full p-6 transform animate-scale-in">
-                                        <div className="text-center mb-6">
-                                            <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-                                                <MessageCircle className="w-8 h-8 text-white" />
-                                            </div>
-                                            <h3 className="text-2xl font-bold text-foreground mb-2">Tem certeza?</h3>
-                                            <p className="text-muted-foreground">Você está perdendo benefícios incríveis!</p>
-                                        </div>
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                                Desbloqueie o Bot de WhatsApp
+                            </h3>
 
-                                        <div className="space-y-4 mb-6">
-                                            <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg transform hover:scale-105 transition-transform duration-200">
-                                                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                                                    <span className="text-white text-sm font-bold">⚡</span>
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-semibold text-green-800 dark:text-green-400">Controle Instantâneo</h4>
-                                                    <p className="text-sm text-green-600 dark:text-green-300">Lance gastos em segundos pelo WhatsApp</p>
-                                                </div>
-                                            </div>
+                            <p className="text-gray-600 dark:text-gray-300 text-sm max-w-sm mx-auto">
+                                Pare de perder tempo digitando manualmente. Com o plano PRO, você envia um áudio ou texto e nossa IA registra tudo.
+                            </p>
 
-                                            <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg transform hover:scale-105 transition-transform duration-200">
-                                                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                                                    <Bot className="w-4 h-4 text-white" />
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-semibold text-blue-800 dark:text-blue-400">IA Inteligente</h4>
-                                                    <p className="text-sm text-blue-600 dark:text-blue-300">Categorização automática dos seus gastos</p>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex items-center gap-3 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg transform hover:scale-105 transition-transform duration-200">
-                                                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                                                    <span className="text-white text-sm font-bold">📊</span>
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-semibold text-purple-800 dark:text-purple-400">Relatórios Automáticos</h4>
-                                                    <p className="text-sm text-purple-600 dark:text-purple-300">Receba resumos semanais por WhatsApp</p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-3">
-                                            <Button
-                                                onClick={() => setShowModal(false)}
-                                                className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-semibold py-3 transform hover:scale-105 transition-all duration-200 shadow-lg"
-                                            >
-                                                🚀 Voltar e Conectar WhatsApp
-                                            </Button>
-                                            <Button
-                                                onClick={() => {
-                                                    setShowModal(false)
-                                                    router.push("/")
-                                                }}
-                                                variant="outline"
-                                                className="w-full border-border text-muted-foreground hover:bg-accent"
-                                            >
-                                                Continuar sem conectar
-                                            </Button>
-                                        </div>
-
-                                        <p className="text-xs text-center text-muted-foreground mt-4">
-                                            💡 Você pode conectar depois nas configurações
-                                        </p>
-                                    </div>
+                            <div className="grid gap-2 max-w-xs mx-auto text-left text-sm text-gray-600 dark:text-gray-400 py-2">
+                                <div className="flex items-center gap-2">
+                                    <CheckCircle size={16} className="text-green-500" />
+                                    <span>Lançamentos por Áudio/Texto</span>
                                 </div>
-                            )}
+                                <div className="flex items-center gap-2">
+                                    <CheckCircle size={16} className="text-green-500" />
+                                    <span>Categorização via IA</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <CheckCircle size={16} className="text-green-500" />
+                                    <span>Relatórios Semanais Automáticos</span>
+                                </div>
+                            </div>
+
+                            <Button
+                                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold h-12 shadow-md hover:shadow-lg transition-all"
+                                onClick={() => openUpgradeModal("Tenha o controlefinanceiro na palma da mão com nosso Bot de WhatsApp exclusivo!", 'PRO')}
+                            >
+                                Fazer Upgrade Agora 🚀
+                            </Button>
+                            <p className="text-xs text-muted-foreground mt-2">
+                                A partir de R$ 19,90/mês
+                            </p>
                         </div>
-                    </form>
+                    )}
 
                     {/* Demonstração da Conversa */}
                     <div className="border-t border-border pt-6">

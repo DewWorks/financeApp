@@ -12,11 +12,13 @@ export function UpsellBanner() {
     const { currentPlan } = usePlanGate();
     const router = useRouter();
 
-    if (currentPlan === PlanType.MAX) {
+    // User requested to show ONLY to FREE users (PlanType.FREE)
+    // If user is PRO or MAX, do not show this banner.
+    if (currentPlan !== PlanType.FREE) {
         return null;
     }
 
-    const isFree = currentPlan === PlanType.FREE;
+    const isFree = true; // effectively always true here now
 
     // Content configuration based on plan
     const content = isFree ? {
