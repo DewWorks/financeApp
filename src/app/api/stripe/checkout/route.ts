@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { User } from "@/app/models/User";
+import { PlanType } from "@/interfaces/IUser";
 import connectToDatabase from "@/lib/mongoose";
 
 export async function POST(req: NextRequest) {
@@ -44,7 +45,10 @@ export async function POST(req: NextRequest) {
 
             // Save Stripe ID to User
             user.subscription = {
-                ...user.subscription,
+                plan: user.subscription?.plan || PlanType.FREE,
+                status: user.subscription?.status || 'ACTIVE',
+                subscriptionId: user.subscription?.subscriptionId,
+                expiresAt: user.subscription?.expiresAt,
                 providerId: customerId
             };
             await user.save();
