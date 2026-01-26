@@ -35,6 +35,7 @@ import { GlobalLoader } from "@/components/ui/molecules/GlobalLoader"
 import { ThemeToggle } from "@/components/ui/atoms/ThemeToggle"
 import { FinancialInsight } from "@/components/ui/molecules/FinancialInsight"
 import { OpenFinanceWidget } from "@/components/ui/molecules/OpenFinanceWidget"
+import { UpsellBanner } from "@/components/ui/molecules/UpsellBanner"
 import * as mongoose from "mongoose";
 import { TransactionsProvider } from "@/context/TransactionsContext"
 import { GoalsProvider } from "@/context/GoalsContext"
@@ -505,6 +506,8 @@ function DashboardContent() {
             <WhatsAppButton />
           </div>
 
+          {/* Upsell Banner (Free/Pro users) */}
+          <UpsellBanner />
 
           {/* Open Finance Widget - Collapsible & Optimized */}
           <OpenFinanceWidget />
