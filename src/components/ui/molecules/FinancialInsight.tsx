@@ -6,6 +6,7 @@ import { TrendingUp, TrendingDown, Sun, Moon, Lightbulb, CheckCircle, ArrowRight
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/atoms/dialog"
 import { Button } from "@/components/ui/atoms/button"
 import { usePlanGate } from "@/context/PlanGateContext"
+import { PlanType } from "@/interfaces/IUser"
 
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine, Area, ComposedChart } from 'recharts';
 
@@ -79,10 +80,34 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
     const [isPaused, setIsPaused] = useState(false)
     const [isModalOpen, setIsModalOpen] = useState(false)
     const timerRef = useRef<NodeJS.Timeout | null>(null)
-    const { checkFeature, openUpgradeModal } = usePlanGate()
+    const { checkFeature, openUpgradeModal, currentPlan } = usePlanGate()
+
+    // Static Teaser Data for Free Users
+    const teaserData: InsightData = {
+        greeting: "Olá",
+        dailySummary: { total: 0 },
+        insights: [
+            {
+                id: "teaser-1",
+                type: "tip",
+                text: "Dica Financeira Exclusiva",
+                value: "R$ ???",
+                trend: "neutral",
+                details: "Essa análise detalhada está disponível apenas para usuários Premium.",
+                recommendation: "Atualize para o plano PRO para desbloquear insights personalizados de economia."
+            }
+        ]
+    };
 
     useEffect(() => {
         const fetchInsights = async () => {
+            // Optimization: Do not fetch for FREE users to save API costs
+            if (currentPlan === PlanType.FREE) {
+                setData(teaserData);
+                setIsLoading(false);
+                return;
+            }
+
             try {
                 const query = new URLSearchParams()
                 if (profileId) query.append("profileId", profileId)
@@ -103,7 +128,7 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
         if (!loading) {
             fetchInsights()
         }
-    }, [profileId, loading, refreshTrigger, scope])
+    }, [profileId, loading, refreshTrigger, scope, currentPlan])
 
     // Carousel Logic
     useEffect(() => {
