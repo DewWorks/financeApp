@@ -425,53 +425,55 @@ export default function WhatsAppConnectPage() {
                         </form>
                     ) : (
                         // BLOQUEIO PARA PLANO FREE - CTA DE UPGRADE
-                        <div className="border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-900/10 rounded-xl p-6 text-center space-y-4 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-4 opacity-10">
-                                <Bot size={100} />
+                        <div className="border border-blue-500/30 bg-gradient-to-br from-slate-900 to-blue-950 rounded-xl p-8 text-center space-y-6 relative overflow-hidden shadow-2xl">
+                            {/* Background Effects */}
+                            <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                                <Bot size={120} className="text-blue-400" />
                             </div>
+                            <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-blue-500/20 blur-[50px] rounded-full pointing-events-none"></div>
 
-                            <div className="flex justify-center">
-                                <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 text-xs font-bold uppercase tracking-wider">
+                            <div className="flex justify-center relative z-10">
+                                <span className="px-4 py-1.5 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-300 text-xs font-bold uppercase tracking-wider shadow-sm">
                                     Funcionalidade PRO
                                 </span>
                             </div>
 
-                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                                Desbloqueie o Bot de WhatsApp
-                            </h3>
+                            <div className="relative z-10">
+                                <h3 className="text-2xl font-bold text-white mb-2">
+                                    Desbloqueie o Bot de WhatsApp
+                                </h3>
 
-                            <p className="text-gray-600 dark:text-gray-300 text-sm max-w-sm mx-auto">
-                                Pare de perder tempo digitando manualmente. Com o plano PRO, você envia um áudio ou texto e nossa IA registra tudo.
-                            </p>
+                                <p className="text-blue-100/70 text-sm max-w-sm mx-auto leading-relaxed">
+                                    Pare de perder tempo digitando manualmente. Com o plano PRO, você envia um áudio ou texto e nossa IA registra tudo.
+                                </p>
+                            </div>
 
-                            <div className="grid gap-2 max-w-xs mx-auto text-left text-sm text-gray-600 dark:text-gray-400 py-2">
-                                <div className="flex items-center gap-2">
-                                    <CheckCircle size={16} className="text-green-500" />
+                            <div className="grid gap-3 max-w-xs mx-auto text-left text-sm text-gray-300 py-2 relative z-10">
+                                <div className="flex items-center gap-3 bg-white/5 p-2 rounded-lg border border-white/5">
+                                    <div className="bg-green-500/20 p-1 rounded-full"><CheckCircle size={14} className="text-green-400" /></div>
                                     <span>Lançamentos por Áudio/Texto</span>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <CheckCircle size={16} className="text-green-500" />
+                                <div className="flex items-center gap-3 bg-white/5 p-2 rounded-lg border border-white/5">
+                                    <div className="bg-blue-500/20 p-1 rounded-full"><CheckCircle size={14} className="text-blue-400" /></div>
                                     <span>Categorização via IA</span>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <CheckCircle size={16} className="text-green-500" />
+                                <div className="flex items-center gap-3 bg-white/5 p-2 rounded-lg border border-white/5">
+                                    <div className="bg-purple-500/20 p-1 rounded-full"><CheckCircle size={14} className="text-purple-400" /></div>
                                     <span>Relatórios Semanais Automáticos</span>
                                 </div>
                             </div>
 
                             <Button
-                                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold h-12 shadow-md hover:shadow-lg transition-all"
-                                onClick={() => openUpgradeModal("Tenha o controlefinanceiro na palma da mão com nosso Bot de WhatsApp exclusivo!", 'PRO')}
+                                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold h-12 shadow-lg hover:shadow-blue-500/25 transition-all transform hover:scale-[1.02] active:scale-95 border border-blue-400/20"
+                                onClick={() => openUpgradeModal("Tenha o controle financeiro na palma da mão com nosso Bot de WhatsApp exclusivo!", 'PRO')}
                             >
                                 Fazer Upgrade Agora 🚀
                             </Button>
-                            <p className="text-xs text-muted-foreground mt-2">
+                            <p className="text-xs text-blue-300/50 mt-2">
                                 A partir de R$ 19,90/mês
                             </p>
                         </div>
                     )}
-
-                    {/* Demonstração da Conversa */}
                     <div className="border-t border-border pt-6">
                         <div className="flex items-center gap-2 mb-4">
                             <Bot className="w-5 h-5 text-blue-600" />

@@ -18,8 +18,8 @@ export function UpgradeModal({ isOpen, onClose, message, requiredPlan = 'PRO' }:
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-[500px] bg-white dark:bg-gray-900 border-2 border-indigo-500/20">
                 <DialogHeader>
-                    <div className="mx-auto bg-indigo-100 dark:bg-indigo-900/30 p-3 rounded-full mb-4 w-fit">
-                        {isMax ? <Crown className="w-8 h-8 text-purple-600 dark:text-purple-400" /> : <Rocket className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />}
+                    <div className="mx-auto bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full mb-4 w-fit">
+                        {isMax ? <Crown className="w-8 h-8 text-cyan-600 dark:text-cyan-400" /> : <Rocket className="w-8 h-8 text-blue-600 dark:text-blue-400" />}
                     </div>
                     <DialogTitle className="text-2xl text-center font-bold dark:text-white">
                         {isMax ? "Desbloqueie o Poder Máximo" : "Faça Upgrade para o PRO"}
@@ -43,12 +43,12 @@ export function UpgradeModal({ isOpen, onClose, message, requiredPlan = 'PRO' }:
                             </li>
                             {isMax && (
                                 <li className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                                    <Check className="w-4 h-4 text-green-500" /> Sincronização Bancária Automática (Open Finance)
+                                    <Check className="w-4 h-4 text-cyan-500" /> Sincronização Bancária Automática (Open Finance)
                                 </li>
                             )}
                             {isMax && (
                                 <li className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                                    <Check className="w-4 h-4 text-green-500" /> Análise Profunda com IA
+                                    <Check className="w-4 h-4 text-cyan-500" /> Análise Profunda com IA
                                 </li>
                             )}
                         </ul>
@@ -64,7 +64,7 @@ export function UpgradeModal({ isOpen, onClose, message, requiredPlan = 'PRO' }:
                             onClose();
                             router.push('/pricing');
                         }}
-                        className={`w-full sm:w-auto font-bold text-white shadow-lg ${isMax ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700' : 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700'}`}
+                        className={`w-full sm:w-auto font-bold text-white shadow-lg ${isMax ? 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700' : 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700'}`}
                     >
                         {isMax ? <Crown className="w-4 h-4 mr-2" /> : <Zap className="w-4 h-4 mr-2" />}
                         Assinar {isMax ? 'MAX' : 'PRO'} Agora

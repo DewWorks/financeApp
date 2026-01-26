@@ -12,7 +12,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 
 interface InsightItem {
     id: string;
-    type: "weekly" | "monthly" | "category" | "zero_spend" | "tip" | "general";
+    type: "weekly" | "monthly" | "category" | "zero_spend" | "tip" | "general" | "locked";
     text: string;
     value: string;
     trend: "positive" | "negative" | "neutral";
@@ -89,7 +89,7 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
         insights: [
             {
                 id: "teaser-1",
-                type: "tip",
+                type: "locked",
                 text: "Dica Financeira Exclusiva",
                 value: "R$ ???",
                 trend: "neutral",
@@ -159,6 +159,7 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
 
     // Icons
     const getIcon = () => {
+        if (currentInsight.type === 'locked') return CheckCircle; // Or Sparkles if imported, but sticking to existing imports to avoid errors: TrendingUp, TrendingDown, Sun, Moon, Lightbulb, CheckCircle, ArrowRight, Info
         if (currentInsight.type === 'tip') return Lightbulb;
         if (currentInsight.type === 'zero_spend') return CheckCircle;
         if (isPositive) return TrendingUp;
@@ -169,13 +170,14 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
 
     // Colors
     const getColors = () => {
+        if (currentInsight.type === 'locked') return "text-white bg-gradient-to-r from-blue-900 to-indigo-900 border border-blue-700 shadow-md";
         if (currentInsight.type === 'tip') return "text-yellow-500 bg-yellow-100 dark:bg-yellow-900/30";
         if (isPositive) return "text-green-500 bg-green-100 dark:bg-green-900/30";
         if (isNegative) return "text-red-500 bg-red-100 dark:bg-red-900/30";
         return "text-blue-500 bg-blue-100 dark:bg-blue-900/30";
     }
     const colorClass = getColors();
-    const trendTextColor = isPositive ? "text-green-600 dark:text-green-400" : (isNegative ? "text-red-600 dark:text-red-400" : "text-gray-600 dark:text-gray-400");
+    const trendTextColor = currentInsight.type === 'locked' ? 'text-blue-400' : (isPositive ? "text-green-600 dark:text-green-400" : (isNegative ? "text-red-600 dark:text-red-400" : "text-gray-600 dark:text-gray-400"));
 
     const handleCardClick = () => {
         if (!checkFeature('DEEP_INSIGHTS')) {

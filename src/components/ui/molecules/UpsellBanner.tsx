@@ -25,15 +25,15 @@ export function UpsellBanner() {
         title: "Desbloqueie a IA Financeira 🚀",
         description: "Automatize seus gastos via WhatsApp e receba insights semanais com o plano PRO.",
         buttonText: "Ver planos PRO",
-        gradient: "from-blue-600 to-purple-600",
-        icon: <Sparkles className="w-6 h-6 text-yellow-300" />,
+        gradient: "from-blue-900 via-indigo-900 to-slate-900 border border-blue-800",
+        icon: <Sparkles className="w-6 h-6 text-blue-400" />,
         features: ["Bot de WhatsApp", "Insights IA", "Lançamentos Ilimitados"]
     } : {
         title: "Conecte seus Bancos com Open Finance 🏦",
         description: "Sincronize automaticamente saldos e faturas de todos os seus bancos com o plano Ultimate.",
         buttonText: "Fazer Upgrade para Ultimate",
-        gradient: "from-slate-900 to-slate-800 border-purple-500/30",
-        icon: <Building2 className="w-6 h-6 text-purple-400" />,
+        gradient: "from-slate-950 to-blue-950 border border-blue-900",
+        icon: <Building2 className="w-6 h-6 text-blue-400" />,
         features: ["Sincronização Bancária", "Consultor IA Avançado", "Suporte Prioritário"]
     };
 
