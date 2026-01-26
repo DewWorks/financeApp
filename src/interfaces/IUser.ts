@@ -8,6 +8,12 @@ export interface IUser {
     cel?: string[];
     address?: string;
     cpf?: string;
+    terms: {
+        accepted: boolean;
+        acceptedAt?: Date;
+        ip?: string;
+        userAgent?: string;
+    };
     tutorialGuide?: boolean;
     executeQuery?: boolean;
     verification?: IUserVerification;

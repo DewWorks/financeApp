@@ -18,6 +18,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("")
   const [cel, setCel] = useState("")
   const [password, setPassword] = useState("")
+  const [termsAccepted, setTermsAccepted] = useState(false)
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
@@ -38,6 +39,17 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    // Validar Termos
+    if (!termsAccepted) {
+      Swal.fire({
+        icon: "warning",
+        title: "Atenção",
+        text: "Você precisa aceitar os Termos de Uso para criar sua conta.",
+        confirmButtonColor: "#3b82f6"
+      })
+      return
+    }
+
     // Se não tem celular, mostrar modal de benefícios
     if (!cel.trim()) {
       setShowWhatsAppModal(true)
@@ -54,7 +66,7 @@ export default function RegisterPage() {
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, cel }),
+        body: JSON.stringify({ name, email, password, cel, termsAccepted }),
       })
 
       const data = await response.json()
@@ -192,6 +204,25 @@ export default function RegisterPage() {
                   maxLength={15}
                 />
                 <p className="text-xs text-muted-foreground">💡 Controle seus gastos por mensagem com nossa IA</p>
+              </div>
+
+              {/* Termos de Uso */}
+              <div className="flex items-start space-x-2 pt-2">
+                <div className="flex items-center h-5">
+                  <input
+                    id="terms"
+                    type="checkbox"
+                    checked={termsAccepted}
+                    onChange={(e) => setTermsAccepted(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                  />
+                </div>
+                <div className="ml-2 text-sm">
+                  <label htmlFor="terms" className="font-medium text-gray-900 dark:text-gray-300">
+                    Eu concordo com os <a href="/terms" target="_blank" className="text-blue-600 hover:underline dark:text-blue-500">Termos de Uso</a>
+                  </label>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">É obrigatório aceitar para criar sua conta.</p>
+                </div>
               </div>
 
               {/* Botão Cadastrar */}

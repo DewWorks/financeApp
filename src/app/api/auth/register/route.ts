@@ -40,8 +40,12 @@ import { getMongoClient } from '@/db/connectionDb';
  */
 export async function POST(request: Request) {
   try {
-    const { name, email, cel, password } = await request.json()
+    const { name, email, cel, password, termsAccepted } = await request.json()
     const client = await getMongoClient();
+
+    if (!termsAccepted) {
+      return NextResponse.json({ error: 'Você deve aceitar os Termos de Uso.' }, { status: 400 })
+    }
 
     const db = client.db("financeApp");
 
@@ -54,12 +58,21 @@ export async function POST(request: Request) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10)
 
+    const ip = request.headers.get("x-forwarded-for") || "unknown";
+    const userAgent = request.headers.get("user-agent") || "unknown";
+
     // Insert new user
     const result = await db.collection('users').insertOne({
       name,
       email,
       cel,
       password: hashedPassword,
+      terms: {
+        accepted: true,
+        acceptedAt: new Date(),
+        ip: ip,
+        userAgent: userAgent
+      },
       tutorialGuide: false,
       executeQuery: false
     })
