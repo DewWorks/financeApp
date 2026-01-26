@@ -24,6 +24,12 @@ const UserSchema = new Schema<IUser>({
     },
     address: String,
     cpf: String,
+    terms: {
+        accepted: { type: Boolean, required: true, default: false },
+        acceptedAt: { type: Date },
+        ip: { type: String },
+        userAgent: { type: String }
+    },
     tutorialGuide: { type: Boolean, default: true },
     executeQuery: { type: Boolean, default: false },
     verification: {
@@ -50,4 +56,4 @@ const UserSchema = new Schema<IUser>({
     }
 });
 
-export const User = mongoose.model<IUser>("User", UserSchema);
+export const User = mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
