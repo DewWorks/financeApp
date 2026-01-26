@@ -10,10 +10,59 @@ export default function PricingPage() {
     const { currentPlan } = useUser();
     const router = useRouter();
 
-    const handleSubscribe = (plan: string) => {
-        // Future Stripe integration hook
-        console.log(`Subscribing to ${plan}`);
-        // For now, maybe just redirect or show a toast
+    const [loading, setLoading] = React.useState<string | null>(null);
+
+    const handleSubscribe = async (plan: string) => {
+        // Map Plan to Price ID (Ideally fetched from backend config or ENV)
+        // For now we map strictly to the known plans.
+        // NOTE: We rely on the button onClick sending 'PRO' or 'MAX'
+
+        // We need the ACTUAL Price IDs from your Stripe Dashboard here.
+        // Since we don't have them in valid ENV vars visible to client easily, 
+        // we can POST the plan name to the API and let the API resolve the ID from hidden ENV.
+        // OR we just send the planKey and let the API decide.
+
+        try {
+            setLoading(plan);
+            const userString = localStorage.getItem("user-id"); // Or use context user._id
+
+            if (!userString) {
+                router.push('/auth/login');
+                return;
+            }
+
+            // We need to map 'PRO' -> price_xxx dynamically or just send 'PRO' and let backend handle.
+            // Let's UPDATE the backend route to accept 'planName' instead of 'priceId' for security/easiness,
+            // OR we hardcode the mapping here if we had the public keys.
+            // Given the task, let's update the API to be smart or send strict IDs if known.
+            // Let's assume the backend will map 'PRO' -> process.env.STRIPE_PRICE_ID_PRO
+
+            const response = await fetch('/api/stripe/checkout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    priceId: plan, // We will update backend to interpret this as a plan key
+                    userId: userString,
+                    successUrl: window.location.origin + '/dashboard?success=true',
+                    cancelUrl: window.location.origin + '/pricing?canceled=true',
+                }),
+            });
+
+            const data = await response.json();
+            if (data.url) {
+                window.location.href = data.url;
+            } else {
+                console.error("Stripe Error:", data.error);
+                alert("Erro ao iniciar pagamento. Tente novamente.");
+                setLoading(null);
+            }
+
+        } catch (error) {
+            console.error("Checkout Error:", error);
+            setLoading(null);
+        }
     };
 
     return (
@@ -109,8 +158,8 @@ export default function PricingPage() {
                         </li>
                     </ul>
 
-                    <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-full py-6 font-bold shadow-lg shadow-blue-500/25" onClick={() => handleSubscribe('PRO')}>
-                        {currentPlan === 'PRO' ? 'Plano Atual' : 'Escolher Plano'}
+                    <Button disabled={!!loading} className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-full py-6 font-bold shadow-lg shadow-blue-500/25" onClick={() => handleSubscribe('PRO')}>
+                        {loading === 'PRO' ? 'Processando...' : (currentPlan === 'PRO' ? 'Plano Atual' : 'Escolher Plano')}
                     </Button>
                 </div>
 
@@ -159,8 +208,8 @@ export default function PricingPage() {
                         </li>
                     </ul>
 
-                    <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-full py-6 font-bold shadow-lg shadow-purple-500/25" onClick={() => handleSubscribe('MAX')}>
-                        {currentPlan === 'MAX' ? 'Plano Atual' : 'Escolher Plano'}
+                    <Button disabled={!!loading} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-full py-6 font-bold shadow-lg shadow-purple-500/25" onClick={() => handleSubscribe('MAX')}>
+                        {loading === 'MAX' ? 'Processando...' : (currentPlan === 'MAX' ? 'Plano Atual' : 'Escolher Plano')}
                     </Button>
                 </div>
 
