@@ -444,7 +444,7 @@ export default function WhatsAppConnectPage() {
                                 </h3>
 
                                 <p className="text-blue-100/70 text-sm max-w-sm mx-auto leading-relaxed">
-                                    Pare de perder tempo digitando manualmente. Com o plano PRO, você envia um áudio ou texto e nossa IA registra tudo.
+                                    Pare de perder tempo digitando manualmente. Com o plano PRO, você envia uma mensagem e nossa IA registra tudo.
                                 </p>
                             </div>
 
