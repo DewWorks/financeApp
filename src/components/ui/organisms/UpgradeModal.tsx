@@ -60,7 +60,10 @@ export function UpgradeModal({ isOpen, onClose, message, requiredPlan = 'PRO' }:
                         Talvez depois
                     </Button>
                     <Button
-                        onClick={() => router.push('/pricing')}
+                        onClick={() => {
+                            onClose();
+                            router.push('/pricing');
+                        }}
                         className={`w-full sm:w-auto font-bold text-white shadow-lg ${isMax ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700' : 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700'}`}
                     >
                         {isMax ? <Crown className="w-4 h-4 mr-2" /> : <Zap className="w-4 h-4 mr-2" />}
