@@ -4,7 +4,7 @@ import { useTransactions } from "@/context/TransactionsContext"
 import { driver } from "driver.js"
 import "driver.js/dist/driver.css"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/card"
-import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, User, ChevronLeft, ChevronRight, Search, RefreshCw, TrendingUp, TrendingDown, Landmark, Wallet, Menu, Home, List, PieChart, Target, Plus, CircleDollarSign } from 'lucide-react'
+import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, User, ChevronLeft, ChevronRight, Search, RefreshCw, TrendingUp, TrendingDown, Landmark, Wallet, Menu, Home, List, PieChart, Target, Plus, CircleDollarSign, LayoutList, LayoutGrid, Calendar, Tag } from 'lucide-react'
 import { AddIncomeDialog } from "@/components/ui/organisms/AddIncomeDialog"
 import { AddExpenseDialog } from "@/components/ui/organisms/AddExpenseDialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/atoms/popover"
@@ -96,8 +96,12 @@ function DashboardContent() {
 
   const [selectedChartType, setSelectedChartType] = useState("pie")
   const [activeTab, setActiveTab] = useState("home") // 'home' | 'transactions' | 'goals' | 'analytics'
+  const [viewMode, setViewMode] = useState<'list' | 'card'>('list')
 
   const dataToUse = isAllTransactions ? allTransactions : transactions;
+
+  // Plan Check
+  const isFree = !user?.subscription?.plan || user.subscription.plan === 'FREE';
 
   // Use backend data instead of frontend calculation
   const totalIncome = summaryData.income;
@@ -673,15 +677,81 @@ function DashboardContent() {
                     <TimelineMonthSelector onSelectMonth={filterTransactionsByMonth} selectedMonth={selectedMonth} />
                   </div>
 
-                  <TransactionsTable
-                    transactions={transactions} // Context already handles filtering
-                    onEditTransaction={handleEditTransaction}
-                    onDeleteTransaction={handleDeleteTransaction}
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onNextPage={handleNextPage}
-                    onPreviousPage={handlePreviousPage}
-                  />
+                  {/* Mobile View Toggle */}
+                  <div className="flex justify-end mb-4 px-2 md:hidden">
+                    <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                      <button
+                        onClick={() => setViewMode('list')}
+                        className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-gray-600 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400'}`}
+                      >
+                        <LayoutList className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setViewMode('card')}
+                        className={`p-1.5 rounded-md transition-all ${viewMode === 'card' ? 'bg-white dark:bg-gray-600 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400'}`}
+                      >
+                        <LayoutGrid className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Render Content Based on View Mode (Mobile) or Always Table (Desktop) */}
+                  <div className="hidden md:block">
+                    <TransactionsTable
+                      transactions={transactions}
+                      onEditTransaction={handleEditTransaction}
+                      onDeleteTransaction={handleDeleteTransaction}
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onNextPage={handleNextPage}
+                      onPreviousPage={handlePreviousPage}
+                    />
+                  </div>
+
+                  <div className="md:hidden">
+                    {viewMode === 'list' ? (
+                      <TransactionsTable
+                        transactions={transactions}
+                        onEditTransaction={handleEditTransaction}
+                        onDeleteTransaction={handleDeleteTransaction}
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onNextPage={handleNextPage}
+                        onPreviousPage={handlePreviousPage}
+                      />
+                    ) : (
+                      <div className="space-y-3">
+                        {transactions.map((t) => (
+                          <div key={t._id?.toString()} className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col gap-3">
+                            <div className="flex justify-between items-start">
+                              <div className="flex items-center gap-3">
+                                <div className={`p-2.5 rounded-full ${t.type === 'income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                                  {t.type === 'income' ? <ArrowUpIcon className="w-5 h-5" /> : <ArrowDownIcon className="w-5 h-5" />}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-gray-900 dark:text-gray-100 line-clamp-1">{t.description}</p>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-xs px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 flex items-center gap-1">
+                                      <Tag className="w-3 h-3" /> {t.tag}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex flex-col items-end">
+                                <span className={`text-base font-bold ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                                  {t.type === 'income' ? '+ ' : '- '}R$ {t.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </span>
+                                <span className="text-xs text-gray-400 flex items-center gap-1 mt-1">
+                                  <Calendar className="w-3 h-3" /> {new Date(t.date).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+                            {/* Actions could go here */}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
                   {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
                 </CardContent>
@@ -782,10 +852,12 @@ function DashboardContent() {
           />
         </div>
 
-        {/* WhatsApp Button - Global & positioned right */}
-        <div className="fixed bottom-28 right-4 z-40 sm:bottom-8 sm:right-8">
-          <WhatsAppButton />
-        </div>
+        {/* WhatsApp Button - Global & positioned right - FREE USERS ONLY */}
+        {isFree && (
+          <div className="fixed bottom-28 right-4 z-40 sm:bottom-8 sm:right-8">
+            <WhatsAppButton />
+          </div>
+        )}
 
         {/* MOBILE BOTTOM NAVIGATION */}
         <div className="md:hidden fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 px-6 py-3 z-50 flex items-center justify-between w-[95vw] max-w-sm">
@@ -819,12 +891,6 @@ function DashboardContent() {
             </PopoverTrigger>
             <PopoverContent className="w-48 p-2 mb-4 bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 shadow-2xl rounded-xl" side="top" align="center" sideOffset={10}>
               <div className="flex flex-col gap-1">
-                {/* Wrapping Add Dialogs Logic here is tricky since they are dialogs. 
-                       Best approach: Use the trigger logic from Fab, or just render visual buttons that trigger the dialogs state if we had it lifted.
-                       Since we don't have lifted state for dialogs easily, we will reuse the Dialog Triggers invisibly or refactor.
-                       
-                       Refactor: We can just put the AddIncomeDialog TRIGGER here customized.
-                   */}
                 <div className="w-full">
                   <AddIncomeDialog onAddIncome={handleAddIncome} trigger={
                     <Button variant="ghost" className="w-full justify-start text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20">
