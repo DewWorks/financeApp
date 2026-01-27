@@ -4,9 +4,10 @@ import { useTransactions } from "@/context/TransactionsContext"
 import { driver } from "driver.js"
 import "driver.js/dist/driver.css"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/card"
-import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, User, ChevronLeft, ChevronRight, Search, RefreshCw, TrendingUp, TrendingDown, Landmark, Wallet } from 'lucide-react'
+import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, User, ChevronLeft, ChevronRight, Search, RefreshCw, TrendingUp, TrendingDown, Landmark, Wallet, Menu } from 'lucide-react'
 import { AddIncomeDialog } from "@/components/ui/organisms/AddIncomeDialog"
 import { AddExpenseDialog } from "@/components/ui/organisms/AddExpenseDialog"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/atoms/popover"
 import type { ITransaction } from "@/interfaces/ITransaction"
 import { SummaryCard } from "@/components/ui/molecules/SummaryCard"
 import { TransactionsTable } from "@/components/ui/molecules/TransactionsTable"
@@ -415,14 +416,15 @@ function DashboardContent() {
               </div>
 
               {/* Área direita - User Info, Logout, Theme */}
-              <div className="flex items-center space-x-2">
+              {/* Desktop Area - User Info, Logout, Theme */}
+              <div className="hidden sm:flex items-center space-x-2">
 
-                {/* Theme Toggle - NEW */}
+                {/* Theme Toggle */}
                 <ThemeToggle />
 
                 {user && (
                   <>
-                    {/* User Info - apenas ícone no mobile */}
+                    {/* User Info */}
                     <Tooltip title={'Perfil'} arrow>
                       <Button
                         className="p-2 rounded-lg bg-transparent transition-colors hover:bg-blue-100 dark:hover:bg-gray-700"
@@ -452,10 +454,66 @@ function DashboardContent() {
                   >
                     <Button onClick={() => (window.location.href = "/auth/login")} variant="ghost" size="sm">
                       <LogIn className="h-5 w-5 mr-2 text-green-600" />
-                      <span className="hidden sm:inline">Entrar</span>
+                      <span>Entrar</span>
                     </Button>
                   </motion.div>
                 )}
+              </div>
+
+              {/* Mobile Menu - Hamburger */}
+              <div className="flex sm:hidden items-center ml-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-10 w-10">
+                      <Menu className="h-6 w-6 text-gray-700 dark:text-gray-200" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56 p-2 mr-2" align="end">
+                    <div className="flex flex-col gap-1">
+                      {/* Theme Toggle Row */}
+                      <div className="flex items-center justify-between px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
+                        <span className="text-sm font-medium">Alterar Tema</span>
+                        <ThemeToggle />
+                      </div>
+
+                      {user && (
+                        <>
+                          <div className="h-px bg-gray-200 dark:bg-gray-700 my-1" />
+                          <Button
+                            variant="ghost"
+                            className="w-full justify-start px-3"
+                            onClick={handleProfile}
+                          >
+                            <User className="h-4 w-4 mr-2 text-blue-500" />
+                            Perfil
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            className="w-full justify-start px-3 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            onClick={handleLogout}
+                          >
+                            <LogOut className="h-4 w-4 mr-2" />
+                            Sair
+                          </Button>
+                        </>
+                      )}
+
+                      {!user && (
+                        <>
+                          <div className="h-px bg-gray-200 dark:bg-gray-700 my-1" />
+                          <Button
+                            onClick={() => (window.location.href = "/auth/login")}
+                            variant="ghost"
+                            className="w-full justify-start px-3 text-green-600"
+                          >
+                            <LogIn className="h-4 w-4 mr-2" />
+                            Entrar
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
           </div>
