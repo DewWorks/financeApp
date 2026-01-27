@@ -199,8 +199,8 @@ function DashboardContent() {
 
   // Verificar se o tutorial já foi visto
   useEffect(() => {
-    const hasSeenTutorial = localStorage.getItem("tutorial-guide")
-    if (!runTutorial && hasSeenTutorial === "false") {
+    const hasSeenTutorial = localStorage.getItem("tutorial-guide-v2")
+    if (!runTutorial && (!hasSeenTutorial || hasSeenTutorial === "false")) {
       setRunTutorial(true)
     }
   }, [])
@@ -213,7 +213,10 @@ function DashboardContent() {
   }, [runTutorial])
 
   // Função para iniciar o tutorial
+  // Função para iniciar o tutorial
   const startTutorial = () => {
+    const isMobile = window.innerWidth < 768
+
     const driverObj = driver({
       showProgress: true,
       allowClose: true,
@@ -223,91 +226,181 @@ function DashboardContent() {
       nextBtnText: "Próximo",
       prevBtnText: "Voltar",
       onDestroyStarted: () => {
-        localStorage.setItem("tutorial-guide", "true")
+        handleTutorialFinish()
       },
       popoverClass: "custom-popover",
+      steps: isMobile ? (getMobileSteps() as any) : (getDesktopSteps() as any)
     })
 
-    driverObj.setSteps([
-      {
-        popover: {
-          title: "🚀 Bem-vindo ao FinancePro!",
-          description: "Vamos te guiar pelos principais recursos do sistema para que você aproveite ao máximo!",
-          showButtons: ["next"],
-        },
-      },
-      {
-        element: "#profile-switcher",
-        popover: {
-          title: "👥 Contas e Perfis",
-          description: "Aqui você pode trocar entre sua conta pessoal e contas colaborativas. Crie contas compartilhadas para gerenciar finanças em grupo!",
-        },
-      },
-      {
-        element: "#transactions-values",
-        popover: {
-          title: "💰 Resumo Financeiro",
-          description: "Aqui você pode ver o saldo total e o resumo das finanças da conta atual.",
-        },
-      },
-      {
-        element: "#add-transactions",
-        popover: {
-          title: "➕ Adicionar Transações",
-          description: "Clique aqui para adicionar suas transações à conta atual.",
-        },
-      },
-      {
-        element: "#transactions-goals",
-        popover: {
-          title: "🎯 Metas Financeiras",
-          description: "Aqui estão todas as suas metas financeiras.",
-        },
-      },
-      {
-        element: "#transactions-table",
-        popover: {
-          title: "📊 Histórico de Transações",
-          description: "Aqui estão todas as transações da conta atual.",
-        },
-      },
-      {
-        element: "#transactions-chart",
-        popover: {
-          title: "📈 Gráficos Financeiros",
-          description: "Esses gráficos mostram a situação financeira da conta atual em detalhes.",
-          onCloseClick: () => driverObj.destroy(),
-          onNextClick: async () => {
-            driverObj.destroy()
-            window.scrollTo({ top: 0, behavior: "smooth" })
-            const userId = getUserIdLocal()
-            try {
-              await fetch("/api/admin/users/tutorialFinished", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  body: JSON.stringify({ userId }),
-                },
-              })
-            } catch (error) {
-              console.error("Failed to update tutorial status:", error)
-            }
-            setRunTutorial(false)
-            updateLocalTutorial()
-            Swal.fire({
-              title: "🎉 Tutorial Concluído!",
-              text: "Parabéns! Agora você pode começar no FinancePro!💸",
-              icon: "success",
-              confirmButtonText: "Começar já!",
-              timer: 5000,
-              showConfirmButton: true,
-            })
-          },
-        },
-      },
-    ])
     driverObj.drive()
   }
+
+  const handleTutorialFinish = async () => {
+    localStorage.setItem("tutorial-guide-v2", "true")
+    setRunTutorial(false)
+
+    // Call API to mark as finished
+    const userId = getUserIdLocal()
+    try {
+      await fetch("/api/admin/users/tutorialFinished", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          body: JSON.stringify({ userId }),
+        },
+      })
+    } catch (error) {
+      console.error("Failed to update tutorial status:", error)
+    }
+
+    updateLocalTutorial()
+
+    Swal.fire({
+      title: "🎉 Parabéns!",
+      text: "Você completou o tour! Aproveite o FinancePro ao máximo. 🚀",
+      icon: "success",
+      confirmButtonText: "Começar",
+      timer: 4000,
+      showConfirmButton: true,
+    })
+  }
+
+  const getMobileSteps = () => [
+    {
+      popover: {
+        title: "🚀 Seu Dinheiro no Bolso!",
+        description: "Bem-vindo ao FinancePro Mobile! Vamos te mostrar como controlar suas finanças com agilidade.",
+        showButtons: ["next"],
+      },
+    },
+    {
+      element: "#transactions-values",
+      popover: {
+        title: "💰 Visão Geral",
+        description: "Acompanhe seus indicadores principais: Saldo, Receitas e Despesas do mês.",
+      },
+      onHighlightStarted: () => setActiveTab('home'),
+    },
+    {
+      element: "#mobile-bottom-nav",
+      popover: {
+        title: "📲 Navegação Rápida",
+        description: "Use esta barra para transitar entre Início, Tabela, Metas e Análises.",
+      },
+      onHighlightStarted: () => setActiveTab('home'),
+    },
+    {
+      element: "#mobile-add-btn",
+      popover: {
+        title: "➕ Adicionar Rápido",
+        description: "Toque no botão central para lançar uma nova Receita ou Despesa em segundos!",
+      },
+      onHighlightStarted: () => setActiveTab('home'),
+    },
+    {
+      element: "#filter-bar",
+      popover: {
+        title: "🔍 Filtros",
+        description: "Filtre seus dados por Tipo (Receita/Despesa) ou Categoria. Use a busca para encontrar itens específicos.",
+      },
+      onHighlightStarted: () => setActiveTab('transactions'),
+    },
+    {
+      element: "#transactions-table",
+      popover: {
+        title: "📝 Lista de Transações",
+        description: "Veja seu histórico. DICA: Arraste o card para a esquerda/direita para editar ou excluir!",
+      },
+      onHighlightStarted: () => setActiveTab('transactions'),
+    },
+    {
+      element: "#transactions-goals",
+      popover: {
+        title: "🎯 Suas Metas",
+        description: "Defina objetivos financeiros e acompanhe seu progresso mês a mês.",
+      },
+      onHighlightStarted: () => setActiveTab('goals'),
+    },
+    {
+      element: "#transactions-chart",
+      popover: {
+        title: "📈 Análise",
+        description: "Entenda para onde vai seu dinheiro com gráficos detalhados.",
+      },
+      onHighlightStarted: () => setActiveTab('analytics'),
+    }
+  ]
+
+  const getDesktopSteps = () => [
+    {
+      popover: {
+        title: "📊 Gestão Profissional",
+        description: "Bem-vindo ao seu Painel FinancePro! Controle total das suas finanças em tela cheia.",
+        showButtons: ["next"],
+      },
+    },
+    {
+      element: "#profile-switcher",
+      popover: {
+        title: "👥 Perfis e Conta",
+        description: "Alterne entre finanças pessoais e contas compartilhadas aqui.",
+      },
+    },
+    {
+      element: "#transactions-values",
+      popover: {
+        title: "💰 Resumo Executivo",
+        description: "Seus KPIs principais: Saldo Atual, Entradas e Saídas do período.",
+      },
+      onHighlightStarted: () => setActiveTab('home'),
+    },
+    {
+      element: "#filter-bar",
+      popover: {
+        title: "🔍 Filtros Avançados",
+        description: "Encontre exatamente o que precisa. Filtre por Tipo, Tag ou use a busca textual.",
+      },
+      onHighlightStarted: () => {
+        setActiveTab('transactions')
+        // Ensure view is Table on desktop for filters to make sense or leave as is? 
+        // Filters are visible in table mode.
+        setViewMode('table')
+      },
+    },
+    {
+      element: "#view-toggles",
+      popover: {
+        title: "👁️ Modos de Visualização",
+        description: "Escolha como visualizar seus dados: Lista, Grade de Cards ou Tabela Detalhada.",
+      },
+      onHighlightStarted: () => setActiveTab('transactions'),
+    },
+    {
+      element: "#desktop-add-btn",
+      popover: {
+        title: "➕ Lançamentos",
+        description: "Registre novas movimentações rapidamente por aqui.",
+      },
+      // FAB is often in Home or Global? Check DOM. It was put in a div that is hidden md:block.
+      // Keep it simple.
+    },
+    {
+      element: "#transactions-goals",
+      popover: {
+        title: "🎯 Metas Financeiras",
+        description: "Defina e monitore seus objetivos de curto e longo prazo.",
+      },
+      onHighlightStarted: () => setActiveTab('goals'),
+    },
+    {
+      element: "#transactions-chart",
+      popover: {
+        title: "📈 Análise Gráfica",
+        description: "Visualize tendências e a distribuição dos seus gastos com gráficos interativos.",
+      },
+      onHighlightStarted: () => setActiveTab('analytics'),
+    }
+  ]
 
   const handleLogout = () => {
     Swal.fire({
@@ -729,7 +822,7 @@ function DashboardContent() {
                   {/* Search and Filters Section */}
                   <div className="flex flex-col gap-3 mb-6 px-2">
                     {/* Top Row: Search + Filters */}
-                    <div className="flex flex-col md:flex-row gap-2 w-full">
+                    <div className="flex flex-col md:flex-row gap-2 w-full" id="filter-bar">
                       <div className="relative flex-grow">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                         <Input
@@ -794,7 +887,7 @@ function DashboardContent() {
                     </div>
 
                     {/* Bottom Row: View Toggles */}
-                    <div className="flex justify-start overflow-x-auto">
+                    <div className="flex justify-start overflow-x-auto" id="view-toggles">
                       <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1 border border-gray-200 dark:border-gray-700">
                         <button
                           onClick={() => setViewMode('list')}
@@ -976,7 +1069,7 @@ function DashboardContent() {
           </div>
         </main>
 
-        <div className="hidden md:block">
+        <div className="hidden md:block" id="desktop-add-btn">
           <MobileTransactionFab
             onAddIncome={handleAddIncome}
             onAddExpense={handleAddExpense}
@@ -991,7 +1084,7 @@ function DashboardContent() {
         )}
 
         {/* MOBILE BOTTOM NAVIGATION */}
-        <div className="md:hidden fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 px-6 py-3 z-50 flex items-center justify-between w-[95vw] max-w-sm">
+        <div id="mobile-bottom-nav" className="md:hidden fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 px-6 py-3 z-50 flex items-center justify-between w-[95vw] max-w-sm">
           <button
             onClick={() => setActiveTab('home')}
             className={`flex flex-col items-center gap-1 transition-all duration-300 ${activeTab === 'home' ? 'text-blue-600 dark:text-blue-400 scale-105' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600'}`}
@@ -1014,6 +1107,7 @@ function DashboardContent() {
               <div className="relative -top-5">
                 <div className="absolute inset-0 bg-blue-500 blur-lg opacity-40 rounded-full"></div>
                 <button
+                  id="mobile-add-btn"
                   className="relative bg-gradient-to-tr from-blue-600 to-blue-500 text-white rounded-full p-4 shadow-xl hover:shadow-2xl hover:scale-110 transition-all duration-300 active:scale-95 border-4 border-gray-50 dark:border-gray-900 flex items-center justify-center"
                 >
                   <Plus className="w-7 h-7" strokeWidth={3} />
