@@ -4,7 +4,7 @@ import { useTransactions } from "@/context/TransactionsContext"
 import { driver } from "driver.js"
 import "driver.js/dist/driver.css"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/card"
-import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, User, ChevronLeft, ChevronRight, Search, RefreshCw, TrendingUp, TrendingDown, Landmark, Wallet, Menu } from 'lucide-react'
+import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, User, ChevronLeft, ChevronRight, Search, RefreshCw, TrendingUp, TrendingDown, Landmark, Wallet, Menu, Home, List, PieChart, Target, Plus, CircleDollarSign } from 'lucide-react'
 import { AddIncomeDialog } from "@/components/ui/organisms/AddIncomeDialog"
 import { AddExpenseDialog } from "@/components/ui/organisms/AddExpenseDialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/atoms/popover"
@@ -95,6 +95,7 @@ function DashboardContent() {
   } = useTransactions()
 
   const [selectedChartType, setSelectedChartType] = useState("pie")
+  const [activeTab, setActiveTab] = useState("home") // 'home' | 'transactions' | 'goals' | 'analytics'
 
   const dataToUse = isAllTransactions ? allTransactions : transactions;
 
@@ -544,24 +545,14 @@ function DashboardContent() {
         </nav >
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <motion.div
-            variants={itemVariants}
-            className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8"
-          >
-            {/* Left Column: Title & Insight Widget */}
-            <div className="flex-1 flex flex-col md:flex-row gap-6 items-start md:items-center">
-              {/* Title Section */}
-              <div className="flex-shrink-0">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
-                  Dashboard
-                </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  {currentProfileId ? `${currentProfileName}` : "Visão Geral"}
-                </p>
-              </div>
 
-              {/* Insight Widget - Takes available space */}
-              <div className="w-full md:max-w-md lg:max-w-lg">
+          {/* --- MOBILE TABBED SECTIONS --- */}
+
+          {/* SECTION: HOME */}
+          <div className={activeTab === 'home' ? 'block min-h-[80vh] pb-32' : 'hidden md:block'}>
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+              {/* Insight Widget */}
+              <div className="w-full">
                 <FinancialInsight
                   userRequestName={user?.name}
                   profileId={currentProfileId || undefined}
@@ -573,133 +564,92 @@ function DashboardContent() {
               </div>
             </div>
 
-            {/* Right Column: Actions */}
-            <div className="hidden sm:flex flex-row gap-3 w-full lg:w-auto" id="add-transactions">
-              <div className="flex-1 lg:flex-none">
-                <AddIncomeDialog onAddIncome={handleAddIncome} />
-              </div>
-              <div className="flex-1 lg:flex-none">
-                <AddExpenseDialog onAddExpense={handleAddExpense} />
-              </div>
-            </div>
-          </motion.div>
 
-          <div className="fixed bottom-4 left-4 z-40 sm:bottom-8 sm:right-8 sm:left-auto">
-            <WhatsAppButton />
+
+            <UpsellBanner />
+            <OpenFinanceWidget />
+
+            <motion.div
+              id="transactions-values"
+              variants={itemVariants}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8"
+            >
+              <SummaryCard
+                title="Saldo Total"
+                value={balance}
+                icon={balance >= 0 ? TrendingUp : TrendingDown}
+                description={balance >= 0 ? "Saldo Positivo" : "Saldo Negativo"}
+                variant={balance >= 0 ? "success" : "danger"}
+              />
+              <SummaryCard
+                title="Receitas"
+                value={totalIncome}
+                icon={ArrowUpIcon}
+                variant="success"
+                description={`+${((totalIncome / (totalIncome + totalExpense)) * 100).toFixed(1)}% do total`}
+              />
+              <SummaryCard
+                title="Despesas"
+                value={totalExpense}
+                icon={ArrowDownIcon}
+                variant="danger"
+                description={`-${((totalExpense / (totalIncome + totalExpense)) * 100).toFixed(1)}% do total`}
+              />
+            </motion.div>
           </div>
 
-          {/* Upsell Banner (Free/Pro users) */}
-          <UpsellBanner />
+          {/* SECTION: GOALS */}
+          <div className={activeTab === 'goals' ? 'block min-h-[80vh] pb-32' : 'hidden md:block'}>
+            <motion.div
+              id="transactions-goals"
+              variants={itemVariants}
+              className="mb-6 sm:mb-8"
+            >
+              <FinancialGoals transactions={dataToUse} />
+            </motion.div>
+          </div>
 
-          {/* Open Finance Widget - Collapsible & Optimized */}
-          <OpenFinanceWidget />
+          {/* SECTION: TRANSACTIONS */}
+          <div className={activeTab === 'transactions' ? 'block min-h-[80vh] pb-32' : 'hidden md:block'}>
 
-          {/* Summary Cards - responsivo */}
-          <motion.div
-            id="transactions-values"
-            variants={itemVariants}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8"
-          >
-            <SummaryCard
-              title="Saldo Total"
-              value={balance}
-              icon={balance >= 0 ? TrendingUp : TrendingDown}
-              description={balance >= 0 ? "Saldo Positivo" : "Saldo Negativo"}
-              variant={balance >= 0 ? "success" : "danger"}
-            />
-            <SummaryCard
-              title="Receitas"
-              value={totalIncome}
-              icon={ArrowUpIcon}
-              variant="success"
-              description={`+${((totalIncome / (totalIncome + totalExpense)) * 100).toFixed(1)}% do total`}
-            />
-            <SummaryCard
-              title="Despesas"
-              value={totalExpense}
-              icon={ArrowDownIcon}
-              variant="danger"
-              description={`-${((totalExpense / (totalIncome + totalExpense)) * 100).toFixed(1)}% do total`}
-            />
-          </motion.div>
-
-          {/* Goals */}
-          <motion.div
-            id="transactions-goals"
-            variants={itemVariants}
-            className="mb-6 sm:mb-8"
-          >
-            <FinancialGoals transactions={dataToUse} />
-          </motion.div>
-
-          {/* Transactions Table */}
-          <motion.div
-            variants={itemVariants}
-          >
-            <Card className="bg-white dark:bg-gray-800 shadow-lg mb-6 sm:mb-8 transition-colors duration-200">
-              <div className="w-full flex flex-col sm:flex-row sm:justify-between sm:items-center p-3 sm:p-0">
-                <CardTitle
-                  id="transactions-table"
-                  className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 sm:p-4 mb-2 sm:mb-0"
-                >
-                  Tabela de Transações
-                </CardTitle>
-                <div className="flex flex-col sm:flex-row gap-2 justify-center sm:justify-start">
-                  <Button
-                    variant="default"
-                    size="sm"
-                    className={`transition-all sm:m-2 ${isAllTransactions ? "bg-red-600 text-white" : "bg-blue-600 text-white"
-                      }`}
-                    onClick={handleToggleTransactions}
-                  >
-                    {isAllTransactions ? (
-                      <>
-                        <RefreshCw className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                        <span className="text-xs sm:text-sm">Limpar</span>
-                      </>
-                    ) : (
-                      <>
-                        <Search className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                        <span className="text-xs sm:text-sm">Buscar Todas</span>
-                      </>
-                    )}
-                  </Button>
-                </div>
+            {/* Mobile-only Mini Summary for Transactions Tab */}
+            <div className="md:hidden grid grid-cols-3 gap-2 mb-4">
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center">
+                <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">Saldo</span>
+                <span className={`text-xs font-bold ${balance >= 0 ? "text-green-600" : "text-red-600"}`}>
+                  R$ {balance.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                </span>
               </div>
-              <CardContent className="p-3 sm:p-6">
-                {/* Filtro por mês */}
-                <div className="flex justify-center space-x-1 sm:space-x-2 my-3 sm:my-4 overflow-x-auto w-full">
-                  <TimelineMonthSelector onSelectMonth={filterTransactionsByMonth} selectedMonth={selectedMonth} />
-                </div>
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center">
+                <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">Receita</span>
+                <span className="text-xs font-bold text-green-600">
+                  R$ {totalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                </span>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center">
+                <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">Despesa</span>
+                <span className="text-xs font-bold text-red-600">
+                  R$ {totalExpense.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                </span>
+              </div>
+            </div>
 
-                <TransactionsTable
-                  transactions={transactions} // Context already handles filtering
-                  onEditTransaction={handleEditTransaction}
-                  onDeleteTransaction={handleDeleteTransaction}
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onNextPage={handleNextPage}
-                  onPreviousPage={handlePreviousPage}
-                />
-
-                {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Charts */}
-          <motion.div
-            variants={itemVariants}
-          >
-            <Card className="bg-white dark:bg-gray-800 shadow-lg" id="transactions-chart">
-              <CardHeader className="p-3 sm:p-6">
-                <CardTitle className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 space-y-2 sm:space-y-0">
-                  <span>Distribuição Financeira</span>
-                  <div className="gap-2 justify-center sm:justify-start">
+            <motion.div
+              variants={itemVariants}
+            >
+              <Card className="bg-white dark:bg-gray-800 shadow-lg mb-6 sm:mb-8 transition-colors duration-200">
+                <div className="w-full flex flex-col sm:flex-row sm:justify-between sm:items-center p-3 sm:p-0">
+                  <CardTitle
+                    id="transactions-table"
+                    className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 sm:p-4 mb-2 sm:mb-0"
+                  >
+                    Tabela de Transações
+                  </CardTitle>
+                  <div className="flex flex-col sm:flex-row gap-2 justify-center sm:justify-start">
                     <Button
                       variant="default"
                       size="sm"
-                      className={`transition-all ${isAllTransactions ? "bg-red-600 text-white" : "bg-blue-600 text-white"
+                      className={`transition-all sm:m-2 ${isAllTransactions ? "bg-red-600 text-white" : "bg-blue-600 text-white"
                         }`}
                       onClick={handleToggleTransactions}
                     >
@@ -716,34 +666,202 @@ function DashboardContent() {
                       )}
                     </Button>
                   </div>
-                </CardTitle>
-                <ChartTypeSelector selectedType={selectedChartType} onSelectType={setSelectedChartType} />
-              </CardHeader>
-              <CardContent className="p-3 sm:p-6">
-                {selectedChartType === "pie" && <DistributionChart transactions={chartData.length > 0 ? chartData : transactions} colors={COLORS} />}
-                {selectedChartType === "bar" && <RecentTransactionsChart transactions={chartData.length > 0 ? chartData : transactions} colors={COLORS} />}
-                {selectedChartType === "line" && (
-                  <CashFlowChart
-                    onFetchAllTransactions={handleToggleTransactions}
-                    transactions={chartData.length > 0 ? chartData : transactions}
-                    colors={["#8884d8", "#ff3366"]}
+                </div>
+                <CardContent className="p-3 sm:p-6">
+                  {/* Filtro por mês */}
+                  <div className="flex justify-center space-x-1 sm:space-x-2 my-3 sm:my-4 overflow-x-auto w-full">
+                    <TimelineMonthSelector onSelectMonth={filterTransactionsByMonth} selectedMonth={selectedMonth} />
+                  </div>
+
+                  <TransactionsTable
+                    transactions={transactions} // Context already handles filtering
+                    onEditTransaction={handleEditTransaction}
+                    onDeleteTransaction={handleDeleteTransaction}
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onNextPage={handleNextPage}
+                    onPreviousPage={handlePreviousPage}
                   />
-                )}
-                {selectedChartType === "area" && (
-                  <IncomeVsExpensesChart
-                    onFetchAllTransactions={handleToggleTransactions}
-                    transactions={chartData.length > 0 ? chartData : transactions}
-                  />
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
+
+                  {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+
+          {/* SECTION: ANALYTICS */}
+          <div className={activeTab === 'analytics' ? 'block min-h-[80vh] pb-32 flex flex-col' : 'hidden md:block'}>
+            <motion.div
+              variants={itemVariants}
+              className="flex-1" // Ensure it takes available height
+            >
+              <Card className="bg-white dark:bg-gray-800 shadow-lg h-full flex flex-col" id="transactions-chart">
+                <CardHeader className="p-3 sm:p-6">
+                  <CardTitle className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 space-y-2 sm:space-y-0">
+                    <span>Distribuição Financeira</span>
+                    <div className="gap-2 justify-center sm:justify-start">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className={`transition-all ${isAllTransactions ? "bg-red-600 text-white" : "bg-blue-600 text-white"
+                          }`}
+                        onClick={handleToggleTransactions}
+                      >
+                        {isAllTransactions ? (
+                          <>
+                            <RefreshCw className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                            <span className="text-xs sm:text-sm">Limpar</span>
+                          </>
+                        ) : (
+                          <>
+                            <Search className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                            <span className="text-xs sm:text-sm">Buscar Todas</span>
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </CardTitle>
+                  <ChartTypeSelector selectedType={selectedChartType} onSelectType={setSelectedChartType} />
+                </CardHeader>
+                <CardContent className="p-3 sm:p-6">
+                  {selectedChartType === "pie" && <DistributionChart transactions={chartData.length > 0 ? chartData : transactions} colors={COLORS} />}
+                  {selectedChartType === "bar" && <RecentTransactionsChart transactions={chartData.length > 0 ? chartData : transactions} colors={COLORS} />}
+                  {selectedChartType === "line" && (
+                    <CashFlowChart
+                      onFetchAllTransactions={handleToggleTransactions}
+                      transactions={chartData.length > 0 ? chartData : transactions}
+                      colors={["#8884d8", "#ff3366"]}
+                    />
+                  )}
+                  {selectedChartType === "area" && (
+                    <IncomeVsExpensesChart
+                      onFetchAllTransactions={handleToggleTransactions}
+                      transactions={chartData.length > 0 ? chartData : transactions}
+                    />
+                  )}
+
+                  {/* Mobile-only Insights Filler */}
+                  <div className="md:hidden mt-6 pt-6 border-t border-gray-100 dark:border-gray-700">
+                    <h4 className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                      <PieChart className="w-4 h-4 text-blue-500" />
+                      Análise Rápida
+                    </h4>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                      Com base nos seus dados recentes, sua saúde financeira parece {balance >= 0 ? 'estável' : 'requerer atenção'}.
+                      {totalIncome > totalExpense
+                        ? ' Você está gastando menos do que ganha, ótimo trabalho! Continue mantendo seus gastos sob controle.'
+                        : ' Seus gastos superaram seus ganhos neste período. Considere revisar suas categorias de despesa.'}
+                    </p>
+                    <div className="mt-4 grid grid-cols-2 gap-3">
+                      <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg">
+                        <span className="block text-[10px] text-gray-400">Maior Gasto</span>
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                          {/* Simple logic for highest expense category could go here, strictly placeholder text for layout now */}
+                          Variável
+                        </span>
+                      </div>
+                      <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg">
+                        <span className="block text-[10px] text-gray-400">Economia</span>
+                        <span className="text-xs font-medium text-green-600">
+                          {((totalIncome - totalExpense) > 0 ? ((totalIncome - totalExpense) / totalIncome * 100).toFixed(0) : 0)}% da renda
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
         </main>
 
-        <MobileTransactionFab
-          onAddIncome={handleAddIncome}
-          onAddExpense={handleAddExpense}
-        />
+        <div className="hidden md:block">
+          <MobileTransactionFab
+            onAddIncome={handleAddIncome}
+            onAddExpense={handleAddExpense}
+          />
+        </div>
+
+        {/* WhatsApp Button - Global & positioned right */}
+        <div className="fixed bottom-28 right-4 z-40 sm:bottom-8 sm:right-8">
+          <WhatsAppButton />
+        </div>
+
+        {/* MOBILE BOTTOM NAVIGATION */}
+        <div className="md:hidden fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 px-6 py-3 z-50 flex items-center justify-between w-[95vw] max-w-sm">
+          <button
+            onClick={() => setActiveTab('home')}
+            className={`flex flex-col items-center gap-1 transition-all duration-300 ${activeTab === 'home' ? 'text-blue-600 dark:text-blue-400 scale-105' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600'}`}
+          >
+            <Home className="w-6 h-6" strokeWidth={activeTab === 'home' ? 2.5 : 2} />
+            <span className="text-[10px] font-medium">Início</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('transactions')}
+            className={`flex flex-col items-center gap-1 transition-all duration-300 ${activeTab === 'transactions' ? 'text-blue-600 dark:text-blue-400 scale-105' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600'}`}
+          >
+            <List className="w-6 h-6" strokeWidth={activeTab === 'transactions' ? 2.5 : 2} />
+            <span className="text-[10px] font-medium">Tabela</span>
+          </button>
+
+          {/* CENTRAL ADD BUTTON */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <div className="relative -top-5">
+                <div className="absolute inset-0 bg-blue-500 blur-lg opacity-40 rounded-full"></div>
+                <button
+                  className="relative bg-gradient-to-tr from-blue-600 to-blue-500 text-white rounded-full p-4 shadow-xl hover:shadow-2xl hover:scale-110 transition-all duration-300 active:scale-95 border-4 border-gray-50 dark:border-gray-900 flex items-center justify-center"
+                >
+                  <Plus className="w-7 h-7" strokeWidth={3} />
+                </button>
+              </div>
+            </PopoverTrigger>
+            <PopoverContent className="w-48 p-2 mb-4 bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 shadow-2xl rounded-xl" side="top" align="center" sideOffset={10}>
+              <div className="flex flex-col gap-1">
+                {/* Wrapping Add Dialogs Logic here is tricky since they are dialogs. 
+                       Best approach: Use the trigger logic from Fab, or just render visual buttons that trigger the dialogs state if we had it lifted.
+                       Since we don't have lifted state for dialogs easily, we will reuse the Dialog Triggers invisibly or refactor.
+                       
+                       Refactor: We can just put the AddIncomeDialog TRIGGER here customized.
+                   */}
+                <div className="w-full">
+                  <AddIncomeDialog onAddIncome={handleAddIncome} trigger={
+                    <Button variant="ghost" className="w-full justify-start text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20">
+                      <ArrowUpIcon className="w-4 h-4 mr-2" /> Receita
+                    </Button>
+                  } />
+                </div>
+                <div className="h-px bg-gray-100 dark:bg-gray-700" />
+                <div className="w-full">
+                  <AddExpenseDialog onAddExpense={handleAddExpense} trigger={
+                    <Button variant="ghost" className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20">
+                      <ArrowDownIcon className="w-4 h-4 mr-2" /> Despesa
+                    </Button>
+                  } />
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+
+
+          <button
+            onClick={() => setActiveTab('goals')}
+            className={`flex flex-col items-center gap-1 transition-all duration-300 ${activeTab === 'goals' ? 'text-blue-600 dark:text-blue-400 scale-105' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600'}`}
+          >
+            <Target className="w-6 h-6" strokeWidth={activeTab === 'goals' ? 2.5 : 2} />
+            <span className="text-[10px] font-medium">Metas</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('analytics')}
+            className={`flex flex-col items-center gap-1 transition-all duration-300 ${activeTab === 'analytics' ? 'text-blue-600 dark:text-blue-400 scale-105' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600'}`}
+          >
+            <PieChart className="w-6 h-6" strokeWidth={activeTab === 'analytics' ? 2.5 : 2} />
+            <span className="text-[10px] font-medium">Análise</span>
+          </button>
+        </div>
+
       </motion.div >
     </>
   )
