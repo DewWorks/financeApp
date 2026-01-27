@@ -225,7 +225,7 @@ function DashboardContent() {
       doneBtnText: "Finalizar",
       nextBtnText: "Próximo",
       prevBtnText: "Voltar",
-      onDestroyStarted: () => {
+      onDestroyed: () => {
         handleTutorialFinish()
       },
       popoverClass: "custom-popover",
