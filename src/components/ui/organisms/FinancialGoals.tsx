@@ -19,6 +19,7 @@ import { Tooltip } from "@/components/ui/atoms/tooltip";
 import { Label } from '@/components/ui/atoms/label';
 import { Progress } from "@/components/ui/atoms/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/atoms/tabs";
+import { FinancialProjections } from "./FinancialProjections";
 
 interface FinancialGoalsProps {
     transactions: ITransaction[];
@@ -353,7 +354,7 @@ export function FinancialGoals({ transactions }: FinancialGoalsProps) {
                             <Button
                                 variant="default"
                                 size="sm"
-                                className={`${activeTab === 'savings' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'} text-white shadow-md hover:shadow-lg transition-all active:scale-95 rounded-full px-4`}
+                                className={`font-bold text-white shadow-md hover:shadow-lg transition-all active:scale-95 rounded-full px-4 ${activeTab === 'savings' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
                                 onClick={handleOpenNewGoalDialog}
                             >
                                 <Plus className="h-4 w-4 mr-2" />
@@ -478,6 +479,17 @@ export function FinancialGoals({ transactions }: FinancialGoalsProps) {
                         </motion.div>
                     )}
                 </AnimatePresence>
+
+                {/* Smart Goals v2 - Projections Section */}
+                {filteredGoals.length > 0 && (
+                    <div className="p-6 border-t dark:border-gray-800">
+                        <FinancialProjections
+                            goals={goals}
+                            transactions={transactions}
+                            type={activeTab}
+                        />
+                    </div>
+                )}
             </div>
         </Card>
     );
