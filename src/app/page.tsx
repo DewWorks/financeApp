@@ -4,7 +4,7 @@ import { useTransactions } from "@/context/TransactionsContext"
 import { driver } from "driver.js"
 import "driver.js/dist/driver.css"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/card"
-import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, User, ChevronLeft, ChevronRight, Search, RefreshCw, TrendingUp, TrendingDown, Landmark, Wallet, Menu, Home, List, PieChart, Target, Plus, CircleDollarSign, LayoutList, LayoutGrid, Table, Calendar, Tag, ArrowRight, Edit, Trash2, ListFilter } from 'lucide-react'
+import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, User, ChevronLeft, ChevronRight, Search, RefreshCw, TrendingUp, TrendingDown, Landmark, Wallet, Menu, Home, List, PieChart, Target, Plus, CircleDollarSign, LayoutList, LayoutGrid, Table, Calendar, Tag, ArrowRight, Edit, Trash2, ListFilter, X } from 'lucide-react'
 import { AddIncomeDialog } from "@/components/ui/organisms/AddIncomeDialog"
 import { AddExpenseDialog } from "@/components/ui/organisms/AddExpenseDialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/atoms/popover"
@@ -740,14 +740,16 @@ function DashboardContent() {
                         />
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <div className="hidden sm:flex items-center gap-1 text-gray-500 rounded-lg bg-gray-100 dark:bg-gray-800 px-2 py-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="hidden sm:flex items-center gap-1 text-gray-500">
                           <ListFilter className="w-4 h-4" />
-                          <span className="text-xs font-medium">Filtros</span>
                         </div>
                         <Select value={selectedType} onValueChange={(val: any) => setSelectedType(val)}>
-                          <SelectTrigger className="w-[110px] bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm rounded-lg text-xs sm:text-sm">
-                            <SelectValue placeholder="Tipo" />
+                          <SelectTrigger className="w-auto min-w-[110px] h-8 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 shadow-sm rounded-lg text-xs font-medium px-3">
+                            <SelectValue>
+                              <span className="text-gray-500 dark:text-gray-400 mr-1">Tipo:</span>
+                              {selectedType === 'all' ? 'Todos' : selectedType === 'income' ? 'Receitas' : 'Despesas'}
+                            </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">Todos</SelectItem>
@@ -757,8 +759,11 @@ function DashboardContent() {
                         </Select>
 
                         <Select value={selectedTag} onValueChange={setSelectedTag}>
-                          <SelectTrigger className="w-[120px] bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm rounded-lg text-xs sm:text-sm">
-                            <SelectValue placeholder="Tag" />
+                          <SelectTrigger className="w-auto min-w-[120px] h-8 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 shadow-sm rounded-lg text-xs font-medium px-3">
+                            <SelectValue>
+                              <span className="text-gray-500 dark:text-gray-400 mr-1">Tag:</span>
+                              {selectedTag === 'all' ? 'Todas' : selectedTag}
+                            </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">Todas</SelectItem>
@@ -767,6 +772,24 @@ function DashboardContent() {
                             ))}
                           </SelectContent>
                         </Select>
+
+                        {/* Clear Filters Button (Right Side) */}
+                        {(hasActiveFilters) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSearchTerm("")
+                              setSelectedType("all")
+                              setSelectedTag("all")
+                            }}
+                            className="h-8 px-3 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 ml-auto sm:ml-0 gap-1 transition-colors"
+                            title="Limpar filtros"
+                          >
+                            <span className="text-xs font-medium">Limpar</span>
+                            <X className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
                       </div>
                     </div>
 
