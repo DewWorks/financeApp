@@ -1,7 +1,8 @@
 import { User } from "@/app/models/User";
 import { getMongoClient } from "@/db/connectionDb";
+import connectToDatabase from "@/lib/mongoose";
 import { ObjectId } from "mongodb";
-import { PlanType } from "@/interfaces/IUser";
+import { IUser, PlanType } from "@/interfaces/IUser";
 
 // Intent Types for cleaner validation
 export type PlanIntent =
@@ -35,7 +36,8 @@ export class PlanService {
      * Throws PlanRestrictionError if not allowed.
      */
     static async validate(userId: string | ObjectId, intent: PlanIntent): Promise<void> {
-        const user = await User.findById(userId).select('subscription.plan').lean();
+        await connectToDatabase();
+        const user = await User.findById(userId).select('subscription.plan').lean() as unknown as IUser;
         if (!user) throw new Error("User not found");
 
         const userPlan = (user.subscription?.plan as PlanType) || PlanType.FREE;
@@ -119,7 +121,8 @@ export class PlanService {
 
     // Helper for Frontend/API to get status without throwing
     static async getPermissions(userId: string | ObjectId) {
-        const user = await User.findById(userId).select('subscription').lean();
+        await connectToDatabase();
+        const user = await User.findById(userId).select('subscription').lean() as unknown as IUser;
         const plan = (user?.subscription?.plan as PlanType) || PlanType.FREE;
         const level = PLAN_LEVELS[plan];
 

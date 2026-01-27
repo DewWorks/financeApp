@@ -144,7 +144,7 @@ export function ProfileSwitcher({ onProfileSwitch, userName, userEmail }: Profil
             </Button>
 
             {isOpen && (
-                <Card className="absolute bg-white dark:bg-zinc-950 top-12 left-0 w-80 z-50 shadow-xl border-2 animate-in slide-in-from-top-2 duration-200">
+                <Card className="absolute bg-white dark:bg-zinc-950 top-12 left-0 w-72 sm:w-80 max-w-[calc(100vw-3rem)] z-50 shadow-xl border-2 animate-in slide-in-from-top-2 duration-200">
                     <CardContent className="p-4">
                         <div className="mb-3">
                             <h4 className="font-semibold text-foreground text-sm">Minha Conta</h4>

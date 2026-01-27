@@ -22,7 +22,7 @@ interface ProfileSwitcherProps {
     userEmail?: string
 }
 
-export function ProfileSwitcher({ onProfileSwitch, userName }: ProfileSwitcherProps) {
+export function ProfileSwitcher({ onProfileSwitch, userName, userEmail }: ProfileSwitcherProps) {
     const [profiles, setProfiles] = useState<Profile[]>([])
     const [currentProfile, setCurrentProfile] = useState<Profile | null>(null)
     const [isOpen, setIsOpen] = useState(false)
