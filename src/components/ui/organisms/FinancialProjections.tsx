@@ -5,7 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/
 import { IGoal } from "@/interfaces/IGoal";
 import { ITransaction } from "@/interfaces/ITransaction";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
-import { TrendingUp, AlertTriangle, Calendar, DollarSign, Activity } from 'lucide-react';
+import { TrendingUp, AlertTriangle, Calendar, DollarSign, Activity, Crown } from 'lucide-react';
+import { Button } from "@/components/ui/atoms/button";
+
+interface FinancialProjectionsProps {
+    goals: IGoal[];
+    transactions: ITransaction[];
+    type: 'savings' | 'spending';
+}
 
 interface FinancialProjectionsProps {
     goals: IGoal[];
@@ -19,27 +26,17 @@ export function FinancialProjections({ goals, transactions, type }: FinancialPro
     const totalTarget = relevantGoals.reduce((acc, g) => acc + g.targetAmount, 0);
 
     // 2. Prepare Chart Data (Time Series)
-    // We'll project 30 days into the future or look back 30 days depending on type
     const generateChartData = () => {
         const data = [];
         const today = new Date();
-        const daysToShow = 30;
 
         if (type === 'savings') {
-            // For Savings: Show growth over last 3 months + projection
-            // Simplified: Just 30 days history for now
             let currentTotal = 0;
-            // Mocking cumulative growth for visualization as we don't have historical snapshots of goals
-            // In a real app, we'd query historical balances. 
-            // Here we'll simulate a linear progression based on transactions
-
-            // Get all relevant transactions
             const relevantTags = relevantGoals.map(g => g.tag);
             const sortedTransactions = transactions
                 .filter(t => t.type === 'income' && relevantTags.includes(t.tag))
                 .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-            // Create a map of date -> amount
             const dateMap = new Map<string, number>();
             sortedTransactions.forEach(t => {
                 const dateKey = new Date(t.date).toLocaleDateString();
@@ -47,30 +44,19 @@ export function FinancialProjections({ goals, transactions, type }: FinancialPro
                 dateMap.set(dateKey, current + t.amount);
             });
 
-            // Fill last 30 days
             for (let i = 29; i >= 0; i--) {
                 const d = new Date();
                 d.setDate(today.getDate() - i);
                 const dateKey = d.toLocaleDateString();
                 const dailyAmount = dateMap.get(dateKey) || 0;
-                currentTotal += dailyAmount; // Cumulative
-                // If no transaction history, we might start at 0. 
-                // Realistically we should start at (Total Current - Transactions in view). 
-                // For now, let's just plot the "Ideal" vs "Actual" if possible, or just the curve.
+                currentTotal += dailyAmount;
             }
-            // Fallback: If no complex history, simpler visualization:
-            // Just show "Ideal Pace" vs "Current Total" as a bar? 
-            // Let's do a "Projection" based on avg savings.
         }
 
-        // Simpler approach for "Demo":
-        // Spending: Burnup Chart (Day 1 to 30/31 of current month)
         if (type === 'spending') {
             const currentMonth = today.getMonth();
             const daysInMonth = new Date(today.getFullYear(), currentMonth + 1, 0).getDate();
-
             let cumulativeSpend = 0;
-            // Filter transactions for this month
             const thisMonthTransactions = transactions.filter(t => {
                 const tDate = new Date(t.date);
                 return tDate.getMonth() === currentMonth && tDate.getFullYear() === today.getFullYear() && t.type === 'expense' && relevantGoals.some(g => g.tag === t.tag);
@@ -78,47 +64,33 @@ export function FinancialProjections({ goals, transactions, type }: FinancialPro
 
             for (let i = 1; i <= daysInMonth; i++) {
                 const dateStr = `${i}/${currentMonth + 1}`;
-
-                // Add transactions for this day
                 const daysTransactions = thisMonthTransactions.filter(t => new Date(t.date).getDate() === i);
                 const dailyTotal = daysTransactions.reduce((sum, t) => sum + t.amount, 0);
                 cumulativeSpend += dailyTotal;
-
-                // Projection: If today is active, we valid data. Future days = null (unless we project)
                 const isFuture = i > today.getDate();
 
                 data.push({
                     name: dateStr,
                     actual: isFuture ? null : cumulativeSpend,
-                    limit: totalTarget, // Flat line
-                    ideal: (totalTarget / daysInMonth) * i // Diagonal line
+                    limit: totalTarget,
+                    ideal: (totalTarget / daysInMonth) * i
                 });
             }
         } else {
-            // Savings: Growth (Last 6 Months)
             const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
             for (let i = 5; i >= 0; i--) {
                 const d = new Date();
                 d.setMonth(today.getMonth() - i);
-
-                // Fake data for "Savings Growth" demo if real data is scarce
-                // In prod: Aggregate transactions by month
                 const monthKey = monthNames[d.getMonth()];
-
-                // Calculate actual savings for that month
                 const monthTransactions = transactions.filter(t => {
                     const tDate = new Date(t.date);
                     return tDate.getMonth() === d.getMonth() && tDate.getFullYear() === d.getFullYear() && t.type === 'income' && relevantGoals.some(g => g.tag === t.tag);
                 });
                 const monthTotal = monthTransactions.reduce((sum, t) => sum + t.amount, 0);
-
-                // Accumulate from previous? Or just monthly contributions?
-                // Usually "Patrimony" is cumulative.
-                // Let's assume linear growth for demo + variance
                 data.push({
                     name: monthKey,
                     value: monthTotal,
-                    target: totalTarget / 6 // Arbitrary "Monthly Target" visual
+                    target: totalTarget / 6
                 });
             }
         }
@@ -154,7 +126,6 @@ export function FinancialProjections({ goals, transactions, type }: FinancialPro
                 aiInsight: "Seu ritmo de gastos está " + (remainingBudget < 0 ? "critico! Considere cortar supérfluos hoje." : "saudável. Mantenha assim para sobrar dinheiro.")
             };
         } else {
-            // Savings
             const currentTotal = relevantGoals.reduce((acc, g) => {
                 const saved = transactions
                     .filter(t => t.tag === g.tag && t.type === 'income')
@@ -163,16 +134,13 @@ export function FinancialProjections({ goals, transactions, type }: FinancialPro
             }, 0);
 
             const remaining = totalTarget - currentTotal;
-
-            // Get relevant income transactions
             const incomeTransactions = transactions
                 .filter(t => t.type === 'income' && relevantGoals.some(g => g.tag === t.tag));
 
             const totalIncome = incomeTransactions.reduce((sum, t) => sum + t.amount, 0);
 
-            // Calculate active months count (Dynamic Average)
             const uniqueMonths = new Set(
-                incomeTransactions.map(t => new Date(t.date).toISOString().slice(0, 7)) // YYYY-MM
+                incomeTransactions.map(t => new Date(t.date).toISOString().slice(0, 7))
             ).size;
 
             const monthsDivisor = Math.max(uniqueMonths, 1);
@@ -181,7 +149,6 @@ export function FinancialProjections({ goals, transactions, type }: FinancialPro
             const monthsToGoal = remaining > 0 ? (remaining / avgMonthly) : 0;
             const yearsToGoal = monthsToGoal / 12;
 
-            // Context-aware AI Insight
             let insight = "";
             if (remaining <= 0) {
                 insight = "Parabéns! Você atingiu sua meta. Defina um novo objetivo para continuar evoluindo.";
@@ -194,7 +161,6 @@ export function FinancialProjections({ goals, transactions, type }: FinancialPro
             } else {
                 insight = "Excelente consistência! Mantenha os aportes para atingir a meta no prazo estimado.";
             }
-
             return {
                 mainMetric: remaining <= 0 ? "Objetivo Alcançado!" : (yearsToGoal > 5 ? "> 5 anos" : (monthsToGoal > 0 ? `${Math.ceil(monthsToGoal)} meses` : "Em breve")),
                 mainLabel: "Para atingir a meta",
@@ -209,8 +175,35 @@ export function FinancialProjections({ goals, transactions, type }: FinancialPro
     const metrics = calculateMetrics();
 
     return (
-        <Card className="border-none shadow-none bg-transparent mt-6">
-            <CardHeader className="px-0 pt-0">
+        <Card className="border-none shadow-none bg-transparent mt-6 relative overflow-hidden">
+            {/* PRO Trial Banner - Top of Card */}
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-600 opacity-50"></div>
+
+            <div className="mx-6 mt-6 mb-2 bg-gradient-to-r from-blue-500/10 via-cyan-500/5 to-blue-500/10 border border-blue-500/20 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-500/20 rounded-full shrink-0 shadow-sm border border-blue-200/50 dark:border-blue-700/50">
+                        <Crown className="w-5 h-5 text-blue-600 dark:text-blue-400 fill-blue-600/20" />
+                    </div>
+                    <div>
+                        <p className="text-sm font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                            FinancePro
+                            <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shadow-sm shadow-blue-500/30">Preview</span>
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            Funcionalidade Premium liberada até <span className="font-bold text-blue-600 dark:text-blue-400">05/03</span>.
+                        </p>
+                    </div>
+                </div>
+                <Button
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700 text-white border-none shadow-md shadow-blue-500/20 w-full sm:w-auto font-medium transition-all hover:scale-105"
+                    onClick={() => window.location.href = '/pricing'}
+                >
+                    Assinar Agora
+                </Button>
+            </div>
+
+            <CardHeader className="px-0 pt-2 pb-6">
                 <CardTitle className="text-lg font-semibold flex items-center gap-2 text-gray-700 dark:text-gray-200">
                     <Activity className="w-5 h-5" />
                     {type === 'savings' ? 'Projeção de Crescimento' : 'Análise de Gastos'}
