@@ -66,7 +66,7 @@ export function AddIncomeDialog({ onAddIncome, initialData, trigger }: AddIncome
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="bg-white sm:max-w-[425px] dark:bg-gray-800 dark:text-white">
+      <DialogContent className="bg-white sm:max-w-[425px] dark:bg-gray-800 dark:text-white max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold text-center">Adicionar Receita</DialogTitle>
         </DialogHeader>

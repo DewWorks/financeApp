@@ -4,17 +4,20 @@ import { useTransactions } from "@/context/TransactionsContext"
 import { driver } from "driver.js"
 import "driver.js/dist/driver.css"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/card"
-import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, User, ChevronLeft, ChevronRight, Search, RefreshCw, TrendingUp, TrendingDown, Landmark, Wallet, Menu, Home, List, PieChart, Target, Plus, CircleDollarSign } from 'lucide-react'
+import { ArrowDownIcon, ArrowUpIcon, DollarSign, LogIn, LogOut, User, ChevronLeft, ChevronRight, Search, RefreshCw, TrendingUp, TrendingDown, Landmark, Wallet, Menu, Home, List, PieChart, Target, Plus, CircleDollarSign, LayoutList, LayoutGrid, Table, Calendar, Tag, ArrowRight, Edit, Trash2, ListFilter, X } from 'lucide-react'
 import { AddIncomeDialog } from "@/components/ui/organisms/AddIncomeDialog"
 import { AddExpenseDialog } from "@/components/ui/organisms/AddExpenseDialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/atoms/popover"
 import type { ITransaction } from "@/interfaces/ITransaction"
 import { SummaryCard } from "@/components/ui/molecules/SummaryCard"
 import { TransactionsTable } from "@/components/ui/molecules/TransactionsTable"
+import { TransactionListItem } from "@/components/ui/molecules/TransactionListItem"
 import { Button } from "@/components/ui/atoms/button"
+import { Input } from "@/components/ui/atoms/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/atoms/select"
 import { useRouter } from "next/navigation"
 import { Title } from "@/components/ui/molecules/Title"
-import { motion } from "framer-motion"
+import { motion, useMotionValue, useTransform, PanInfo } from "framer-motion"
 import { CashFlowChart } from "@/components/ui/charts/CashFlowChart"
 import { DistributionChart } from "@/components/ui/charts/DistributionChart"
 import { RecentTransactionsChart } from "@/components/ui/charts/RecentTransactionChart"
@@ -66,7 +69,7 @@ const itemVariants = {
 function DashboardContent() {
   const router = useRouter()
   const [user, setUser] = useState<IUser | null>(null)
-  const { toggleTheme } = useTheme()
+  const { theme, toggleTheme } = useTheme()
 
   const { currentProfileId, currentProfileName, isLoading: isProfileLoading } = useCurrentProfile();
 
@@ -96,8 +99,58 @@ function DashboardContent() {
 
   const [selectedChartType, setSelectedChartType] = useState("pie")
   const [activeTab, setActiveTab] = useState("home") // 'home' | 'transactions' | 'goals' | 'analytics'
+  const [viewMode, setViewMode] = useState<'list' | 'card' | 'table'>('list')
+  const [searchTerm, setSearchTerm] = useState("")
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("")
+  const [selectedType, setSelectedType] = useState<"all" | "income" | "expense">("all")
+  const [selectedTag, setSelectedTag] = useState<string>("all")
+
+  // Debounce Search
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 500)
+    return () => clearTimeout(handler)
+  }, [searchTerm])
+
+  // Get unique tags for filter
+  const uniqueTags = Array.from(new Set(transactions.map(t => t.tag))).sort()
 
   const dataToUse = isAllTransactions ? allTransactions : transactions;
+
+  // Search Logic
+  useEffect(() => {
+    if (searchTerm && allTransactions.length === 0) {
+      getAllTransactions();
+    }
+  }, [searchTerm, allTransactions.length, getAllTransactions]);
+
+  const filteredTransactions = allTransactions.filter(t => {
+    const matchesSearch = debouncedSearchTerm
+      ? t.description.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      t.tag.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      t.amount.toString().includes(debouncedSearchTerm)
+      : true;
+
+    const matchesType = selectedType === "all" ? true : t.type === selectedType;
+    const matchesTag = selectedTag === "all" ? true : t.tag === selectedTag;
+
+    return matchesSearch && matchesType && matchesTag;
+  });
+
+  // If no filters are active (search is empty, type is all, tag is all), show default transactions (paginated or all depending on logic)
+  // However, the original logic was: if search, filter allTransactions. If not, use 'transactions' (which is paginated).
+  // We need to maintain pagination if no search/filter.
+  // Actually, if ANY filter is active, we should filter from 'allTransactions' and bypass server pagination (client-side filter).
+  // If NO filter is active, we show 'transactions' which is the current page.
+
+  const hasActiveFilters = debouncedSearchTerm !== "" || selectedType !== "all" || selectedTag !== "all";
+  const displayTransactions = hasActiveFilters ? filteredTransactions : transactions;
+
+  // Plan Check
+
+  // Plan Check
+  const isFree = !user?.subscription?.plan || user.subscription.plan === 'FREE';
 
   // Use backend data instead of frontend calculation
   const totalIncome = summaryData.income;
@@ -673,15 +726,163 @@ function DashboardContent() {
                     <TimelineMonthSelector onSelectMonth={filterTransactionsByMonth} selectedMonth={selectedMonth} />
                   </div>
 
-                  <TransactionsTable
-                    transactions={transactions} // Context already handles filtering
-                    onEditTransaction={handleEditTransaction}
-                    onDeleteTransaction={handleDeleteTransaction}
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onNextPage={handleNextPage}
-                    onPreviousPage={handlePreviousPage}
-                  />
+                  {/* Search and Filters Section */}
+                  <div className="flex flex-col gap-3 mb-6 px-2">
+                    {/* Top Row: Search + Filters */}
+                    <div className="flex flex-col md:flex-row gap-2 w-full">
+                      <div className="relative flex-grow">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <Input
+                          placeholder="Buscar transação..."
+                          className="pl-9 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 w-full"
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="hidden sm:flex items-center gap-1 text-gray-500">
+                          <ListFilter className="w-4 h-4" />
+                        </div>
+                        <Select value={selectedType} onValueChange={(val: any) => setSelectedType(val)}>
+                          <SelectTrigger className="w-auto min-w-[110px] h-8 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 shadow-sm rounded-lg text-xs font-medium px-3">
+                            <SelectValue>
+                              <span className="text-gray-500 dark:text-gray-400 mr-1">Tipo:</span>
+                              {selectedType === 'all' ? 'Todos' : selectedType === 'income' ? 'Receitas' : 'Despesas'}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Todos</SelectItem>
+                            <SelectItem value="income">Receitas</SelectItem>
+                            <SelectItem value="expense">Despesas</SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        <Select value={selectedTag} onValueChange={setSelectedTag}>
+                          <SelectTrigger className="w-auto min-w-[120px] h-8 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 shadow-sm rounded-lg text-xs font-medium px-3">
+                            <SelectValue>
+                              <span className="text-gray-500 dark:text-gray-400 mr-1">Tag:</span>
+                              {selectedTag === 'all' ? 'Todas' : selectedTag}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Todas</SelectItem>
+                            {uniqueTags.map(tag => (
+                              <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+
+                        {/* Clear Filters Button (Right Side) */}
+                        {(hasActiveFilters) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSearchTerm("")
+                              setSelectedType("all")
+                              setSelectedTag("all")
+                            }}
+                            className="h-8 px-3 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 ml-auto sm:ml-0 gap-1 transition-colors"
+                            title="Limpar filtros"
+                          >
+                            <span className="text-xs font-medium">Limpar</span>
+                            <X className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Bottom Row: View Toggles */}
+                    <div className="flex justify-start overflow-x-auto">
+                      <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1 border border-gray-200 dark:border-gray-700">
+                        <button
+                          onClick={() => setViewMode('list')}
+                          className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-all text-xs font-medium ${viewMode === 'list' ? 'bg-white dark:bg-gray-600 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                          <LayoutList className="w-4 h-4" />
+                          <span>Lista</span>
+                        </button>
+                        <button
+                          onClick={() => setViewMode('card')}
+                          className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-all text-xs font-medium ${viewMode === 'card' ? 'bg-white dark:bg-gray-600 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                          <LayoutGrid className="w-4 h-4" />
+                          <span>Cards</span>
+                        </button>
+                        <button
+                          onClick={() => setViewMode('table')}
+                          className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-all text-xs font-medium ${viewMode === 'table' ? 'bg-white dark:bg-gray-600 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                          <Table className="w-4 h-4" />
+                          <span>Tabela</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* UNIFIED CONTENT RENDERING */}
+                  <div>
+                    {displayTransactions.length === 0 ? (
+                      <div className="text-center py-10 text-gray-400 border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-xl">
+                        <Search className="w-12 h-12 mx-auto mb-3 text-gray-200 dark:text-gray-700" />
+                        <p>Nenhuma transação encontrada com os filtros atuais.</p>
+                      </div>
+                    ) : (
+                      <>
+
+                        {/* TABLE VIEW (Responsive + ForceScroll) */}
+                        {viewMode === 'table' && (
+                          <div className="overflow-x-auto pb-4">
+                            <div className="md:w-full">
+                              <TransactionsTable
+                                transactions={displayTransactions}
+                                onEditTransaction={handleEditTransaction}
+                                onDeleteTransaction={handleDeleteTransaction}
+                                currentPage={hasActiveFilters ? 1 : currentPage}
+                                totalPages={hasActiveFilters ? 1 : totalPages}
+                                onNextPage={hasActiveFilters ? () => { } : handleNextPage}
+                                onPreviousPage={hasActiveFilters ? () => { } : handlePreviousPage}
+                                forceDesktopMode={true}
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {viewMode === 'list' && (
+                          <div className="max-w-4xl mx-auto flex flex-col rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800">
+                            {displayTransactions.map((t) => (
+                              <TransactionListItem
+                                key={t._id?.toString()}
+                                transaction={t}
+                                onEdit={() => handleEditTransaction(t)}
+                                onDelete={() => handleDeleteTransaction(t._id!.toString())}
+                              />
+                            ))}
+                          </div>
+                        )}
+
+                        {/* CARD VIEW (Grid Layout) */}
+                        {viewMode === 'card' && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-8">
+                            {/* Hint for Swipe on Mobile */}
+                            <div className="col-span-full md:hidden flex justify-center items-center gap-2 text-xs text-gray-400 mb-2">
+                              <ArrowRight className="w-3 h-3" /> Arraste: Direita para Editar, Esquerda para Excluir
+                            </div>
+                            {displayTransactions.map((t) => (
+                              <SwipeableTransactionCard
+                                key={t._id?.toString()}
+                                transaction={t}
+                                theme={theme}
+                                onEdit={() => handleEditTransaction(t)}
+                                onDelete={() => handleDeleteTransaction(t._id!.toString())}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
 
                   {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
                 </CardContent>
@@ -782,10 +983,12 @@ function DashboardContent() {
           />
         </div>
 
-        {/* WhatsApp Button - Global & positioned right */}
-        <div className="fixed bottom-28 right-4 z-40 sm:bottom-8 sm:right-8">
-          <WhatsAppButton />
-        </div>
+        {/* WhatsApp Button - Global & positioned right - FREE USERS ONLY */}
+        {isFree && (
+          <div className="fixed bottom-28 right-4 z-40 sm:bottom-8 sm:right-8">
+            <WhatsAppButton />
+          </div>
+        )}
 
         {/* MOBILE BOTTOM NAVIGATION */}
         <div className="md:hidden fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 px-6 py-3 z-50 flex items-center justify-between w-[95vw] max-w-sm">
@@ -819,12 +1022,6 @@ function DashboardContent() {
             </PopoverTrigger>
             <PopoverContent className="w-48 p-2 mb-4 bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 shadow-2xl rounded-xl" side="top" align="center" sideOffset={10}>
               <div className="flex flex-col gap-1">
-                {/* Wrapping Add Dialogs Logic here is tricky since they are dialogs. 
-                       Best approach: Use the trigger logic from Fab, or just render visual buttons that trigger the dialogs state if we had it lifted.
-                       Since we don't have lifted state for dialogs easily, we will reuse the Dialog Triggers invisibly or refactor.
-                       
-                       Refactor: We can just put the AddIncomeDialog TRIGGER here customized.
-                   */}
                 <div className="w-full">
                   <AddIncomeDialog onAddIncome={handleAddIncome} trigger={
                     <Button variant="ghost" className="w-full justify-start text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20">
@@ -865,6 +1062,86 @@ function DashboardContent() {
       </motion.div >
     </>
   )
+}
+
+function SwipeableTransactionCard({ transaction, onEdit, onDelete, theme }: { transaction: ITransaction, onEdit: () => void, onDelete: () => void, theme: string }) {
+  const x = useMotionValue(0);
+  const deleteOpacity = useTransform(x, [-100, -50], [1, 0]);
+  const editOpacity = useTransform(x, [50, 100], [0, 1]);
+
+  // Explicitly handle "white" vs "dark gray" based on theme, as 'bg-white' class is reliable only if not overridden by style
+  const centerColor = theme === 'dark' ? "rgba(31, 41, 55, 1)" : "rgba(255, 255, 255, 1)";
+
+  const cardColor = useTransform(x, [-150, -50, 0, 50, 150], [
+    "rgba(239, 68, 68, 0.2)",
+    "rgba(239, 68, 68, 0.1)",
+    centerColor,
+    "rgba(59, 130, 246, 0.1)",
+    "rgba(59, 130, 246, 0.2)"
+  ]);
+
+  const handleDragEnd = (_: any, info: PanInfo) => {
+    if (info.offset.x < -100) {
+      onDelete();
+    } else if (info.offset.x > 100) {
+      onEdit();
+    }
+  };
+
+  return (
+    <div className="relative overflow-hidden rounded-xl">
+      {/* Background Actions */}
+      <div className="absolute inset-0 flex items-center justify-between px-6">
+        <motion.div style={{ opacity: editOpacity }} className="flex items-center text-blue-600 font-bold">
+          <Edit className="w-6 h-6 mr-2" /> Editar
+        </motion.div>
+        <motion.div style={{ opacity: deleteOpacity }} className="flex items-center text-red-600 font-bold">
+          Excluir <Trash2 className="w-6 h-6 ml-2" />
+        </motion.div>
+      </div>
+
+      <motion.div
+        style={{ x, backgroundColor: cardColor }}
+        drag="x"
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.2}
+        onDragEnd={handleDragEnd}
+        className="relative z-10 bg-white dark:bg-gray-800 p-4 border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col gap-3 rounded-xl touch-pan-y"
+      >
+        <div className="flex justify-between items-start">
+          <div className="flex items-center gap-3">
+            <div className={`p-2.5 rounded-full ${transaction.type === 'income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+              {transaction.type === 'income' ? <ArrowUpIcon className="w-5 h-5" /> : <ArrowDownIcon className="w-5 h-5" />}
+            </div>
+            <div>
+              <p className="font-bold text-gray-900 dark:text-gray-100 line-clamp-1">{transaction.description}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-xs px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 flex items-center gap-1">
+                  <Tag className="w-3 h-3" /> {transaction.tag}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col items-end">
+            <span className={`text-base font-bold ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+              {transaction.type === 'income' ? '+ ' : '- '}R$ {transaction.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </span>
+            <span className="text-xs text-gray-400 flex items-center gap-1 mt-1">
+              <Calendar className="w-3 h-3" /> {new Date(transaction.date).toLocaleDateString()}
+            </span>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 pt-2 border-t border-gray-50 dark:border-gray-700">
+          <Button variant="ghost" size="sm" className="h-8 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={onEdit}>
+            <Edit className="w-3 h-3 mr-1" /> Editar
+          </Button>
+          <Button variant="ghost" size="sm" className="h-8 text-xs text-red-500 hover:text-red-600 hover:bg-red-50" onClick={onDelete}>
+            <Trash2 className="w-3 h-3 mr-1" /> Excluir
+          </Button>
+        </div>
+      </motion.div>
+    </div>
+  );
 }
 
 function DashboardWrapper() {
