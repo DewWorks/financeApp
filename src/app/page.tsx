@@ -40,6 +40,7 @@ import { UpsellBanner } from "@/components/ui/molecules/UpsellBanner"
 import * as mongoose from "mongoose";
 import { TransactionsProvider } from "@/context/TransactionsContext"
 import { GoalsProvider } from "@/context/GoalsContext"
+import { useTheme } from "@/components/ui/organisms/ThemeContext"
 
 const COLORS = ["#0088FE", "#ff6666", "#FFBB28", "#FF8042", "#8884D8"]
 
@@ -65,6 +66,7 @@ const itemVariants = {
 function DashboardContent() {
   const router = useRouter()
   const [user, setUser] = useState<IUser | null>(null)
+  const { toggleTheme } = useTheme()
 
   const { currentProfileId, currentProfileName, isLoading: isProfileLoading } = useCurrentProfile();
 
@@ -230,8 +232,8 @@ function DashboardContent() {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
+                  body: JSON.stringify({ userId }),
                 },
-                body: JSON.stringify({ userId }),
               })
             } catch (error) {
               console.error("Failed to update tutorial status:", error)
@@ -411,7 +413,7 @@ function DashboardContent() {
               </div>
 
               {/* Profile Switcher - Align left next to logo */}
-              <div className="flex-1 flex justify-start ml-4 sm:ml-8" id="profile-switcher">
+              <div className="hidden sm:flex flex-1 justify-start ml-4 sm:ml-8" id="profile-switcher">
                 <ProfileSwitcher onProfileSwitch={handleProfileSwitch} userName={user?.name} userEmail={user?.email} />
               </div>
 
@@ -468,12 +470,34 @@ function DashboardContent() {
                       <Menu className="h-6 w-6 text-gray-700 dark:text-gray-200" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-56 p-2 mr-2" align="end">
-                    <div className="flex flex-col gap-1">
+                  <PopoverContent className="w-72 max-w-[calc(100vw-1rem)] p-3 mr-2 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-xl" align="end">
+                    <div className="flex flex-col gap-2">
+                      {/* Mobile User Info Section */}
+                      {user && (
+                        <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-100 dark:border-gray-700 mb-2">
+                          <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center border border-blue-200 dark:border-blue-800 flex-shrink-0">
+                            <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
+                              {user.name || "Usuário"}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                              {user.email}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Theme Toggle Row */}
-                      <div className="flex items-center justify-between px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
-                        <span className="text-sm font-medium">Alterar Tema</span>
-                        <ThemeToggle />
+                      <div
+                        className="flex items-center justify-between px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                        onClick={() => toggleTheme()}
+                      >
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Alterar Tema</span>
+                        <div className="pointer-events-none">
+                          <ThemeToggle />
+                        </div>
                       </div>
 
                       {user && (
@@ -481,7 +505,7 @@ function DashboardContent() {
                           <div className="h-px bg-gray-200 dark:bg-gray-700 my-1" />
                           <Button
                             variant="ghost"
-                            className="w-full justify-start px-3"
+                            className="w-full justify-start px-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                             onClick={handleProfile}
                           >
                             <User className="h-4 w-4 mr-2 text-blue-500" />
@@ -720,7 +744,7 @@ function DashboardContent() {
           onAddIncome={handleAddIncome}
           onAddExpense={handleAddExpense}
         />
-      </motion.div>
+      </motion.div >
     </>
   )
 }
