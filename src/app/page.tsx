@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/atoms/p
 import type { ITransaction } from "@/interfaces/ITransaction"
 import { SummaryCard } from "@/components/ui/molecules/SummaryCard"
 import { TransactionsTable } from "@/components/ui/molecules/TransactionsTable"
+import { TransactionListItem } from "@/components/ui/molecules/TransactionListItem"
 import { Button } from "@/components/ui/atoms/button"
 import { Input } from "@/components/ui/atoms/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/atoms/select"
@@ -806,10 +807,11 @@ function DashboardContent() {
                       </div>
                     ) : (
                       <>
+
                         {/* TABLE VIEW (Responsive + ForceScroll) */}
                         {viewMode === 'table' && (
                           <div className="overflow-x-auto pb-4">
-                            <div className="min-w-[800px] md:min-w-0 md:w-full">
+                            <div className="md:w-full">
                               <TransactionsTable
                                 transactions={displayTransactions}
                                 onEditTransaction={handleEditTransaction}
@@ -824,23 +826,12 @@ function DashboardContent() {
                           </div>
                         )}
 
-                        {/* LIST VIEW (Using Table component but simpler context? Or same as List logic?) */}
-                        {/* User requested List view. On Desktop "List" is often same as Table, but maybe they want the Stacked look? */}
-                        {/* I'll use standard TransactionsTable for "List" mode too, as it is a list of rows. */}
-                        {/* Actually, user said "enable List/Card on Desktop". */}
-                        {/* Let's map 'list' to TransactionsTable (Standard mode) and 'table' to TransactionsTable (maybe with border?). */}
-                        {/* For now, 'list' will use the TransactionsTable just like 'table' but without forceDesktopMode (so it acts responsive default)? */}
-                        {/* Wait, if I use forceDesktopMode=false, on mobile it renders the mobile list. On Desktop it renders table. */}
-                        {/* So 'list' mode: forceDesktopMode={false}. */}
-                        {/* 'table' mode: forceDesktopMode={true} (forces table even on mobile). */}
-
                         {viewMode === 'list' && (
-                          <div className="max-w-4xl mx-auto space-y-4 pb-8">
+                          <div className="max-w-4xl mx-auto flex flex-col rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800">
                             {displayTransactions.map((t) => (
-                              <SwipeableTransactionCard
+                              <TransactionListItem
                                 key={t._id?.toString()}
                                 transaction={t}
-                                theme={theme}
                                 onEdit={() => handleEditTransaction(t)}
                                 onDelete={() => handleDeleteTransaction(t._id!.toString())}
                               />
@@ -855,7 +846,6 @@ function DashboardContent() {
                             <div className="col-span-full md:hidden flex justify-center items-center gap-2 text-xs text-gray-400 mb-2">
                               <ArrowRight className="w-3 h-3" /> Arraste: Direita para Editar, Esquerda para Excluir
                             </div>
-
                             {displayTransactions.map((t) => (
                               <SwipeableTransactionCard
                                 key={t._id?.toString()}
