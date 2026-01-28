@@ -1,28 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+import jwt from "jsonwebtoken";
 import { NotificationService } from "@/services/NotificationService";
 
 export async function POST(req: NextRequest) {
     try {
-        // 1. Auth Check
-        //        const token = await getToken({ req });
-        //        if (!token || !token.sub) {
-        // Allow loose auth for now or handle strict session?
-        // Usually UpgradeModal is shown to logged users, but let's be safe.
-        //            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        //        }
-        //        const userId = token.sub;
+        // 1. Auth Check (Manual JWT)
+        const authHeader = req.headers.get("authorization");
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
 
-        // Note: getToken might require secret/env setup properly. 
-        // For simplicity/speed in this context, assuming standard NextAuth session cookie is present.
-        // If getToken fails, we might need another way to get UserID.
-        // Let's assume passed in body for now OR use a robust session getter.
+        const token = authHeader.split(" ")[1];
+        let userId: string;
 
-        // Simpler way if Client sends userId? No, insecure.
-        // Let's rely on token. If it fails, we skip sending (fail safe).
+        try {
+            // Verify token
+            const decoded = jwt.verify(token, process.env.JWT_SECRET || "default_secret") as { userId: string, sub?: string };
+            userId = decoded.userId || decoded.sub || "";
+        } catch (err) {
+            console.error("Token verification failed:", err);
+            return NextResponse.json({ error: "Invalid Token" }, { status: 401 });
+        }
 
-        const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-        if (!token?.sub) {
+        if (!userId) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
@@ -34,7 +34,8 @@ export async function POST(req: NextRequest) {
         const notifier = new NotificationService();
 
         // Fire and forget (don't await email sending to keep UI snappy)
-        notifier.sendUpsellEmail(token.sub, plan).catch(console.error);
+        // Fire and forget (don't await email sending to keep UI snappy)
+        notifier.sendUpsellEmail(userId, plan).catch(console.error);
 
         return NextResponse.json({ success: true });
 
