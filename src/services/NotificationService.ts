@@ -195,4 +195,122 @@ export class NotificationService {
             console.error("[NotificationService] Upsell Error:", error);
         }
     }
+
+    async sendWelcomeEmail(user: { name: string; email: string }) {
+        try {
+            console.log(`[NotificationService] Sending Welcome Email to ${user.email}`);
+            const subject = `Bem-vindo ao FinancePro, ${user.name}! 🚀`;
+            const html = `
+                <div style="font-family: sans-serif; color: #333;">
+                    <h2 style="color: #2563eb;">Sua jornada para a liberdade financeira começa agora!</h2>
+                    <p>Olá, <strong>${user.name}</strong>!</p>
+                    <p>Estamos muito felizes em ter você conosco. O FinancePro foi criado para descomplicar sua vida financeira.</p>
+                    
+                    <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h3 style="margin-top: 0;">Primeiros Passos:</h3>
+                        <ul style="padding-left: 20px;">
+                            <li style="margin-bottom: 10px;">🏦 <strong>Conecta seu Banco:</strong> (Plano Max) Para não digitar nada nunca mais.</li>
+                            <li style="margin-bottom: 10px;">💬 <strong>Chama no Zap:</strong> Adicione nosso bot e mande mensagens: "Gastei 50 no mercado".</li>
+                            <li style="margin-bottom: 10px;">🎯 <strong>Defina Metas:</strong> Diga ao sistema quanto quer economizar.</li>
+                        </ul>
+                    </div>
+
+                    <p>Se precisar de algo, é só chamar.</p>
+                    
+                    <div style="margin-top: 30px; text-align: center;">
+                        <a href="https://finance-pro-mu.vercel.app/" style="background-color: #2563eb; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                            Acessar Dashboard
+                        </a>
+                    </div>
+                </div>
+            `;
+            await sendEmail({ to: user.email, subject, htmlContent: html });
+        } catch (error) {
+            console.error("[NotificationService] Welcome Email Error:", error);
+        }
+    }
+
+    async sendWeeklyDigest(userId: string) {
+        try {
+            const client = await getMongoClient();
+            const db = client.db('financeApp');
+            const user = await db.collection('users').findOne({ _id: new ObjectId(userId) });
+            if (!user || !user.email) return;
+
+            // Generate Insight Data
+            const insights = await this.insightService.generateDailyInsight(userId);
+            // Fix: Use the direct weekly summary logic we added to InsightService
+            const rawWeekTotal = insights.weeklySummary?.total || 0;
+            const weekTotal = rawWeekTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+            const topCategory = insights.insights.find(i => i.type === 'category' && i.trend === 'neutral')?.text || "Várias";
+
+            console.log(`[NotificationService] Sending Weekly Digest to ${user.email}`);
+
+            const subject = `📊 Seu Resumo Semanal FinancePro`;
+            const html = `
+                <div style="font-family: sans-serif; color: #333;">
+                    <h2 style="color: #2563eb;">Como foi sua semana?</h2>
+                    <p>Olá, <strong>${user.name}</strong>!</p>
+                    <p>Aqui está o resumo das suas finanças nos últimos 7 dias:</p>
+
+                    <div style="display: flex; gap: 20px; margin: 20px 0;">
+                        <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; flex: 1;">
+                            <div style="font-size: 12px; color: #666;">Gastos da Semana</div>
+                            <div style="font-size: 20px; font-weight: bold; color: #111;">${weekTotal}</div>
+                        </div>
+                        <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; flex: 1;">
+                            <div style="font-size: 12px; color: #666;">Destaque</div>
+                            <div style="font-size: 16px; font-weight: bold; color: #111;">${topCategory}</div>
+                        </div>
+                    </div>
+
+                    <p>Acesse o app para ver os gráficos detalhados e ajustar suas metas.</p>
+
+                    <div style="margin-top: 30px; text-align: center;">
+                        <a href="https://finance-pro-mu.vercel.app/" style="background-color: #2563eb; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                            Detalhes
+                        </a>
+                    </div>
+                </div>
+            `;
+            await sendEmail({ to: user.email, subject, htmlContent: html });
+
+        } catch (error) {
+            console.error("[NotificationService] Weekly Digest Error:", error);
+        }
+    }
+
+    async sendInactivityReminder(userId: string) {
+        try {
+            const client = await getMongoClient();
+            const db = client.db('financeApp');
+            const user = await db.collection('users').findOne({ _id: new ObjectId(userId) });
+            if (!user || !user.email) return;
+
+            console.log(`[NotificationService] Sending Inactivity Reminder to ${user.email}`);
+
+            const subject = `🥺 Suas finanças sentem sua falta...`;
+            const html = `
+                <div style="font-family: sans-serif; color: #333;">
+                    <h2 style="color: #e11d48;">Tudo bem por aí?</h2>
+                    <p>Olá, <strong>${user.name}</strong>!</p>
+                    <p>Faz um tempinho que não vemos movimentações na sua conta.</p>
+                    <p>Para manter o controle financeiro, a consistência é chave. Que tal registrar os gastos da semana hoje?</p>
+                    
+                    <p>Lembre-se: Você pode registrar gastos enviando uma mensagem no WhatsApp! 🎙️</p>
+
+                    <div style="margin-top: 30px; text-align: center;">
+                        <a href="https://finance-pro-mu.vercel.app/" style="background-color: #e11d48; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                            Voltar para o App
+                        </a>
+                    </div>
+                </div>
+            `;
+            await sendEmail({ to: user.email, subject, htmlContent: html });
+
+        } catch (error) {
+            console.error("[NotificationService] Inactivity Reminder Error:", error);
+        }
+    }
 }

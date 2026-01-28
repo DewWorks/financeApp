@@ -77,8 +77,13 @@ export async function POST(request: Request) {
       executeQuery: false
     })
 
+    // Send Welcome Email (Async)
+    import("@/services/NotificationService").then(({ NotificationService }) => {
+      new NotificationService().sendWelcomeEmail({ name, email }).catch(console.error);
+    });
+
     return NextResponse.json({ message: 'Usuário cadastrado com sucesso!' }, { status: 201 })
-    console.log(result);
+    // console.log(result);
   } catch (error) {
     console.error('Registration error:', error)
     return NextResponse.json({ error: 'Erro interno do servidor. Tente novamente mais tarde.' }, { status: 500 })

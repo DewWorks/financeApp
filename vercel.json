@@ -1,0 +1,8 @@
+{
+    "crons": [
+        {
+            "path": "/api/cron/daily-smart-digest",
+            "schedule": "0 23 * * *"
+        }
+    ]
+}

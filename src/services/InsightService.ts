@@ -37,6 +37,9 @@ export interface InsightResult {
     dailySummary: {
         total: number;
     };
+    weeklySummary: {
+        total: number;
+    };
     monthSummary: {
         total: number;
     };
@@ -768,6 +771,9 @@ export class InsightService {
             insights,
             dailySummary: {
                 total: todayTotal
+            },
+            weeklySummary: {
+                total: weekTotal
             },
             monthSummary: {
                 total: monthTotal
