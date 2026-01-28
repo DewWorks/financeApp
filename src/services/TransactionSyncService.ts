@@ -167,7 +167,7 @@ export class TransactionSyncService {
             if (newTransactions.length > 0) {
                 console.log(`[SyncService] Enriching ${newTransactions.length} new transactions with AI...`);
                 // Process in chunks if too many new ones (rare in incremental sync)
-                const enrichedData = await AiService.enrichTransactions(newTransactions.slice(0, 50));
+                const enrichedData = await AiService.enrichTransactions(newTransactions.slice(0, 50), userId.toString());
                 enrichedMap = new Map(enrichedData.map(e => [e.pluggyTransactionId, e]));
             }
 
