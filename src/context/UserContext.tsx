@@ -20,20 +20,20 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const refreshUser = async () => {
         try {
             setLoading(true);
-            // Fallback to localStorage logic from current app implementation
-            // Ideally should be a /me endpoint using cookies
-            const userId = localStorage.getItem("user-id");
-            if (!userId) {
-                setUser(null);
-                setLoading(false);
-                return;
-            }
+            // Try fetching from standard authenticated endpoint (cookies)
+            const response = await fetch(`/api/users`);
 
-            const response = await fetch(`/api/admin/users/${userId}`);
             if (response.ok) {
                 const userData = await response.json();
                 setUser(userData);
+                // Sync localStorage for legacy checks if needed
+                if (userData._id) {
+                    localStorage.setItem("user-id", userData._id);
+                }
             } else {
+                // If 401, we might try localStorage fallback or just clear
+                // Ideally, if /api/users fails (401), we are logged out.
+                console.warn("User auth check failed:", response.status);
                 setUser(null);
             }
         } catch (error) {

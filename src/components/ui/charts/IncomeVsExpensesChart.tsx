@@ -27,6 +27,7 @@ import type { ITransaction } from "@/interfaces/ITransaction"
 interface IncomeVsExpensesChartProps {
     transactions: ITransaction[]
     onFetchAllTransactions: () => Promise<boolean>;
+    initialChartType?: ChartType
 }
 
 type ChartType = "acumulado" | "mensal" | "anual"
@@ -37,8 +38,8 @@ const chartTitles: Record<ChartType, string> = {
     anual: "Comparativo Anual",
 }
 
-export function IncomeVsExpensesChart({ transactions, onFetchAllTransactions }: IncomeVsExpensesChartProps) {
-    const [selectedChartType, setSelectedChartType] = useState<ChartType>("acumulado")
+export function IncomeVsExpensesChart({ transactions, onFetchAllTransactions, initialChartType = "acumulado" }: IncomeVsExpensesChartProps) {
+    const [selectedChartType, setSelectedChartType] = useState<ChartType>(initialChartType)
 
     const handleChartTypeChange = async (type: ChartType) => {
         if (type === "anual") {
