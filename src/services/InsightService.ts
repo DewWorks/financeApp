@@ -384,6 +384,61 @@ export class InsightService {
                     recommendation: "Mapeie grandes despesas anuais para não ser pego de surpresa."
                 });
             }
+
+            // 5. ANOMALY DETECTION (CATEGORY SPIKES)
+            // Calculate average per category over history
+            const categoryHistory: { [cat: string]: number[] } = {};
+
+            // We need to re-scan transactions for category history since standard scan only did current/last month
+            // Optimization: traverse monthlyExpenses keys is not enough, we need category breakdown per month.
+            // Let's do a quick pass on the transactions array again or optimize earlier.
+            // Given 'transactions' has 12m data (scope=all), we can just loop.
+
+            transactions.forEach((t: any) => {
+                if (t.type === 'expense' && t.category && t.category !== 'Outros') {
+                    const d = parseDate(t.date);
+                    if (!d) return;
+                    // Skip current month for "Average" calculation to be fair
+                    if (d.getMonth() === todayDate.getMonth() && d.getFullYear() === todayDate.getFullYear()) return;
+
+                    const k = t.category;
+                    if (!categoryHistory[k]) categoryHistory[k] = [];
+                    categoryHistory[k].push(Number(t.amount));
+                }
+            });
+
+            // Analyze current month vs Average
+            Object.entries(categoryMap).forEach(([cat, currentAmount]) => {
+                const history = categoryHistory[cat];
+                if (history && history.length > 0) {
+                    // Simple average of all transactions? No, need sum per month.
+                    // Correct approach: Group history by month first.
+                    // Too complex for one loop. Let's start simple:
+                    // Just sum all history amounts and divide by 'monthsAnalyzed' (approx).
+                    const totalHist = history.reduce((a, b) => a + b, 0);
+                    const avgHist = totalHist / Math.max(monthsAnalyzed, 1); // monthsAnalyzed calculated earlier
+
+                    if (avgHist > 50) { // Ignore trivial amounts
+                        const ratio = currentAmount / avgHist;
+
+                        // If we are late in the month (day > 20), direct comparison is valid.
+                        // If early, projected comparison is better? 
+                        // Let's use direct amount. If I already spent more than my Monthly Average on day 10, that's a HUGE anomaly.
+
+                        if (ratio > 1.4) {
+                            insights.push({
+                                id: `anomaly-${cat}`,
+                                type: "category",
+                                text: `Alerta: ${cat}`,
+                                value: `+${((ratio - 1) * 100).toFixed(0)}%`,
+                                trend: "negative",
+                                details: `Você já gastou ${ratio.toFixed(1)}x sua média mensal em ${cat} (R$ ${currentAmount.toFixed(0)} vs Méd: R$ ${avgHist.toFixed(0)}).`,
+                                recommendation: "Revise se houve algum gasto extraordinário ou erro de categoria."
+                            });
+                        }
+                    }
+                }
+            });
         }
 
         // =========================================================
