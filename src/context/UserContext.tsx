@@ -48,8 +48,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
         refreshUser();
     }, []);
 
-    // Derive plan safely
-    const currentPlan = (user?.subscription?.plan as PlanType) || PlanType.FREE;
+    // Derive plan safely (Admins get MAX features)
+    const currentPlan = (user?.admin ? PlanType.MAX : (user?.subscription?.plan as PlanType)) || PlanType.FREE;
 
     return (
         <UserContext.Provider value={{ user, currentPlan, loading, refreshUser }}>
