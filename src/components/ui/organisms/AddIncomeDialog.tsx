@@ -30,15 +30,30 @@ interface AddIncomeDialogProps {
     recurrenceCount: number) => void
   initialData?: ITransaction
   trigger?: React.ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
-export function AddIncomeDialog({ onAddIncome, initialData, trigger }: AddIncomeDialogProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [isRecurring, setIsRecurring] = useState(false)
+export function AddIncomeDialog({ onAddIncome, initialData, trigger, open: externalOpen, onOpenChange: externalOnOpenChange }: AddIncomeDialogProps) {
+  const [internalIsOpen, setInternalIsOpen] = useState(false)
+  const isControlled = externalOpen !== undefined
+
+  const isOpen = isControlled ? externalOpen : internalIsOpen
+  const setIsOpen = isControlled ? externalOnOpenChange! : setInternalIsOpen
+
+  const [isRecurring, setIsRecurring] = useState(initialData?.isRecurring || false)
+  const isEditMode = !!initialData
 
   const { control, handleSubmit, reset, formState: { errors } } = useForm<IncomeFormData>({
     resolver: zodResolver(incomeSchema),
-    defaultValues: initialData || {
+    defaultValues: initialData ? {
+      description: initialData.description,
+      amount: initialData.amount,
+      tag: initialData.tag as any,
+      date: initialData.date.split('T')[0],
+      isRecurring: initialData.isRecurring,
+      recurrenceCount: initialData.recurrenceCount
+    } : {
       description: '',
       amount: 0,
       tag: incomeTags[0],
@@ -48,9 +63,12 @@ export function AddIncomeDialog({ onAddIncome, initialData, trigger }: AddIncome
     },
   })
 
+  // Reset form when initialData changes or dialog opens
+  // (Simplified for now, expecting distinct component instances or key reset)
+
   const onSubmit = (data: IncomeFormData) => {
     onAddIncome(data.description, data.amount, data.tag, data.date, data.isRecurring, data.recurrenceCount ?? 1)
-    setIsOpen(false)
+    if (!isControlled) setIsOpen(false)
     reset()
   }
 
@@ -60,15 +78,17 @@ export function AddIncomeDialog({ onAddIncome, initialData, trigger }: AddIncome
         {trigger ? (
           trigger
         ) : (
-          <Button variant="outline" className="bg-green-500 text-white hover:bg-green-600">
-            <PlusIcon className="h-4 w-4 mr-2" />
-            Receita
-          </Button>
+          !isControlled && (
+            <Button variant="outline" className="bg-green-500 text-white hover:bg-green-600">
+              <PlusIcon className="h-4 w-4 mr-2" />
+              Receita
+            </Button>
+          )
         )}
       </DialogTrigger>
       <DialogContent className="bg-white sm:max-w-[425px] dark:bg-gray-800 dark:text-white max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-lg font-semibold text-center">Adicionar Receita</DialogTitle>
+          <DialogTitle className="text-lg font-semibold text-center">{isEditMode ? 'Editar Receita' : 'Adicionar Receita'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
           <div className="space-y-2">
@@ -198,7 +218,7 @@ export function AddIncomeDialog({ onAddIncome, initialData, trigger }: AddIncome
             />
           )}
           <Button type="submit" className="bg-green-500 text-white w-full mt-6">
-            Adicionar Receita
+            {isEditMode ? 'Salvar Alterações' : 'Adicionar Receita'}
           </Button>
         </form>
       </DialogContent>

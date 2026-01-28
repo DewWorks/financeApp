@@ -29,15 +29,30 @@ interface AddExpenseDialogProps {
   onAddExpense: (description: string, amount: number, tag: string, date: string, isRecurring: boolean, recurrenceCount: number) => void
   initialData?: ITransaction;
   trigger?: React.ReactNode;
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
-export function AddExpenseDialog({ onAddExpense, initialData, trigger }: AddExpenseDialogProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [isRecurring, setIsRecurring] = useState(false)
+export function AddExpenseDialog({ onAddExpense, initialData, trigger, open: externalOpen, onOpenChange: externalOnOpenChange }: AddExpenseDialogProps) {
+  const [internalIsOpen, setInternalIsOpen] = useState(false)
+  const isControlled = externalOpen !== undefined
+
+  const isOpen = isControlled ? externalOpen : internalIsOpen
+  const setIsOpen = isControlled ? externalOnOpenChange! : setInternalIsOpen
+
+  const [isRecurring, setIsRecurring] = useState(initialData?.isRecurring || false)
+  const isEditMode = !!initialData
 
   const { control, handleSubmit, reset, formState: { errors } } = useForm<ExpenseFormData>({
     resolver: zodResolver(expenseSchema),
-    defaultValues: initialData || {
+    defaultValues: initialData ? {
+      description: initialData.description,
+      amount: initialData.amount,
+      tag: initialData.tag as any,
+      date: initialData.date.split('T')[0],
+      isRecurring: initialData.isRecurring,
+      recurrenceCount: initialData.recurrenceCount
+    } : {
       description: '',
       amount: 0,
       tag: expenseTags[0],
@@ -49,7 +64,7 @@ export function AddExpenseDialog({ onAddExpense, initialData, trigger }: AddExpe
 
   const onSubmit = (data: ExpenseFormData) => {
     onAddExpense(data.description, data.amount, data.tag, data.date, data.isRecurring, data.recurrenceCount ?? 1)
-    setIsOpen(false)
+    if (!isControlled) setIsOpen(false)
     reset()
   }
 
@@ -59,15 +74,17 @@ export function AddExpenseDialog({ onAddExpense, initialData, trigger }: AddExpe
         {trigger ? (
           trigger
         ) : (
-          <Button variant="outline" className="bg-red-500 text-white hover:bg-red-600">
-            <PlusIcon className="h-4 w-4 mr-2" />
-            Despesa
-          </Button>
+          !isControlled && (
+            <Button variant="outline" className="bg-red-500 text-white hover:bg-red-600">
+              <PlusIcon className="h-4 w-4 mr-2" />
+              Despesa
+            </Button>
+          )
         )}
       </DialogTrigger>
       <DialogContent className="bg-white sm:max-w-[425px] dark:bg-gray-800 dark:text-white max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-lg font-semibold text-center">Adicionar Despesa</DialogTitle>
+          <DialogTitle className="text-lg font-semibold text-center">{isEditMode ? 'Editar Despesa' : 'Adicionar Despesa'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
           <div className="space-y-2">
@@ -161,7 +178,7 @@ export function AddExpenseDialog({ onAddExpense, initialData, trigger }: AddExpe
             />
           )}
 
-          <Button type="submit" className="bg-red-500 text-white w-full mt-6">Adicionar Despesa</Button>
+          <Button type="submit" className="bg-red-500 text-white w-full mt-6">{isEditMode ? 'Salvar Alterações' : 'Adicionar Despesa'}</Button>
         </form>
       </DialogContent>
     </Dialog>

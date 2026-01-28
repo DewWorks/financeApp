@@ -61,8 +61,12 @@ export function FinancialGoals({ transactions }: FinancialGoalsProps) {
         const typeToCheck = goalType === 'spending' ? 'expense' : 'income';
 
         const currentAmount = Array.isArray(transactions) ? transactions.filter(
-            (t) => t.tag === goal.tag && t.type === typeToCheck
-        ).reduce((sum, t) => sum + t.amount, 0) : 0;
+            (t) => {
+                const isTypeMatch = t.type === typeToCheck;
+                const isTagMatch = t.tag?.toLowerCase().trim() === goal.tag?.toLowerCase().trim();
+                return isTypeMatch && isTagMatch;
+            }
+        ).reduce((sum, t) => sum + (Number(t.amount) || 0), 0) : 0;
 
         return currentAmount;
     };

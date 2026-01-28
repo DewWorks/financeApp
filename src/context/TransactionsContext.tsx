@@ -15,6 +15,7 @@ interface TransactionsContextType {
     getAllTransactionsPage: (page?: number) => Promise<void>;
     isAllTransactions: boolean;
     setIsAllTransactions: React.Dispatch<React.SetStateAction<boolean>>;
+    setAllTransactions: React.Dispatch<React.SetStateAction<ITransaction[]>>; // Add interface definition
     getTransactions: (page?: number) => Promise<void>;
     addTransaction: (transaction: Partial<ITransaction>) => Promise<void>;
     editTransaction: (updatedTransaction: Partial<ITransaction>) => Promise<void>;
@@ -31,6 +32,8 @@ interface TransactionsContextType {
     selectedMonth: number | null;
     loading: boolean;
     summaryData: { income: number; expense: number; balance: number };
+    getChartData: () => Promise<void>;
+    getSummary: () => Promise<void>;
 }
 
 const TransactionsContext = createContext<TransactionsContextType | undefined>(undefined);
@@ -376,6 +379,9 @@ export function TransactionsProvider({ children, profileId }: { children: ReactN
                 selectedMonth,
                 loading,
                 summaryData,
+                setAllTransactions, // Export setAllTransactions
+                getChartData,
+                getSummary,
             }}
         >
             {children}

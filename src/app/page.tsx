@@ -94,9 +94,14 @@ function DashboardContent() {
     selectedMonth,
     loading,
     summaryData,
-    chartData
+    chartData,
+    setTransactions,
+    setAllTransactions,
+    getChartData,
+    getSummary
   } = useTransactions()
 
+  const [isTableLoading, setIsTableLoading] = useState(false) // Local loading state for table operations
   const [selectedChartType, setSelectedChartType] = useState("pie")
   const [activeTab, setActiveTab] = useState("home") // 'home' | 'transactions' | 'goals' | 'analytics'
   const [viewMode, setViewMode] = useState<'list' | 'card' | 'table'>('list')
@@ -116,14 +121,16 @@ function DashboardContent() {
   // Get unique tags for filter
   const uniqueTags = Array.from(new Set(transactions.map(t => t.tag))).sort()
 
-  const dataToUse = isAllTransactions ? allTransactions : transactions;
+  // Use chartData (full month) if available, otherwise transactions
+  const dataToUse = chartData.length > 0 ? chartData : transactions;
+
 
   // Search Logic
   useEffect(() => {
-    if (searchTerm && allTransactions.length === 0) {
+    if (debouncedSearchTerm && allTransactions.length === 0) {
       getAllTransactions();
     }
-  }, [searchTerm, allTransactions.length, getAllTransactions]);
+  }, [debouncedSearchTerm, allTransactions.length, getAllTransactions]);
 
   const filteredTransactions = allTransactions.filter(t => {
     const matchesSearch = debouncedSearchTerm
@@ -454,22 +461,79 @@ function DashboardContent() {
     addTransaction(newTransaction)
   }
 
-  const handleEditTransaction = async (updatedTransaction: Partial<ITransaction>) => {
+  const [editingTransaction, setEditingTransaction] = useState<ITransaction | null>(null)
+
+  const handleEditTransaction = (transaction: ITransaction) => {
+    setEditingTransaction(transaction)
+  }
+
+  /* ----------------------------------------------------------------------------------
+   *  UPDATE LOCAL STATE AFTER EDIT
+   * ---------------------------------------------------------------------------------- */
+  const handleSaveEdit = async (description: string, amount: number, tag: string, date: string, isRecurring: boolean, recurrenceCount: number) => {
+    if (!editingTransaction) return
+
+    const updatedTransaction: Partial<ITransaction> = {
+      _id: editingTransaction._id,
+      type: editingTransaction.type,
+      description,
+      amount,
+      tag,
+      date,
+      isRecurring,
+      recurrenceCount,
+      profileId: editingTransaction.profileId // Preserve profile
+    }
+
     await editTransaction(updatedTransaction)
+
+    // Manual State Update to Refresh UI Immediately (Optimistic / Local Sync)
+    // Update Paginated Transactions
+    if (setTransactions) {
+      setTransactions(prev => prev.map(t => t._id.toString() === editingTransaction._id.toString() ? { ...t, ...updatedTransaction } : t));
+    }
+    // Update All Transactions (used for Search)
+    if (setAllTransactions) {
+      setAllTransactions(prev => prev.map(t => t._id.toString() === editingTransaction._id.toString() ? { ...t, ...updatedTransaction } : t));
+    }
+
+    setEditingTransaction(null)
+
+    // Background Data Sync (Charts, Goals, Summary) - Non-blocking
+    Promise.all([
+      getChartData && getChartData(),
+      getSummary && getSummary(),
+      // Force Goals re-evaluation if needed, but updated 'transactions' prop should handle it
+    ]).catch(err => console.error("Background sync failed", err));
   }
 
   const handleDeleteTransaction = async (transactionId: string) => {
     await deleteTransaction(transactionId)
+    // Also update local state for immediate feedback
+    if (setTransactions) {
+      setTransactions(prev => prev.filter(t => t._id.toString() !== transactionId))
+    }
+    if (setAllTransactions) {
+      setAllTransactions(prev => prev.filter(t => t._id.toString() !== transactionId))
+    }
+    // Background Sync
+    Promise.all([
+      getChartData && getChartData(),
+      getSummary && getSummary()
+    ]).catch(err => console.error("Background sync failed", err));
   }
 
   const [isLoadingAll, setIsLoadingAll] = useState(false)
 
+
+
+
   const handleToggleTransactions = async (): Promise<boolean> => {
     if (isAllTransactions) {
-      setIsLoadingAll(true); // Show loader even for reset if needed, or maybe just for 'ALL'
+      setIsTableLoading(true); // Table only
       await getTransactions();
       setIsAllTransactions(false);
-      setIsLoadingAll(false);
+      setIsTableLoading(false);
       return true;
     } else {
       const result = await Swal.fire({
@@ -484,16 +548,16 @@ function DashboardContent() {
       });
 
       if (result.isConfirmed) {
-        setIsLoadingAll(true);
+        setIsTableLoading(true); // Table only
         // Minimum visualization time for the premium loader (because it's cool)
         await Promise.all([
           getAllTransactions(),
           getAllTransactionsPage(1),
-          new Promise(resolve => setTimeout(resolve, 3000)) // Force at least 3s of loading
+          // new Promise(resolve => setTimeout(resolve, 3000)) // Remove artificial delay to make it snappy
         ]);
 
         setIsAllTransactions(true);
-        setIsLoadingAll(false);
+        setIsTableLoading(false);
         return true;
       }
       return false;
@@ -534,7 +598,7 @@ function DashboardContent() {
     }
   }, [])
 
-  if (loading && !isLoadingAll) { // Only show skeleton if NOT global loading (or should we show both underneath?)
+  if (loading && !isLoadingAll && transactions.length === 0 && allTransactions.length === 0) { // Only show skeleton on initial empty load
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-background p-4 sm:p-8">
         <DashboardSkeleton />
@@ -813,7 +877,14 @@ function DashboardContent() {
                     </Button>
                   </div>
                 </div>
-                <CardContent className="p-3 sm:p-6">
+                <CardContent className="p-3 sm:p-6 relative">
+                  {(isTableLoading || (loading && (transactions.length > 0 || allTransactions.length > 0))) && (
+                    <div className="absolute inset-0 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-50 flex items-start pt-20 justify-center rounded-b-xl">
+                      <div className="flex flex-col items-center bg-white dark:bg-gray-800 p-4 rounded-full shadow-xl border border-gray-100 dark:border-gray-700">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                      </div>
+                    </div>
+                  )}
                   {/* Filtro por mês */}
                   <div className="flex justify-center space-x-1 sm:space-x-2 my-3 sm:my-4 overflow-x-auto w-full">
                     <TimelineMonthSelector onSelectMonth={filterTransactionsByMonth} selectedMonth={selectedMonth} />
@@ -1153,7 +1224,24 @@ function DashboardContent() {
           </button>
         </div>
 
-      </motion.div >
+        {/* Edit Dialogs */}
+        {editingTransaction && editingTransaction.type === 'income' && (
+          <AddIncomeDialog
+            open={true}
+            onOpenChange={(open) => !open && setEditingTransaction(null)}
+            initialData={editingTransaction}
+            onAddIncome={handleSaveEdit}
+          />
+        )}
+        {editingTransaction && editingTransaction.type === 'expense' && (
+          <AddExpenseDialog
+            open={true}
+            onOpenChange={(open) => !open && setEditingTransaction(null)}
+            initialData={editingTransaction}
+            onAddExpense={handleSaveEdit}
+          />
+        )}
+      </motion.div>
     </>
   )
 }
