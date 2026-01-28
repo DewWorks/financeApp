@@ -26,6 +26,7 @@ interface CashFlowChartProps {
     transactions: ITransaction[]
     colors?: string[]
     onFetchAllTransactions?: () => Promise<boolean>;
+    initialChartType?: ChartType
 }
 
 type ChartType = "saldoAcumulado" | "fluxoDiario" | "comparativoAnual"
@@ -36,8 +37,8 @@ const chartTitles: Record<ChartType, string> = {
     comparativoAnual: "Comparativo Anual",
 }
 
-export function CashFlowChart({ transactions, colors, onFetchAllTransactions }: CashFlowChartProps) {
-    const [selectedChartType, setSelectedChartType] = useState<ChartType>("fluxoDiario") // Start with Flow as it's most robust
+export function CashFlowChart({ transactions, colors, onFetchAllTransactions, initialChartType = "fluxoDiario" }: CashFlowChartProps) {
+    const [selectedChartType, setSelectedChartType] = useState<ChartType>(initialChartType)
 
     // Process Data
     const processedData = useMemo(() => {
