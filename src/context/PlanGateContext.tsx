@@ -7,6 +7,7 @@ import { useUser } from "@/context/UserContext";
 
 interface PlanGateContextType {
     currentPlan: PlanType;
+    isLoading: boolean;
     openUpgradeModal: (message?: string, requiredPlan?: 'PRO' | 'MAX') => void;
     checkFeature: (feature: 'UNLIMITED_TRANSACTIONS' | 'WHATSAPP' | 'OPEN_FINANCE' | 'DEEP_INSIGHTS') => boolean;
 }
@@ -14,7 +15,7 @@ interface PlanGateContextType {
 const PlanGateContext = createContext<PlanGateContextType | undefined>(undefined);
 
 export function PlanGateProvider({ children }: { children: ReactNode }) {
-    const { currentPlan } = useUser();
+    const { currentPlan, loading } = useUser();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalMessage, setModalMessage] = useState<string | undefined>(undefined);
     const [requiredPlan, setRequiredPlan] = useState<'PRO' | 'MAX'>('PRO');
@@ -41,7 +42,7 @@ export function PlanGateProvider({ children }: { children: ReactNode }) {
     };
 
     return (
-        <PlanGateContext.Provider value={{ currentPlan, openUpgradeModal, checkFeature }}>
+        <PlanGateContext.Provider value={{ currentPlan, isLoading: loading, openUpgradeModal, checkFeature }}>
             {children}
             <UpgradeModal
                 isOpen={isModalOpen}

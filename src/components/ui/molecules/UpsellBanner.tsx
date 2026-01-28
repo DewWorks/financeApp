@@ -9,8 +9,11 @@ import { Sparkles, Zap, Building2, ArrowRight, MessageCircle } from "lucide-reac
 import { useRouter } from "next/navigation";
 
 export function UpsellBanner() {
-    const { currentPlan } = usePlanGate();
+    const { currentPlan, isLoading } = usePlanGate();
     const router = useRouter();
+
+    // Prevent flicker: Don't show anything while determining plan
+    if (isLoading) return null;
 
     // User requested to show ONLY to FREE users (PlanType.FREE)
     // If user is PRO or MAX, do not show this banner.

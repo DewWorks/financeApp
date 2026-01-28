@@ -80,7 +80,7 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
     const [isPaused, setIsPaused] = useState(false)
     const [isModalOpen, setIsModalOpen] = useState(false)
     const timerRef = useRef<NodeJS.Timeout | null>(null)
-    const { checkFeature, openUpgradeModal, currentPlan } = usePlanGate()
+    const { checkFeature, openUpgradeModal, currentPlan, isLoading: isPlanLoading } = usePlanGate()
 
     // Static Teaser Data for Free Users
     const teaserData: InsightData = {
@@ -143,7 +143,7 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
         }
     }, [data, isPaused, isModalOpen]);
 
-    if (loading || isLoading) {
+    if (loading || isLoading || isPlanLoading) {
         return (
             <div className={`animate-pulse bg-gray-200 dark:bg-gray-800 rounded-xl ${compact ? 'h-20 w-full' : 'h-24 w-full'}`}></div>
         )
