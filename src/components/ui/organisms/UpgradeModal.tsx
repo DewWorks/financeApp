@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/atoms/button";
 import { Check, Rocket, Zap, Crown } from "lucide-react";
 import { useRouter } from "next/navigation";
+import React from "react";
 
 interface UpgradeModalProps {
     isOpen: boolean;
@@ -13,6 +14,19 @@ interface UpgradeModalProps {
 export function UpgradeModal({ isOpen, onClose, message, requiredPlan = 'PRO' }: UpgradeModalProps) {
     const router = useRouter();
     const isMax = requiredPlan === 'MAX';
+    const hasTriggeredRef = React.useRef(false);
+
+    // Trigger Upsell Email on Open (Once per session/mount)
+    React.useEffect(() => {
+        if (isOpen && !hasTriggeredRef.current) {
+            hasTriggeredRef.current = true;
+            fetch('/api/user/notify-upsell', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ plan: requiredPlan })
+            }).catch(err => console.error("Upsell trigger failed:", err));
+        }
+    }, [isOpen, requiredPlan]);
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>

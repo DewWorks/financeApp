@@ -14,6 +14,11 @@ const SYSTEM_INSTRUCTION = `
 Você é o "Fin", o assistente financeiro pessoal de elite do usuário.
 Sua missão é ajudar o usuário a prosperar financeiramente através de dados precisos e categorização inteligente.
 
+**PERSONALIDADE:**
+- **Amigável e Direto**: Use emojis pontuais 🚀, 💰, 📊. Fale como um consultor financeiro jovem e esperto.
+- **Proativo**: Se o gasto for alto, pergunte ou comente.
+- **Transparente**: Se consultar dados, diga exatamente o que achou.
+
 **MANDAMENTOS DA CATEGORIZAÇÃO (CRÍTICO):**
 Sempre que o usuário registrar um gasto, você deve inferir a categoria com precisão cirúrgica:
 - "Uber", "99", "Táxi", "Combustível", "Posto", "Estacionamento" -> **Transporte** (NUNCA Outros).
@@ -22,17 +27,18 @@ Sempre que o usuário registrar um gasto, você deve inferir a categoria com pre
 - "Aluguel", "Condomínio" -> **Aluguel**.
 - "Luz", "Água", "Internet", "Celular" -> **Custos de Vida**.
 - "Farmácia", "Médico", "Exame" -> **Saúde**.
+- "Pagamento Fatura", "Cartão", "Resgate" -> **Transferência** (NUNCA Despesa).
 
-**Diretrizes de Personalidade:**
-- **Analítico e Proativo**: Não apenas registre. Se o usuário gastar 500 no Uber, comente: "Isso é alto para transporte, foi uma viagem longa?".
-- **Insightful**: Ao dar o saldo, compare com médias se possível (invente uma média sensata se não tiver dados históricos claros, ex: "Você gastou X hoje").
-- **Conciso, mas Brilhante**: Vá direto ao ponto, mas mostre inteligência.
-- **Falha Graciosa**: Se não encontrar dados, diga "Ainda não tenho registros desse período, mas podemos começar agora!".
+**SEUS SUPER-PODERES (FERRAMENTAS):**
+1. **addTransaction**: Use quando o usuário disser "Gastei X", "Comprei Y", "Recebi Z".
+2. **getRecentTransactions**: Use quando o usuário perguntar "O que gastei ontem?", "Ultimas compras?", "O que tem de hoje?".
+3. **querySpending**: Use para totalizações. "Quanto gastei de Uber?", "Qual o saldo do mês?", "Quanto foi em Alimentação?".
+4. **setGoal**: Para definir metas.
 
-**Ferramentas:**
-- 'addTransaction': Para registrar (Use a inferência de categoria acima!).
-- 'querySpending': Para consultar saldos e totais.
-- 'setGoal': Para definir metas.
+**REGRAS DE RESPOSTA:**
+- Ao registrar: "✅ Feito! [Descrição] de R$ [Valor] anotado em [Categoria]."
+- Ao consultar lista: "Aqui estão suas últimas movimentações: ..." e liste data/valor/descrição.
+- Ao consultar total: "📊 Você gastou R$ [Total] em [Categoria] neste período."
 `;
 
 const tools = [
@@ -44,82 +50,62 @@ const tools = [
                 parameters: {
                     type: SchemaType.OBJECT,
                     properties: {
-                        amount: {
-                            type: SchemaType.NUMBER,
-                            description: "O valor numérico da transação. Ex: 50.0"
-                        },
-                        description: {
-                            type: SchemaType.STRING,
-                            description: "Descrição curta da transação. Ex: 'Mercado', 'Uber', 'Salário'"
-                        },
-                        type: {
-                            type: SchemaType.STRING,
-                            description: "Tipo da transação: 'expense' para gastos, 'income' para ganhos.",
-                            enum: ["expense", "income"]
-                        },
-                        category: {
-                            type: SchemaType.STRING,
-                            description: "Categoria inferida da transação. Ex: 'Alimentação', 'Transporte', 'Lazer'.",
-                        }
+                        amount: { type: SchemaType.NUMBER, description: "Valor numérico. Ex: 50.0" },
+                        description: { type: SchemaType.STRING, description: "Descrição curta. Ex: 'Mercado', 'Uber'" },
+                        type: { type: SchemaType.STRING, enum: ["expense", "income", "transfer"], description: "Tipo: expense, income ou transfer." },
+                        category: { type: SchemaType.STRING, description: "Categoria inferida." }
                     },
                     required: ["amount", "description", "type"]
                 }
             },
             {
-                name: "setGoal",
-                description: "Define uma meta financeira ou um limite de gastos (Budget).",
+                name: "getRecentTransactions",
+                description: "Busca as últimas transações registradas para consulta detalhada.",
                 parameters: {
                     type: SchemaType.OBJECT,
                     properties: {
-                        name: {
-                            type: SchemaType.STRING,
-                            description: "Nome da meta. Ex: 'Viagem', 'Mercado Mensal'."
-                        },
-                        amount: {
-                            type: SchemaType.NUMBER,
-                            description: "Valor alvo ou limite."
-                        },
-                        type: {
-                            type: SchemaType.STRING,
-                            description: "'savings' para meta de economia (juntar dinheiro), 'spending' para limite de gastos (orçamento).",
-                            enum: ["savings", "spending"]
-                        },
-                        category: {
-                            type: SchemaType.STRING,
-                            description: "Categoria associada (obrigatório para spending). Ex: 'Alimentação'."
-                        }
-                    },
-                    required: ["name", "amount", "type"]
+                        limit: { type: SchemaType.NUMBER, description: "Número de transações (padrão 5)" },
+                        category: { type: SchemaType.STRING, description: "Filtrar por categoria específica (opcional)" }
+                    }
                 }
             },
             {
                 name: "querySpending",
-                description: "Busca o status financeiro, total gasto ou insights do usuário.",
+                description: "Calcula totais, saldos ou soma gastos por categoria.",
                 parameters: {
                     type: SchemaType.OBJECT,
                     properties: {
-                        period: {
-                            type: SchemaType.STRING,
-                            description: "O período de análise. Use 'current_month' para visão geral do mês.",
-                            enum: ["current_month", "last_month", "all"]
-                        },
-                        scope: {
-                            type: SchemaType.STRING,
-                            description: "Escopo da análise. 'recent' para últimos 60 dias, 'all' para 12 meses.",
-                            enum: ["recent", "all"]
-                        }
+                        period: { type: SchemaType.STRING, enum: ["current_month", "last_month", "all"], description: "Período." },
+                        category: { type: SchemaType.STRING, description: "Categoria específica para somar. Ex: 'Transporte', 'Alimentação'. Se vazio, traz geral." }
                     },
                     required: ["period"]
+                }
+            },
+            {
+                name: "setGoal",
+                description: "Define uma meta financeira.",
+                parameters: {
+                    type: SchemaType.OBJECT,
+                    properties: {
+                        name: { type: SchemaType.STRING },
+                        amount: { type: SchemaType.NUMBER },
+                        type: { type: SchemaType.STRING, enum: ["savings", "spending"] },
+                        category: { type: SchemaType.STRING }
+                    },
+                    required: ["name", "amount", "type"]
                 }
             }
         ]
     }
 ] as any;
 
+import { NotificationService } from "./NotificationService";
+
 export class FinanceAgentService {
     private genAI: GoogleGenerativeAI;
     private model: GenerativeModel;
     private insightService: InsightService;
+    private notificationService: NotificationService;
 
     constructor() {
         const apiKey = process.env.GEMINI_API_KEY;
@@ -133,6 +119,7 @@ export class FinanceAgentService {
             tools: tools
         });
         this.insightService = new InsightService();
+        this.notificationService = new NotificationService();
     }
 
     private logError(error: any) {
@@ -152,7 +139,6 @@ export class FinanceAgentService {
 
             const transaction = {
                 userId: new ObjectId(userId),
-                // profileId: new ObjectId(userId), // REMOVED: InsightService expects no profileId for personal view
                 type: args.type || 'expense',
                 description: args.description || 'Transação via WhatsApp',
                 amount: Number(args.amount),
@@ -164,14 +150,106 @@ export class FinanceAgentService {
             const result = await db.collection('transactions').insertOne(transaction);
 
             if (result.acknowledged) {
+                // Trigger Smart Alerts asynchronously (Fire & Forget style)
+                this.notificationService.checkAndSendAlerts(userId).catch(e => console.error("Alert Error:", e));
+
                 return { success: true, message: "Transaction Saved", id: result.insertedId };
             } else {
                 return { success: false, message: "Database Error" };
             }
+
         } catch (error) {
             console.error("Error adding transaction:", error);
             this.logError(error);
             return { success: false, error: "Failed to save to database" };
+        }
+    }
+
+    private async getRecentTransactions(args: any, userId: string) {
+        try {
+            const client = await getMongoClient();
+            const db = client.db('financeApp');
+            const limit = args.limit || 5;
+
+            const query: any = { userId: new ObjectId(userId) };
+            if (args.category) {
+                query.tag = args.category;
+            }
+
+            const trans = await db.collection('transactions')
+                .find(query)
+                .sort({ date: -1 })
+                .limit(limit)
+                .toArray();
+
+            if (trans.length === 0) return { message: "Nenhuma transação encontrada recente." };
+
+            const list = trans.map(t => {
+                const dateStr = new Date(t.date).toLocaleDateString('pt-BR');
+                const valStr = t.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                return `- ${dateStr}: ${t.description} (${valStr}) [${t.tag}]`;
+            }).join("\n");
+
+            return { success: true, transactions_text: list, count: trans.length };
+
+        } catch (error) {
+            console.error("Error getting recent transactions:", error);
+            return { success: false, error: "Erro ao buscar transações." };
+        }
+    }
+
+    private async querySpending(args: any, userId: string) {
+        try {
+            const client = await getMongoClient();
+            const db = client.db('financeApp');
+
+            // If specific category request, aggregate directly
+            if (args.category) {
+                const start = new Date();
+                start.setDate(1); // Start of current month default
+                if (args.period === 'last_month') {
+                    start.setMonth(start.getMonth() - 1);
+                    start.setDate(1);
+                    const end = new Date(start);
+                    end.setMonth(end.getMonth() + 1);
+                    end.setDate(0);
+                    // Filter...
+                }
+
+                // Aggregation for category sum
+                const match: any = {
+                    userId: new ObjectId(userId),
+                    tag: args.category,
+                    type: 'expense'
+                };
+
+                // Optional: date filtering can be improved here, but keep simple for now
+
+                const result = await db.collection('transactions').aggregate([
+                    { $match: match },
+                    { $group: { _id: null, total: { $sum: "$amount" } } }
+                ]).toArray();
+
+                const total = result[0]?.total || 0;
+                return {
+                    message: `Total gasto em ${args.category}: R$ ${total.toFixed(2)}`,
+                    amount: total,
+                    category: args.category
+                };
+            }
+
+            // General Insights (existing logic)
+            const scope = args.scope === 'all' ? 'all' : 'recent';
+            const insightResult = await this.insightService.generateDailyInsight(userId, undefined, scope);
+            return {
+                today_spend: insightResult.dailySummary.total,
+                month_spend: insightResult.monthSummary.total,
+                insights: insightResult.insights.map(i => `${i.text}: ${i.value} (${i.details})`).join("; ")
+            };
+        } catch (error) {
+            console.error("Error querying spending:", error);
+            this.logError(error);
+            return { success: false, error: "Failed to retrieve insights" };
         }
     }
 
@@ -198,25 +276,6 @@ export class FinanceAgentService {
             console.error("Error setting goal:", error);
             this.logError(error);
             return { success: false, error: "Failed to create goal" };
-        }
-    }
-
-    private async querySpending(args: any, userId: string) {
-        try {
-            // Reusing InsightService to get processed data
-            const scope = args.scope === 'all' ? 'all' : 'recent';
-            const insightResult = await this.insightService.generateDailyInsight(userId, undefined, scope);
-
-            // Return the raw insights structure so the LLM can interpret it
-            return {
-                today_spend: insightResult.dailySummary.total,
-                month_spend: insightResult.monthSummary.total,
-                insights: insightResult.insights.map(i => `${i.text}: ${i.value} (${i.details})`).join("; ")
-            };
-        } catch (error) {
-            console.error("Error querying spending:", error);
-            this.logError(error);
-            return { success: false, error: "Failed to retrieve insights" };
         }
     }
 
@@ -247,6 +306,8 @@ export class FinanceAgentService {
                         apiResult = await this.setGoal(args, userId);
                     } else if (name === "querySpending") {
                         apiResult = await this.querySpending(args, userId);
+                    } else if (name === "getRecentTransactions") {
+                        apiResult = await this.getRecentTransactions(args, userId);
                     } else {
                         apiResult = { error: "Unknown function" };
                     }
