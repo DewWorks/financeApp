@@ -2,6 +2,7 @@
 
 import { useTransactions } from "@/context/TransactionsContext"
 import { useTheme } from "@/components/ui/organisms/ThemeContext"
+import { useUser } from "@/context/UserContext"
 import { useCurrentProfile } from "@/hooks/useCurrentProfile"
 import { useDashboardFilters } from "@/hooks/useDashboardFilters"
 import { useTransactionActions } from "@/hooks/useTransactionActions"
@@ -98,31 +99,9 @@ function DashboardContent() {
 
   const { currentProfileId, isLoading: isProfileLoading } = useCurrentProfile();
 
-  // Local State
-  // We need 'user' state locally or from context? 
-  // page.tsx used to have `const [user, setUser] = useState<IUser | null>(null)`.
-  // And fetched it? Or used useSession? 
-  // It verified auth via /api/users/me or similar.
-  // We should restore that logic or use a useAuth hook. 
-  // The original page.tsx had `useEffect` to fetch user.
-  // I will restore it here.
-  const [user, setUser] = useState<IUser | null>(null)
-
-  useEffect(() => {
-    async function fetchUser() {
-      try {
-        const res = await fetch('/api/users');
-        if (res.ok) {
-          const userData = await res.json();
-          setUser(userData);
-          localStorage.setItem("user_data", JSON.stringify(userData));
-        }
-      } catch (e) {
-        console.error("Auth check failed", e);
-      }
-    }
-    fetchUser();
-  }, []);
+  // Context Data from UserContext (Global Source of Truth)
+  // Replaces local fetch to ensure Admin logic (currentPlan) is respected everywhere
+  const { user, currentPlan, loading: isUserLoading } = useUser();
 
   const [activeTab, setActiveTab] = useState("home")
   const [selectedChartType, setSelectedChartType] = useState("pie")
@@ -165,8 +144,8 @@ function DashboardContent() {
   }, [summaryData]);
 
   // Derived Props for Sub-Components
-  const isFree = user?.subscription?.plan === PlanType.FREE;
-  const isAdmin = user?.admin || false;
+  const isFree = currentPlan === PlanType.FREE;
+  // const isAdmin = user?.admin || false; // No longer needed manually, hidden in currentPlan logic
 
   // Toggle Logic
   const handleToggleTransactions = async (): Promise<boolean> => {
