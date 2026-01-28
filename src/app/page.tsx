@@ -20,6 +20,9 @@ import { UpsellBanner } from "@/components/ui/molecules/UpsellBanner"
 import { OpenFinanceWidget } from "@/components/ui/molecules/OpenFinanceWidget"
 import { WhatsAppButton } from "@/components/ui/molecules/whatsapp-button"
 import { MobileTransactionFab } from "@/components/ui/molecules/MobileTransactionFab"
+import { AddIncomeDialog } from "@/components/ui/organisms/AddIncomeDialog"
+import { AddExpenseDialog } from "@/components/ui/organisms/AddExpenseDialog"
+import { Toast } from "@/components/ui/atoms/toast"
 
 // Charts (Analytics Section)
 import { CashFlowChart } from "@/components/ui/charts/CashFlowChart"
@@ -35,6 +38,9 @@ import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
 import { IUser, PlanType } from "@/interfaces/IUser"
 import { ObjectId } from "mongodb"
+import { TransactionsProvider } from "@/context/TransactionsContext"
+import { GoalsProvider } from "@/context/GoalsContext"
+import { ITransaction } from "@/interfaces/ITransaction"
 
 const COLORS = ["#0088FE", "#ff6666", "#FFBB28", "#FF8042", "#8884D8"]
 
@@ -85,7 +91,9 @@ function DashboardContent() {
     setTransactions,
     setAllTransactions,
     getChartData,
-    getSummary
+    getSummary,
+    toast,
+    setToast
   } = useTransactions()
 
   const { currentProfileId, isLoading: isProfileLoading } = useCurrentProfile();
@@ -224,18 +232,37 @@ function DashboardContent() {
       profileId: (currentProfileId || undefined) as unknown as ObjectId
     })
   }
-
+  // This usually needs to interact with ProfileContext, but ProfileSwitcher handles it internally?
+  // Check original page.tsx: <ProfileSwitcher onProfileSwitch={handleProfileSwitch} ... />
   const handleProfileSwitch = (id: string | null) => {
-    // This usually needs to interact with ProfileContext, but ProfileSwitcher handles it internally?
-    // Check original page.tsx: <ProfileSwitcher onProfileSwitch={handleProfileSwitch} ... />
-    // And const { currentProfileId, ... } = useCurrentProfile().
-    // The ProfileSwitcher probably reloads page or updates context. 
-    // Original: 
-    // const handleProfileSwitch = (profileId: string | null) => {
-    //   window.location.reload(); 
-    // }
-    // Let's keep reload for safety.
     window.location.reload();
+  }
+
+  // Edit Logic
+  const [editingTransaction, setEditingTransaction] = useState<ITransaction | null>(null)
+
+  const handleSaveEdit = async (d: string, a: number, t: string, date: string, r: boolean, rc: number) => {
+    if (!editingTransaction?._id) return
+
+    try {
+      // Force ID to string to ensure correct URL in axios
+      const idString = editingTransaction._id.toString();
+
+      await editTransaction({
+        _id: idString as any, // Cast to avoid TS error, ensuring runtime string
+        description: d,
+        amount: a,
+        tag: t,
+        date: new Date(date).toISOString(),
+        isRecurring: r,
+        recurrenceCount: rc,
+        type: editingTransaction.type
+      })
+      setToast({ message: "Transação salva com sucesso!", type: 'success' });
+    } catch (e) {
+      console.error("Falha ao salvar edição:", e);
+      setToast({ message: "Erro ao salvar edição.", type: 'error' });
+    }
   }
 
   // Loading State
@@ -326,11 +353,10 @@ function DashboardContent() {
                 </span>
               </div>
             </div>
-
             <DashboardTransactions
               transactions={filters.isFiltering ? filters.filteredTransactions : transactions}
               filters={filters}
-              onEdit={(t) => transactionActions.setEditingTransaction(t)}
+              onEdit={(t) => setEditingTransaction(t)}
               onDelete={transactionActions.handleDeleteTransaction}
               pagination={{
                 currentPage,
@@ -450,13 +476,44 @@ function DashboardContent() {
           onAddExpense={handleAddExpense}
         />
 
-      </motion.div >
+        {/* Edit Dialogs */}
+        {editingTransaction && editingTransaction.type === 'income' && (
+          <AddIncomeDialog
+            key={editingTransaction._id.toString()}
+            open={!!editingTransaction}
+            onOpenChange={(open) => !open && setEditingTransaction(null)}
+            initialData={editingTransaction}
+            onAddIncome={async (d, a, t, date, r, rc) => {
+              await handleSaveEdit(d, a, t, date, r, rc)
+              setEditingTransaction(null)
+            }}
+          />
+        )}
+        {editingTransaction && (editingTransaction.type === 'expense' || editingTransaction.type === 'transfer') && (
+          <AddExpenseDialog
+            key={editingTransaction._id.toString()}
+            open={!!editingTransaction}
+            onOpenChange={(open) => !open && setEditingTransaction(null)}
+            initialData={editingTransaction}
+            onAddExpense={async (d, a, t, date, r, rc) => {
+              await handleSaveEdit(d, a, t, date, r, rc)
+              setEditingTransaction(null)
+            }}
+          />
+        )}
+
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        )}
+
+      </motion.div>
     </>
   )
 }
-
-import { TransactionsProvider } from "@/context/TransactionsContext"
-import { GoalsProvider } from "@/context/GoalsContext"
 
 function Dashboard() {
   return (
