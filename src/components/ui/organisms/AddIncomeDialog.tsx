@@ -15,7 +15,7 @@ const incomeTagsTuple = incomeTags as [string, ...string[]]
 const incomeSchema = z.object({
   description: z.string().min(1, 'Descrição é obrigatória'),
   amount: z.number().positive('O valor deve ser positivo'),
-  tag: z.enum(incomeTagsTuple),
+  tag: z.string().min(1, 'Categoria é obrigatória'),
   date: z.string().refine((date) => !isNaN(Date.parse(date)), {
     message: 'Data inválida',
   }),
@@ -90,7 +90,7 @@ export function AddIncomeDialog({ onAddIncome, initialData, trigger, open: exter
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold text-center">{isEditMode ? 'Editar Receita' : 'Adicionar Receita'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
+        <form onSubmit={handleSubmit(onSubmit, (errors) => alert("Erro validação: " + JSON.stringify(errors)))} className="space-y-4 mt-4">
           <div className="space-y-2">
             <Label htmlFor="description" className="text-sm font-medium dark:text-white">
               Descrição

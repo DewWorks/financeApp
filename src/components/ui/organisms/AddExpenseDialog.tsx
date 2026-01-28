@@ -15,7 +15,7 @@ const expenseTagsTuple = expenseTags as [string, ...string[]]
 const expenseSchema = z.object({
   description: z.string().min(1, 'Descrição é obrigatória'),
   amount: z.number().positive('O valor deve ser positivo'),
-  tag: z.enum(expenseTagsTuple),
+  tag: z.string().min(1, 'Categoria é obrigatória'),
   date: z.string().refine((date) => !isNaN(Date.parse(date)), {
     message: 'Data inválida',
   }),
@@ -86,7 +86,7 @@ export function AddExpenseDialog({ onAddExpense, initialData, trigger, open: ext
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold text-center">{isEditMode ? 'Editar Despesa' : 'Adicionar Despesa'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
+        <form onSubmit={handleSubmit(onSubmit, (errors) => alert("Erro validação: " + JSON.stringify(errors)))} className="space-y-4 mt-4">
           <div className="space-y-2">
             <Label htmlFor="description">Descrição</Label>
             <Controller name="description" control={control} render={({ field }) => (

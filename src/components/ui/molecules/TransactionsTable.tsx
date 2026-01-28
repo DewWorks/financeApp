@@ -47,8 +47,9 @@ export function TransactionsTable({
     }
 
     const handleEditClick = (transaction: ITransaction) => {
-        setTransactionToEdit(transaction)
-        setEditDialogOpen(true)
+        if (onEditTransaction) {
+            onEditTransaction(transaction);
+        }
     }
 
     const handleConfirmDelete = () => {
@@ -56,19 +57,6 @@ export function TransactionsTable({
             onDeleteTransaction(transactionToDelete._id.toString())
             setDeleteDialogOpen(false)
             setTransactionToDelete(null)
-        }
-    }
-
-    const handleEditTransaction = async (description: string, amount: number, tag: string, date: string, isRecurring?: boolean, recurrenceCount?: number) => {
-        if (transactionToEdit && transactionToEdit._id && onEditTransaction) {
-            const updatedTransaction = { ...transactionToEdit, description, amount, tag, date, isRecurring, recurrenceCount }
-            try {
-                onEditTransaction(updatedTransaction)
-                setEditDialogOpen(false)
-                setTransactionToEdit(null)
-            } catch (error) {
-                console.error('Failed to edit transaction:', error)
-            }
         }
     }
 
@@ -226,32 +214,6 @@ export function TransactionsTable({
                             Excluir
                         </Button>
                     </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-                <DialogContent className="sm:max-w-[425px]">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2 text-primary">
-                            <Edit2 className="h-5 w-5" />
-                            Editar Transação
-                        </DialogTitle>
-                    </DialogHeader>
-                    <div className="py-4">
-                        {transactionToEdit && (
-                            transactionToEdit.type === 'income' ? (
-                                <AddIncomeDialog
-                                    onAddIncome={handleEditTransaction}
-                                    initialData={transactionToEdit}
-                                />
-                            ) : (
-                                <AddExpenseDialog
-                                    onAddExpense={handleEditTransaction}
-                                    initialData={transactionToEdit}
-                                />
-                            )
-                        )}
-                    </div>
                 </DialogContent>
             </Dialog>
         </>
