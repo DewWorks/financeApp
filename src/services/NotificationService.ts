@@ -18,7 +18,13 @@ export class NotificationService {
         try {
             console.log(`[NotificationService] Checking alerts for user ${userId}...`);
 
-            // 1. Generate Deep Insights
+            // 1. Connect DB (Moved to top for Goal Check access)
+            const client = await getMongoClient();
+            const db = client.db('financeApp');
+            const notificationsCol = db.collection('notifications');
+            const usersCol = db.collection('users');
+
+            // 2. Generate Deep Insights
             const result = await this.insightService.generateDailyInsight(userId, undefined, 'all');
             const insights = result.insights;
 
@@ -34,16 +40,68 @@ export class NotificationService {
                 return false;
             });
 
+            // 2b. Check Goals (Positive Reinforcement)
+            try {
+                const goals = await db.collection("goals").find({ userId: new ObjectId(userId), type: 'savings' }).toArray();
+
+                // We need to calculate saved amount for each goal.
+                // Assuming 'tag' maps to category or simple accumulation.
+                // For simplicity in this iteration: Check if 'currentAmount' (manually updated) >= 'targetAmount'.
+                // Ideally this would aggregate 'income' - 'expense' for that tag. 
+                // Let's assume the user manually updates the 'currentAmount' on the Goal in the UI, OR we calculate it.
+                // Given the complexities of auto-calculating savings per tag, let's rely on 'currentAmount' field if present, 
+                // OR calculate balance for that tag.
+
+                // Let's calculate balance for the tag (Income - Expense for that tag)
+                const transactions = await db.collection("transactions").find({ userId: new ObjectId(userId) }).toArray();
+
+                for (const goal of goals) {
+                    if (!goal.targetAmount) continue;
+                    const tag = goal.tag || goal.category;
+
+                    // Simple Balance Calculation for Tag
+                    const tagIncome = transactions
+                        .filter(t => t.type === 'income' && (t.tag === tag || t.category === tag))
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
+
+                    // If it's a "Savings Goal", maybe we don't subtract expenses? 
+                    // Usually Savings means "I put money aside".
+                    // Let's use Balance (Income - Expense) for that Tag.
+                    const tagExpense = transactions
+                        .filter(t => t.type === 'expense' && (t.tag === tag || t.category === tag))
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
+
+                    const currentBalance = tagIncome - tagExpense; // For a savings goal, usually we treat transfers/incomes as +
+
+                    if (currentBalance >= goal.targetAmount) {
+                        // Check if already notified
+                        const alertId = `goal-met-${goal._id}`;
+                        const alreadySent = await notificationsCol.findOne({ insightId: alertId });
+
+                        if (!alreadySent) {
+                            alerts.push({
+                                id: alertId,
+                                type: 'goal',
+                                text: `Meta Atingida: ${goal.title || tag}`,
+                                value: `R$ ${currentBalance.toFixed(0)}`,
+                                trend: 'positive',
+                                details: `Você atingiu sua meta de R$ ${goal.targetAmount}!`
+                            });
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("[NotificationService] Goal Check Error:", err);
+            }
+
             if (alerts.length === 0) {
                 console.log(`[NotificationService] No high-priority alerts found.`);
                 return;
             }
 
-            // 3. Connect DB for Throttling Check
-            const client = await getMongoClient();
-            const db = client.db('financeApp');
-            const notificationsCol = db.collection('notifications');
-            const usersCol = db.collection('users');
+
 
             // 4. Get User Email
             const user = await usersCol.findOne({ _id: new ObjectId(userId) });
@@ -57,6 +115,12 @@ export class NotificationService {
             const throttleDate = new Date(Date.now() - THROTTLE_DAYS * 24 * 60 * 60 * 1000);
 
             for (const alert of alerts) {
+                // Special handling for Goals (One Time Only, maintained by checking DB above, but safe to double check)
+                if (alert.type === 'goal') {
+                    await this.sendGoalMetAlert(userId, alert.text, alert.value);
+                    continue; // sendGoalMetAlert handles its own logging
+                }
+
                 // Check if sent in last 7 days
                 const lastSent = await notificationsCol.findOne({
                     userId: new ObjectId(userId),
@@ -311,6 +375,52 @@ export class NotificationService {
 
         } catch (error) {
             console.error("[NotificationService] Inactivity Reminder Error:", error);
+        }
+    }
+
+    async sendGoalMetAlert(userId: string, goalName: string, amount: string) {
+        try {
+            const client = await getMongoClient();
+            const db = client.db('financeApp');
+            const user = await db.collection('users').findOne({ _id: new ObjectId(userId) });
+            if (!user || !user.email) return;
+
+            console.log(`[NotificationService] Sending Goal Met Alert to ${user.email}`);
+
+            const subject = `🎉 Parabéns! Meta "${goalName}" Atingida!`;
+            const html = `
+                <div style="font-family: sans-serif; color: #333;">
+                    <h2 style="color: #16a34a;">Vitória Financeira! 🏆</h2>
+                    <p>Olá, <strong>${user.name}</strong>!</p>
+                    <p>Temos ótimas notícias: Você atingiu sua meta de economia <strong>${goalName}</strong>!</p>
+                    
+                    <div style="background-color: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #bbf7d0;">
+                        <h3 style="margin: 0; color: #15803d; font-size: 24px;">${amount} Economizados</h3>
+                        <p style="margin-top: 5px; color: #166534;">Todo seu esforço valeu a pena.</p>
+                    </div>
+
+                    <p>Que tal comemorar (com moderação) ou já criar a próxima meta?</p>
+
+                    <div style="margin-top: 30px; text-align: center;">
+                        <a href="https://finance-pro-mu.vercel.app/" style="background-color: #16a34a; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                            Definir Nova Meta
+                        </a>
+                    </div>
+                </div>
+            `;
+            await sendEmail({ to: user.email, subject, htmlContent: html });
+
+            // Log notification to prevent spamming
+            const notificationsCol = db.collection('notifications');
+            await notificationsCol.insertOne({
+                userId: new ObjectId(userId),
+                insightId: `goal-met-${goalName.toLowerCase().replace(/\s+/g, '-')}`,
+                type: 'goal',
+                sentAt: new Date()
+            });
+
+        } catch (error) {
+            console.error("[NotificationService] Goal Met Error:", error);
         }
     }
 }

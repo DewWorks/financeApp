@@ -3,7 +3,7 @@ import { ObjectId } from "mongodb";
 
 export interface InsightItem {
     id: string;
-    type: "weekly" | "monthly" | "category" | "zero_spend" | "tip" | "general" | "deep_metric" | "savings" | "trend";
+    type: "weekly" | "monthly" | "category" | "zero_spend" | "tip" | "general" | "deep_metric" | "savings" | "trend" | "goal";
     text: string;
     value: string;
     trend: "positive" | "negative" | "neutral";
