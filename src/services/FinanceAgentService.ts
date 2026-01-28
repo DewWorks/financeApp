@@ -99,10 +99,13 @@ const tools = [
     }
 ] as any;
 
+import { NotificationService } from "./NotificationService";
+
 export class FinanceAgentService {
     private genAI: GoogleGenerativeAI;
     private model: GenerativeModel;
     private insightService: InsightService;
+    private notificationService: NotificationService;
 
     constructor() {
         const apiKey = process.env.GEMINI_API_KEY;
@@ -116,6 +119,7 @@ export class FinanceAgentService {
             tools: tools
         });
         this.insightService = new InsightService();
+        this.notificationService = new NotificationService();
     }
 
     private logError(error: any) {
@@ -146,10 +150,14 @@ export class FinanceAgentService {
             const result = await db.collection('transactions').insertOne(transaction);
 
             if (result.acknowledged) {
+                // Trigger Smart Alerts asynchronously (Fire & Forget style)
+                this.notificationService.checkAndSendAlerts(userId).catch(e => console.error("Alert Error:", e));
+
                 return { success: true, message: "Transaction Saved", id: result.insertedId };
             } else {
                 return { success: false, message: "Database Error" };
             }
+
         } catch (error) {
             console.error("Error adding transaction:", error);
             this.logError(error);

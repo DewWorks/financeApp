@@ -253,6 +253,15 @@ export class TransactionSyncService {
             if (bulkOps.length > 0) {
                 const res = await collection.bulkWrite(bulkOps);
                 console.log(`[SyncService] Bulk Write Result: ${res.upsertedCount} inserted, ${res.modifiedCount} updated.`);
+
+                // NEW: Trigger Smart Alerts if we have new transactions
+                if (res.upsertedCount > 0) {
+                    import("./NotificationService").then(({ NotificationService }) => {
+                        const notifier = new NotificationService();
+                        notifier.checkAndSendAlerts(userId.toString()).catch(e => console.error("[SyncService] Alert Error:", e));
+                    });
+                }
+
                 return { success: true, new: res.upsertedCount, updated: res.modifiedCount };
             }
 
