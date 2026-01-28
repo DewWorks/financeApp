@@ -21,7 +21,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
         try {
             setLoading(true);
             // Try fetching from standard authenticated endpoint (cookies)
-            const response = await fetch(`/api/users`);
+            const response = await fetch(`/api/users`, {
+                headers: { 'Content-Type': 'application/json' },
+                cache: 'no-store' // Disable caching to prevent stale 401s
+            });
 
             if (response.ok) {
                 const userData = await response.json();
