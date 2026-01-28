@@ -16,6 +16,7 @@ export interface IUser {
     };
     tutorialGuide?: boolean;
     executeQuery?: boolean;
+    admin?: boolean;
     verification?: IUserVerification;
     subscription?: ISubscription;
     updatedAt?: Date;

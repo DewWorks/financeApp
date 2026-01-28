@@ -32,6 +32,7 @@ const UserSchema = new Schema<IUser>({
     },
     tutorialGuide: { type: Boolean, default: true },
     executeQuery: { type: Boolean, default: false },
+    admin: { type: Boolean, default: false },
     verification: {
         code: String,
         type: { type: String, enum: Object.values(IUserTypesVerification) },

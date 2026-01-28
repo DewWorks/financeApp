@@ -4,20 +4,12 @@ import { getPluggyClient } from "@/lib/pluggy";
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 import { ObjectId } from 'mongodb';
-import fs from 'fs';
-import path from 'path';
 import { PlanService } from '@/services/PlanService';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 const logDebug = (message: string) => {
-    try {
-        const logPath = path.join(process.cwd(), 'debug_bank_conn.log');
-        const timestamp = new Date().toISOString();
-        fs.appendFileSync(logPath, `[${timestamp}] ${message}\n`);
-    } catch (e) {
-        // failed to log
-    }
+    // console.log(`[BankConn] ${message}`); // Uncomment for debugging in server logs
 }
 
 async function getUserId() {

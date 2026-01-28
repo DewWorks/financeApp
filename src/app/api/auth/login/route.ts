@@ -87,7 +87,7 @@ export async function POST(request: Request) {
     }
 
     // Generate JWT token
-    const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '1d' })
+    const token = jwt.sign({ userId: user._id, isAdmin: user.isAdmin }, JWT_SECRET, { expiresIn: '1d' })
       ; (await
         // Set the token in a secure HTTP-only cookie
         cookies()).set({
