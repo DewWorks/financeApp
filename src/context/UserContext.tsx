@@ -23,7 +23,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
             // Try fetching from standard authenticated endpoint (cookies)
             const response = await fetch(`/api/users`, {
                 headers: { 'Content-Type': 'application/json' },
-                cache: 'no-store' // Disable caching to prevent stale 401s
+                cache: 'no-store', // Disable caching to prevent stale 401s
+                credentials: 'include' // Ensure cookies are sent
             });
 
             if (response.ok) {
@@ -38,10 +39,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 // Ideally, if /api/users fails (401), we are logged out.
                 console.warn("User auth check failed:", response.status);
                 setUser(null);
+                localStorage.removeItem("user-id"); // Clean up stale state
             }
         } catch (error) {
             console.error("Error fetching user:", error);
             setUser(null);
+            localStorage.removeItem("user-id");
         } finally {
             setLoading(false);
         }
@@ -53,6 +56,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     // Derive plan safely (Admins get MAX features)
     const currentPlan = (user?.admin ? PlanType.MAX : (user?.subscription?.plan as PlanType)) || PlanType.FREE;
+
+    console.log("[UserContext] Debug:", {
+        admin: user?.admin,
+        plan: user?.subscription?.plan,
+        computed: currentPlan,
+        fullUser: user
+    });
 
     return (
         <UserContext.Provider value={{ user, currentPlan, loading, refreshUser }}>

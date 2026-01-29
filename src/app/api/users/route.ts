@@ -7,6 +7,8 @@ import { sendEmail } from '@/app/functions/emails/sendEmail';
 import { IUser } from '@/interfaces/IUser';
 import { formatToE164 } from '@/lib/phoneUtils';
 
+export const dynamic = 'force-dynamic';
+
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
 class AuthError extends Error {
