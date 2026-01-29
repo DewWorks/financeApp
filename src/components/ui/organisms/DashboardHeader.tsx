@@ -1,3 +1,4 @@
+import React from "react"
 import { IUser } from "@/interfaces/IUser"
 import { Title } from "@/components/ui/molecules/Title"
 import { ProfileSwitcher } from "@/components/ui/molecules/ProfileSwitcher"
@@ -23,6 +24,28 @@ export function DashboardHeader({
     handleProfile,
     toggleTheme
 }: DashboardHeaderProps) {
+    // Fallback: If prop is null, try to read from localStorage (Visual redundancy)
+    const [localUser, setLocalUser] = React.useState<IUser | null>(user);
+
+    React.useEffect(() => {
+        if (user) {
+            setLocalUser(user);
+        } else {
+            // Try to rescue from localStorage
+            try {
+                const stored = localStorage.getItem("user_data");
+                if (stored) {
+                    setLocalUser(JSON.parse(stored));
+                }
+            } catch (e) {
+                console.error("Failed to parse local user", e);
+            }
+        }
+    }, [user]);
+
+    // Use legitimate user or fallback
+    const displayUser = user || localUser;
+
     return (
         <nav className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
@@ -34,7 +57,7 @@ export function DashboardHeader({
 
                     {/* Profile Switcher - Align left next to logo */}
                     <div className="hidden sm:flex flex-1 justify-start ml-4 sm:ml-8" id="profile-switcher">
-                        <ProfileSwitcher onProfileSwitch={handleProfileSwitch} userName={user?.name} userEmail={user?.email} />
+                        <ProfileSwitcher onProfileSwitch={handleProfileSwitch} userName={displayUser?.name} userEmail={displayUser?.email} />
                     </div>
 
                     {/* Desktop Area - User Info, Logout, Theme */}
@@ -43,7 +66,7 @@ export function DashboardHeader({
                         {/* Theme Toggle */}
                         <ThemeToggle />
 
-                        {user && (
+                        {displayUser && (
                             <>
                                 {/* User Info */}
                                 <Tooltip title={'Perfil'} arrow>
@@ -67,7 +90,7 @@ export function DashboardHeader({
                             </>
                         )}
 
-                        {!user && (
+                        {!displayUser && (
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
@@ -92,17 +115,17 @@ export function DashboardHeader({
                             <PopoverContent className="w-72 max-w-[calc(100vw-1rem)] p-3 mr-2 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-xl" align="end">
                                 <div className="flex flex-col gap-2">
                                     {/* Mobile User Info Section */}
-                                    {user && (
+                                    {displayUser && (
                                         <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-100 dark:border-gray-700 mb-2">
                                             <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center border border-blue-200 dark:border-blue-800 flex-shrink-0">
                                                 <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                                             </div>
                                             <div className="min-w-0 flex-1">
                                                 <p className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
-                                                    {user.name || "Usuário"}
+                                                    {displayUser.name || "Usuário"}
                                                 </p>
                                                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                                    {user.email}
+                                                    {displayUser.email}
                                                 </p>
                                             </div>
                                         </div>
@@ -119,7 +142,7 @@ export function DashboardHeader({
                                         </div>
                                     </div>
 
-                                    {user && (
+                                    {displayUser && (
                                         <>
                                             <div className="h-px bg-gray-200 dark:bg-gray-700 my-1" />
                                             <Button
@@ -141,7 +164,7 @@ export function DashboardHeader({
                                         </>
                                     )}
 
-                                    {!user && (
+                                    {!displayUser && (
                                         <>
                                             <div className="h-px bg-gray-200 dark:bg-gray-700 my-1" />
                                             <Button
