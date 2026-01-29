@@ -136,6 +136,18 @@ export default function LoginPage() {
         localStorage.setItem("execute-query", data.executeQuery.toString())
         localStorage.setItem("user-id", data.userId.toString())
 
+        // PREFETCH: Fetch full user profile immediately to populate localStorage
+        // This ensures the Dashboard has data even if the initial network call fails
+        try {
+          const userRes = await fetch("/api/users");
+          if (userRes.ok) {
+            const userData = await userRes.json();
+            localStorage.setItem("user_data", JSON.stringify(userData));
+          }
+        } catch (e) {
+          console.error("Prefetch failed", e);
+        }
+
         Swal.fire({
           icon: "success",
           title: "Sucesso!",
