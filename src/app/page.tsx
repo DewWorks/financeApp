@@ -245,7 +245,8 @@ function DashboardContent() {
   }
 
   // Loading State
-  if (loading && !isAllTransactions && transactions.length === 0 && allTransactions.length === 0) {
+  // Ensure we don't flash "Logged Out" state while verifying auth
+  if ((loading && !isAllTransactions && transactions.length === 0 && allTransactions.length === 0) || isUserLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-background p-4 sm:p-8">
         <DashboardSkeleton />
