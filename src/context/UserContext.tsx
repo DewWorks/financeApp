@@ -35,7 +35,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     const refreshUser = async () => {
         try {
-            setLoading(true);
+            // Don't set loading=true if we already have a user (background refresh)
+            if (!user) setLoading(true);
+
             // Use axios to align with TransactionsContext (proven to work)
             const response = await axios.get('/api/users', {
                 headers: {
@@ -57,11 +59,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
             }
         } catch (error) {
             console.error("Error fetching user (axios):", error);
-            setUser(null);
-            // Only clear storage if it's explicitly a 401 (Unauthorized)
+
+            // CRITICAL FIX: Do NOT wipe user if it's just a network error or 500
+            // Only wipe if it is strictly a 401 (Unauthorized) which means our token is dead.
             if (axios.isAxiosError(error) && error.response?.status === 401) {
+                setUser(null);
                 localStorage.removeItem("user-id");
                 localStorage.removeItem("user_data");
+            } else {
+                console.warn("Keeping existing user session due to non-critical error");
             }
         } finally {
             setLoading(false);

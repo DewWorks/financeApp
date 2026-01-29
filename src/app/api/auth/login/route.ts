@@ -95,7 +95,7 @@ export async function POST(request: Request) {
           value: token,
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
+          sameSite: 'lax', // 'strict' can block cookies on some redirects/first loads
           maxAge: 60 * 60 * 24, // 1 day
           path: '/',
         })
