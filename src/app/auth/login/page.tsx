@@ -13,6 +13,7 @@ import { Mail, Phone, Eye, EyeOff, Loader2 } from "lucide-react"
 import Swal from "sweetalert2"
 import { ThemeToggle } from "@/components/ui/atoms/ThemeToggle"
 import { validatePhoneDetails } from "@/lib/phoneUtils"
+import axios from "axios"
 
 export default function LoginPage() {
   const [emailOrPhone, setEmailOrPhone] = useState("")
@@ -139,10 +140,9 @@ export default function LoginPage() {
         // PREFETCH: Fetch full user profile immediately to populate localStorage
         // This ensures the Dashboard has data even if the initial network call fails
         try {
-          const userRes = await fetch("/api/users");
-          if (userRes.ok) {
-            const userData = await userRes.json();
-            localStorage.setItem("user_data", JSON.stringify(userData));
+          const userRes = await axios.get("/api/users");
+          if (userRes) {
+            localStorage.setItem("user_data", JSON.stringify(userRes.data));
           }
         } catch (e) {
           console.error("Prefetch failed", e);
