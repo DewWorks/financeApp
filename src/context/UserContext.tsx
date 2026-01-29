@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { IUser } from "@/interfaces/IUser";
 import { PlanType } from "@/interfaces/IUser";
+import axios from 'axios';
 
 interface UserContextType {
     user: IUser | null;
@@ -20,31 +21,33 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const refreshUser = async () => {
         try {
             setLoading(true);
-            // Try fetching from standard authenticated endpoint (cookies)
-            const response = await fetch(`/api/users`, {
-                headers: { 'Content-Type': 'application/json' },
-                cache: 'no-store', // Disable caching to prevent stale 401s
-                credentials: 'include' // Ensure cookies are sent
+            // Use axios to align with TransactionsContext (proven to work)
+            const response = await axios.get('/api/users', {
+                headers: {
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache',
+                    'Expires': '0',
+                }
             });
 
-            if (response.ok) {
-                const userData = await response.json();
+            if (response.data) {
+                const userData = response.data;
                 setUser(userData);
-                // Sync localStorage for legacy checks if needed
+
+                // Sync localStorage for legacy checks
                 if (userData._id) {
                     localStorage.setItem("user-id", userData._id);
+                    localStorage.setItem("user_data", JSON.stringify(userData)); // Redundant but safe
                 }
-            } else {
-                // If 401, we might try localStorage fallback or just clear
-                // Ideally, if /api/users fails (401), we are logged out.
-                console.warn("User auth check failed:", response.status);
-                setUser(null);
-                localStorage.removeItem("user-id"); // Clean up stale state
             }
         } catch (error) {
-            console.error("Error fetching user:", error);
+            console.error("Error fetching user (axios):", error);
             setUser(null);
-            localStorage.removeItem("user-id");
+            // Only clear storage if it's explicitly a 401 (Unauthorized)
+            if (axios.isAxiosError(error) && error.response?.status === 401) {
+                localStorage.removeItem("user-id");
+                localStorage.removeItem("user_data");
+            }
         } finally {
             setLoading(false);
         }
