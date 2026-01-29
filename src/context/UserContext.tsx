@@ -18,6 +18,21 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<IUser | null>(null);
     const [loading, setLoading] = useState(true);
 
+    // HYDRATION: Restore session immediately to avoid "Free Plan" flash
+    useEffect(() => {
+        try {
+            const stored = localStorage.getItem("user_data");
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                setUser(parsed);
+                // If we have data, we are not "loading" in terms of UI blocking
+                // But we still fetch fresh data below to update
+            }
+        } catch (e) {
+            console.error("Hydration failed", e);
+        }
+    }, []);
+
     const refreshUser = async () => {
         try {
             setLoading(true);
