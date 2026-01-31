@@ -423,4 +423,77 @@ export class NotificationService {
             console.error("[NotificationService] Goal Met Error:", error);
         }
     }
+
+
+    async sendNudgeEmail(userId: string) {
+        try {
+            const client = await getMongoClient();
+            const db = client.db('financeApp');
+            const user = await db.collection('users').findOne({ _id: new ObjectId(userId) });
+            if (!user || !user.email) return;
+
+            console.log(`[NotificationService] Sending Nudge Email to ${user.email}`);
+
+            const subject = `🤔 Esqueceu de algo?`;
+            const html = `
+                <div style="font-family: sans-serif; color: #333;">
+                    <h2 style="color: #6366f1;">Passou rápido, né?</h2>
+                    <p>Olá, <strong>${user.name}</strong>!</p>
+                    <p>Notamos que você não registrou gastos nos últimos 3 dias.</p>
+                    <p>Para ter clareza total das suas finanças, registrar os pequenos gastos diários faz toda a diferença.</p>
+                    
+                    <div style="background-color: #eef2ff; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                        <p style="margin: 0;"><strong>Dica:</strong> Se não tiver tempo, apenas mande um áudio para nosso bot no WhatsApp!</p>
+                    </div>
+
+                    <div style="margin-top: 30px; text-align: center;">
+                        <a href="https://finance-pro-mu.vercel.app/" style="background-color: #6366f1; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                            Registrar
+                        </a>
+                    </div>
+                </div>
+            `;
+            await sendEmail({ to: user.email, subject, htmlContent: html });
+        } catch (error) {
+            console.error("[NotificationService] Nudge Email Error:", error);
+        }
+    }
+
+    async sendComebackEmail(userId: string) {
+        try {
+            const client = await getMongoClient();
+            const db = client.db('financeApp');
+            const user = await db.collection('users').findOne({ _id: new ObjectId(userId) });
+            if (!user || !user.email) return;
+
+            console.log(`[NotificationService] Sending Comeback Email to ${user.email}`);
+
+            const subject = `🚀 Muitas novidades no FinancePro!`;
+            const html = `
+                <div style="font-family: sans-serif; color: #333;">
+                    <h2 style="color: #0ea5e9;">Sentimos sua falta!</h2>
+                    <p>Olá, <strong>${user.name}</strong>!</p>
+                    <p>Faz um tempo que não te vemos por aqui (30 dias ou mais). Tanta coisa mudou...</p>
+                    
+                    <h3 style="color: #0ea5e9;">O que há de novo:</h3>
+                    <ul style="padding-left: 20px;">
+                        <li style="margin-bottom: 10px;">🧠 <strong>IA Mais Inteligente:</strong> Agora ela entende melhor seus hábitos.</li>
+                        <li style="margin-bottom: 10px;">⚡ <strong>Performance:</strong> O app está muito mais rápido.</li>
+                        <li style="margin-bottom: 10px;">🔒 <strong>Segurança:</strong> Seus dados ainda mais protegidos.</li>
+                    </ul>
+
+                    <p>Que tal dar uma olhadinha sem compromisso?</p>
+
+                    <div style="margin-top: 30px; text-align: center;">
+                        <a href="https://finance-pro-mu.vercel.app/" style="background-color: #0ea5e9; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                            Detalhes
+                        </a>
+                    </div>
+                </div>
+            `;
+            await sendEmail({ to: user.email, subject, htmlContent: html });
+        } catch (error) {
+            console.error("[NotificationService] Comeback Email Error:", error);
+        }
+    }
 }
