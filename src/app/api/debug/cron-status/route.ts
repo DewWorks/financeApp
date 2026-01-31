@@ -3,6 +3,10 @@ import { getMongoClient } from '@/db/connectionDb';
 
 export const dynamic = 'force-dynamic';
 
+function escapeRegExp(string: string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+}
+
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
@@ -24,8 +28,9 @@ export async function GET(request: Request) {
         const db = client.db('financeApp');
 
         // Case-insensitive search
+        const safeEmail = escapeRegExp(email);
         let user = await db.collection('users').findOne({
-            email: { $regex: new RegExp(`^${email}$`, 'i') }
+            email: { $regex: new RegExp(`^${safeEmail}$`, 'i') }
         });
 
         if (!user) {
