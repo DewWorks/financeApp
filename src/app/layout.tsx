@@ -5,6 +5,7 @@ import { AuthPopup } from "@/components/ui/molecules/AuthPopup";
 import { ThemeProvider } from "@/components/ui/organisms/ThemeContext"
 import { UserProvider } from "@/context/UserContext";
 import { PlanGateProvider } from "@/context/PlanGateContext";
+import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -17,10 +18,24 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
+export const viewport = {
+  themeColor: "#ffffff",
+};
+
 export const metadata: Metadata = {
   title: "FinancePro",
   description: "Desenvolvido por JoaoIto DevWorks",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "FinancePro",
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
+
 
 export default function RootLayout({
   children,
@@ -40,6 +55,7 @@ export default function RootLayout({
           </UserProvider>
         </ThemeProvider>
         <AuthPopup />
+        <ServiceWorkerRegister />
       </body>
     </html>
   );

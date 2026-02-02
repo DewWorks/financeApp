@@ -8,6 +8,7 @@ import { Tooltip } from "@/components/ui/atoms/tooltip"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/atoms/popover"
 import { LogOut, User, LogIn, Menu } from "lucide-react"
 import { motion } from "framer-motion"
+import { PWAInstallButton } from "@/components/ui/molecules/PWAInstallButton"
 
 interface DashboardHeaderProps {
     user: IUser | null
@@ -62,6 +63,8 @@ export function DashboardHeader({
 
                     {/* Desktop Area - User Info, Logout, Theme */}
                     <div className="hidden sm:flex items-center space-x-2">
+
+                        <PWAInstallButton className="hidden sm:flex" />
 
                         {/* Theme Toggle */}
                         <ThemeToggle />
@@ -177,6 +180,10 @@ export function DashboardHeader({
                                             </Button>
                                         </>
                                     )}
+                                    {/* Link de Instalação PWA Mobile */}
+                                    <div className="sm:hidden w-full">
+                                        <PWAInstallButton className="w-full justify-start px-3 text-blue-600 dark:text-blue-400" />
+                                    </div>
                                 </div>
                             </PopoverContent>
                         </Popover>
