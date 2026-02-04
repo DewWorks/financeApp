@@ -25,9 +25,32 @@ export default function LoginPage() {
   const [errorMessage, setErrorMessage] = useState("")
   const router = useRouter()
 
-  // MFA States
   const [mfaRequired, setMfaRequired] = useState(false)
   const [mfaCode, setMfaCode] = useState("")
+  // Fallback MFA States
+  const [userId, setUserId] = useState("")
+  const [sendingCode, setSendingCode] = useState(false)
+
+  const handleSendOtp = async (channel: 'email' | 'whatsapp') => {
+    setSendingCode(true)
+    try {
+      const res = await fetch("/api/auth/mfa/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, channel })
+      })
+      if (res.ok) {
+        Swal.fire("Sucesso", `Código enviado por ${channel === 'email' ? 'Email' : 'WhatsApp'}!`, "success")
+      } else {
+        Swal.fire("Erro", "Falha ao enviar código. Tente novamente.", "error")
+      }
+    } catch (error) {
+      Swal.fire("Erro", "Erro de conexão.", "error")
+    } finally {
+      setSendingCode(false)
+    }
+  }
+
 
   useEffect(() => {
     const cookies = document.cookie

@@ -8,6 +8,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 import { getPhoneQueryVariations } from '@/lib/phoneUtils'
 import { loginLimiter, checkRateLimit } from '@/lib/rateLimit'
 import { verifyMfaToken } from '@/lib/mfa'
+import { MfaService } from '@/lib/MfaService'
 
 /**
  * @swagger
@@ -112,7 +113,8 @@ export async function POST(request: Request) {
         return NextResponse.json({ mfaRequired: true, userId: user._id }, { status: 200 });
       }
 
-      const isValid = verifyMfaToken(mfaCode, user.mfaSecret);
+      // Use MfaService to verify (handles both TOTP and Email/WhatsApp OTP)
+      const isValid = await MfaService.verifyLoginCode(user._id.toString(), mfaCode);
       if (!isValid) {
         return NextResponse.json({ error: 'Código de autenticação inválido.' }, { status: 400 });
       }
