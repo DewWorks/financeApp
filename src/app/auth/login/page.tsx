@@ -16,6 +16,7 @@ import { validatePhoneDetails } from "@/lib/phoneUtils"
 import axios from "axios"
 
 export default function LoginPage() {
+  // State Normal
   const [emailOrPhone, setEmailOrPhone] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -23,6 +24,33 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const router = useRouter()
+
+  const [mfaRequired, setMfaRequired] = useState(false)
+  const [mfaCode, setMfaCode] = useState("")
+  // Fallback MFA States
+  const [userId, setUserId] = useState("")
+  const [sendingCode, setSendingCode] = useState(false)
+
+  const handleSendOtp = async (channel: 'email' | 'whatsapp') => {
+    setSendingCode(true)
+    try {
+      const res = await fetch("/api/auth/mfa/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, channel })
+      })
+      if (res.ok) {
+        Swal.fire("Sucesso", `Código enviado por ${channel === 'email' ? 'Email' : 'WhatsApp'}!`, "success")
+      } else {
+        Swal.fire("Erro", "Falha ao enviar código. Tente novamente.", "error")
+      }
+    } catch (error) {
+      Swal.fire("Erro", "Erro de conexão.", "error")
+    } finally {
+      setSendingCode(false)
+    }
+  }
+
 
   useEffect(() => {
     const cookies = document.cookie
@@ -36,78 +64,34 @@ export default function LoginPage() {
   const handleEmailOrPhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setEmailOrPhone(value)
-    setErrorMessage("") // Limpa erro ao digitar
-
-    // Detectar tipo de input
+    setErrorMessage("")
     if (value.includes("@")) {
       setInputType("email")
     } else if (/^\(?\d{2}\)?\s?\d{4,5}-?\d{4}$/.test(value) || /^\d+$/.test(value) || value.startsWith('+')) {
       setInputType("phone")
-      // Auto-formatar telefone apenas se estiver "limpo" (não complexo com DDI +55 explicitado pelo usuário)
-      // Se usuario digitar +55, deixamos ele controlar ou aplicamos mascara depois.
-      // Por enquanto, validação visual.
     } else if (value === "") {
       setInputType("unknown")
     }
   }
 
-  const formatPhoneNumber = (value: string) => {
-    const numbers = value.replace(/\D/g, "")
-    if (numbers.length <= 11) {
-      return numbers.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3")
-    }
-    return value
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!emailOrPhone || !password) {
-      Swal.fire({
-        icon: "error",
-        title: "Erro!",
-        text: "Preencha todos os campos.",
-      })
+    if (!mfaRequired && (!emailOrPhone || !password)) {
+      Swal.fire({ icon: "error", title: "Erro!", text: "Preencha todos os campos." })
       return;
     }
 
-    // Validação específica de telefone antes do envio
-    // Se não tem @ e tem números (ou +), assumimos que é telefone
-    if (!emailOrPhone.includes("@") && (/\d/.test(emailOrPhone) || emailOrPhone.startsWith('+'))) {
+    if (mfaRequired && mfaCode.length < 6) {
+      Swal.fire({ icon: "error", title: "Erro!", text: "Digite o código de 6 dígitos." })
+      return;
+    }
+
+    // Validação de telefone (apenas se não for MFA)
+    if (!mfaRequired && !emailOrPhone.includes("@") && (/\d/.test(emailOrPhone) || emailOrPhone.startsWith('+'))) {
       const validation = validatePhoneDetails(emailOrPhone);
       if (!validation.isValid) {
-        let errorMsg = "Número inválido.";
-        let warningText = "";
-
-        switch (validation.error) {
-          case 'TOO_SHORT':
-            errorMsg = "O número digitado é muito curto.";
-            warningText = "Verifique o DDD e o 9º dígito.";
-            break;
-          case 'TOO_LONG':
-            errorMsg = "O número digitado é muito longo.";
-            break;
-          case 'INVALID_COUNTRY':
-            errorMsg = "Código de país inválido.";
-            break;
-          case 'NOT_A_NUMBER':
-            errorMsg = "Caracteres inválidos.";
-            break;
-          default:
-            errorMsg = "Verifique o número digitado.";
-            warningText = "Formato esperado: (DDD) 99999-9999";
-        }
-
-        const fullMsg = warningText ? `${errorMsg}\n${warningText}` : errorMsg;
-
-        setErrorMessage(fullMsg.replace(/\n/g, ' ')); // Mostra no parágrafo
-
-        Swal.fire({
-          icon: "info",
-          title: "Atenção",
-          text: fullMsg.replace(/\n/g, ' '),
-          confirmButtonColor: "#0085FF"
-        });
+        Swal.fire({ icon: "info", title: "Atenção", text: "Número inválido." });
         return;
       }
     }
@@ -115,30 +99,39 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      // Detectar se é telefone ou email
-      // Detectar se é telefone ou email logicamente
-      // Se tiver @ é email. Se não tiver @ e tiver digitos, é telefone.
       const isPhone = !emailOrPhone.includes("@") && /\d/.test(emailOrPhone);
+
+      const payload: any = {
+        [isPhone ? "cel" : "email"]: emailOrPhone,
+        password,
+      }
+
+      // If MFA is active, send the code
+      if (mfaRequired) {
+        payload.mfaCode = mfaCode
+      }
 
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          [isPhone ? "cel" : "email"]: emailOrPhone,
-          password,
-        }),
+        body: JSON.stringify(payload),
       })
 
       const data = await response.json()
 
       if (response.ok) {
+        // [NEW] Check if MFA is required
+        if (data.mfaRequired) {
+          setMfaRequired(true);
+          setIsLoading(false);
+          return; // Stop here, show MFA UI
+        }
+
         localStorage.setItem("auth_token", data.token)
         localStorage.setItem("tutorial-guide", data.tutorialGuide.toString())
         localStorage.setItem("execute-query", data.executeQuery.toString())
         localStorage.setItem("user-id", data.userId.toString())
 
-        // PREFETCH: Fetch full user profile immediately to populate localStorage
-        // This ensures the Dashboard has data even if the initial network call fails
         try {
           const userRes = await axios.get("/api/users");
           if (userRes) {
@@ -161,199 +154,113 @@ export default function LoginPage() {
         console.error("Login API Error:", data)
         const msg = data.error || data.message || "Erro ao processar login.";
         setErrorMessage(msg);
-        Swal.fire({
-          icon: "error",
-          title: "Erro!",
-          text: msg,
-        })
+        Swal.fire({ icon: "error", title: "Erro!", text: msg })
       }
     } catch (error) {
       console.error("Login error:", error)
-      Swal.fire({
-        icon: "error",
-        title: "Erro!",
-        text: "Ocorreu um erro inesperado. Tente novamente mais tarde.",
-      })
+      Swal.fire({ icon: "error", title: "Erro!", text: "Ocorreu um erro inesperado." })
     } finally {
       setIsLoading(false)
     }
   }
 
-  const routerRegister = () => {
-    router.push("/auth/register")
-  }
-
-  const handleForgotPassword = () => {
-    router.push("/auth/forgot-password")
-  }
-
-  const getPlaceholder = () => {
-    switch (inputType) {
-      case "email":
-        return "email@exemplo.com"
-      case "phone":
-        return "(11) 99999-9999"
-      default:
-        return "email@exemplo.com ou (11) 99999-9999"
-    }
-  }
-
-  const getInputIcon = () => {
-    switch (inputType) {
-      case "email":
-        return <Mail className="w-5 h-5 text-blue-500" />
-      case "phone":
-        return <Phone className="w-5 h-5 text-green-500" />
-      default:
-        return <Mail className="w-5 h-5 text-muted-foreground" />
-    }
-  }
+  const routerRegister = () => router.push("/auth/register")
+  const handleForgotPassword = () => router.push("/auth/forgot-password")
+  const getPlaceholder = () => inputType === "email" ? "email@exemplo.com" : inputType === "phone" ? "(11) 99999-9999" : "email ou telefone";
+  const getInputIcon = () => inputType === "email" ? <Mail className="w-5 h-5 text-blue-500" /> : inputType === "phone" ? <Phone className="w-5 h-5 text-green-500" /> : <Mail className="w-5 h-5 text-muted-foreground" />;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-background relative">
-      <div className="absolute top-4 right-4">
-        <ThemeToggle />
-      </div>
+      <div className="absolute top-4 right-4"><ThemeToggle /></div>
       <Card className="w-full max-w-md">
         <CardHeader className="flex items-center justify-center">
           <Title />
           <CardTitle className="text-2xl font-bold text-center">Login</CardTitle>
-          <p className="text-center text-muted-foreground mt-2">Entre com seu email ou telefone</p>
+          <p className="text-center text-muted-foreground mt-2">
+            {mfaRequired ? "Confirmação de Segurança" : "Entre com seu email ou telefone"}
+          </p>
         </CardHeader>
 
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4 text-xl">
-            {/* Campo Email ou Telefone */}
-            <div className="space-y-2">
-              <Label className="text-xl" htmlFor="emailOrPhone">
-                Email ou Telefone
-              </Label>
-              <div className="relative">
-                <div className="absolute left-3 top-1/2 transform -translate-y-1/2">{getInputIcon()}</div>
-                <Input
-                  id="emailOrPhone"
-                  type="text"
-                  value={emailOrPhone}
-                  onChange={handleEmailOrPhoneChange}
-                  className="border-2 border-border pl-12"
-                  placeholder={getPlaceholder()}
-                  required
-                />
-              </div>
-              {/* Helper Text para Telefone ou Erro */}
-              <p className={`text-xs ml-1 ${errorMessage ? "text-red-500 font-semibold" : "text-muted-foreground"}`}>
-                {errorMessage
-                  ? errorMessage
-                  : inputType === 'phone'
-                    ? 'Digite DDD + Número (Ex: 63 99999-9999)'
-                    : inputType === 'email'
-                      ? 'Digite seu e-mail cadastrado'
-                      : 'Digite seu e-mail ou celular com DDD'}
-              </p>
 
-              {/* Indicador visual do tipo detectado */}
-              {inputType !== "unknown" && (
-                <div className="flex items-center gap-2 text-sm">
-                  {inputType === "email" && (
-                    <>
-                      <Mail className="w-4 h-4 text-blue-500" />
-                      <span className="text-blue-600">Email detectado</span>
-                    </>
-                  )}
-                  {inputType === "phone" && (
-                    <>
-                      <Phone className="w-4 h-4 text-green-500" />
-                      <span className="text-green-600">Telefone detectado</span>
-                    </>
-                  )}
+            {!mfaRequired ? (
+              <>
+                {/* Login Form Normal */}
+                <div className="space-y-2">
+                  <Label className="text-xl" htmlFor="emailOrPhone">Email ou Telefone</Label>
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2">{getInputIcon()}</div>
+                    <Input id="emailOrPhone" type="text" value={emailOrPhone} onChange={handleEmailOrPhoneChange} className="border-2 border-border pl-12" placeholder={getPlaceholder()} required />
+                  </div>
+                  <p className={`text-xs ml-1 ${errorMessage ? "text-red-500 font-semibold" : "text-muted-foreground"}`}>
+                    {errorMessage || (inputType === 'phone' ? 'DDD + Número' : 'Email ou Celular')}
+                  </p>
                 </div>
-              )}
-            </div>
 
-            {/* Campo Senha */}
-            <div className="space-y-2">
-              <Label className="text-xl" htmlFor="password">
-                Senha
-              </Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="border-2 border-border pr-12"
-                  placeholder="***********"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
+                <div className="space-y-2">
+                  <Label className="text-xl" htmlFor="password">Senha</Label>
+                  <div className="relative">
+                    <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className="border-2 border-border pr-12" placeholder="***********" required />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* MFA Challenge Form */
+              <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg text-center">
+                  <p className="text-blue-800 dark:text-blue-300 font-medium mb-1">Conta Protegida</p>
+                  <p className="text-sm text-blue-600 dark:text-blue-400">Digite o código de 6 dígitos do seu app autenticador.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xl text-center block">Código de Autenticação</Label>
+                  <Input
+                    autoFocus
+                    value={mfaCode}
+                    onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    className="text-center text-2xl tracking-[0.5em] font-mono h-14"
+                    placeholder="000 000"
+                    maxLength={6}
+                  />
+                </div>
+
+                <div className="text-center">
+                  <Button variant="link" type="button" onClick={() => setMfaRequired(false)} className="text-muted-foreground">
+                    Voltar para login
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Botão de Login */}
-            <Button
-              type="submit"
-              className="w-full text-xl bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-70 disabled:cursor-not-allowed"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-6 w-6 animate-spin" />
-                  Entrando...
-                </>
-              ) : (
-                "Entrar"
-              )}
+            <Button type="submit" className="w-full text-xl bg-blue-600 hover:bg-blue-700 text-white" disabled={isLoading}>
+              {isLoading ? <><Loader2 className="mr-2 h-6 w-6 animate-spin" /> {mfaRequired ? "Verificando..." : "Entrando..."}</> : (mfaRequired ? "Verificar" : "Entrar")}
             </Button>
 
-            {/* Link Esqueceu Senha */}
-            <h3
-              onClick={handleForgotPassword}
-              className="cursor-pointer text-md text-blue-600 text-center underline hover:text-blue-800 transition-colors"
-            >
-              Esqueceu a senha?
-            </h3>
-
-            {/* Divisor */}
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="bg-background px-2 text-muted-foreground">ou</span>
-              </div>
-            </div>
-
-            {/* Cadastro */}
-            <div className="text-center space-y-3">
-              <h2 className="text-xl text-foreground">Não possui uma conta?</h2>
-              <Button
-                onClick={routerRegister}
-                className="w-full text-xl bg-green-600 hover:bg-green-700 text-white"
-                type="button"
-              >
-                Cadastrar-se
-              </Button>
-            </div>
+            {!mfaRequired && (
+              <>
+                <h3 onClick={handleForgotPassword} className="cursor-pointer text-md text-blue-600 text-center underline hover:text-blue-800 transition-colors">Esqueceu a senha?</h3>
+                <div className="relative my-6">
+                  <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
+                  <div className="relative flex justify-center text-sm"><span className="bg-background px-2 text-muted-foreground">ou</span></div>
+                </div>
+                <div className="text-center space-y-3">
+                  <h2 className="text-xl text-foreground">Não possui uma conta?</h2>
+                  <Button onClick={routerRegister} className="w-full text-xl bg-green-600 hover:bg-green-700 text-white" type="button">Cadastrar-se</Button>
+                </div>
+              </>
+            )}
           </form>
 
-          {/* Informações sobre tipos de login */}
-          <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-            <h4 className="font-semibold text-blue-800 dark:text-blue-400 mb-2">💡 Dica:</h4>
-            <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
-              <li>
-                • Use seu <strong>email</strong>: usuario@email.com
-              </li>
-              <li>
-                • Ou seu <strong>telefone</strong>: (11) 99999-9999
-              </li>
-            </ul>
-          </div>
+          {!mfaRequired && inputType !== "unknown" && (
+            <div className="mt-6 flex justify-center">
+              {inputType === "email" && <span className="text-blue-600 text-xs flex gap-1 items-center bg-blue-50 px-2 py-1 rounded"><Mail className="w-3 h-3" /> Email detectado</span>}
+              {inputType === "phone" && <span className="text-green-600 text-xs flex gap-1 items-center bg-green-50 px-2 py-1 rounded"><Phone className="w-3 h-3" /> Telefone detectado</span>}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

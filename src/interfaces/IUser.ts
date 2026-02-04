@@ -17,6 +17,8 @@ export interface IUser {
     tutorialGuide?: boolean;
     executeQuery?: boolean;
     admin?: boolean;
+    mfaEnabled?: boolean;
+    mfaSecret?: string;
     verification?: IUserVerification;
     subscription?: ISubscription;
     updatedAt?: Date;

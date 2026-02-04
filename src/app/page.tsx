@@ -24,6 +24,7 @@ import { MobileTransactionFab } from "@/components/ui/molecules/MobileTransactio
 import { AddIncomeDialog } from "@/components/ui/organisms/AddIncomeDialog"
 import { AddExpenseDialog } from "@/components/ui/organisms/AddExpenseDialog"
 import { Toast } from "@/components/ui/atoms/toast"
+import { MfaNudge } from "@/components/dashboard/MfaNudge"
 
 // Charts (Analytics Section)
 import { CashFlowChart } from "@/components/ui/charts/CashFlowChart"
@@ -275,6 +276,9 @@ function DashboardContent() {
         />
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+          {/* SECURITY NUDGE */}
+          <MfaNudge mfaEnabled={user?.mfaEnabled} />
 
           {/* SECTION: HOME */}
           <div className={activeTab === 'home' ? 'block min-h-[80vh] pb-32 md:min-h-0 md:pb-0' : 'hidden md:block'}>
