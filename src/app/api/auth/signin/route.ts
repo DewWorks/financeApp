@@ -16,7 +16,7 @@ export const runtime = 'nodejs'
 
 /**
  * @swagger
- * /api/auth/login:
+ * /api/auth/signin:
  *   post:
  *     tags:
  *       - Auth
