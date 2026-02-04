@@ -228,6 +228,32 @@ export default function LoginPage() {
                   />
                 </div>
 
+                {/* Fallback Options */}
+                <div className="flex gap-2 justify-center pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={sendingCode}
+                    onClick={() => handleSendOtp('email')}
+                    className="text-xs"
+                  >
+                    {sendingCode ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Mail className="w-3 h-3 mr-1" />}
+                    Enviar por Email
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={sendingCode}
+                    onClick={() => handleSendOtp('whatsapp')}
+                    className="text-xs"
+                  >
+                    {sendingCode ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Phone className="w-3 h-3 mr-1" />}
+                    WhatsApp
+                  </Button>
+                </div>
+
                 <div className="text-center">
                   <Button variant="link" type="button" onClick={() => setMfaRequired(false)} className="text-muted-foreground">
                     Voltar para login
