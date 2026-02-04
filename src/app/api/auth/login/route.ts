@@ -12,6 +12,7 @@ import { MfaService } from '@/lib/MfaService'
 
 // Required to prevent 405 Method Not Allowed in production (Vercel)
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
 /**
  * @swagger

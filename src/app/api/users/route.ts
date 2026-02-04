@@ -8,6 +8,11 @@ import { IUser } from '@/interfaces/IUser';
 import { formatToE164 } from '@/lib/phoneUtils';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
+if (!process.env.MONGODB_URI) {
+    console.error("CRITICAL: MONGODB_URI is missing in runtime environment!");
+}
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
