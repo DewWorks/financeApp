@@ -6,6 +6,8 @@ import { cookies } from 'next/headers'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 import { getPhoneQueryVariations } from '@/lib/phoneUtils'
+import { loginLimiter, checkRateLimit } from '@/lib/rateLimit'
+import { verifyMfaToken } from '@/lib/mfa'
 
 /**
  * @swagger
@@ -30,9 +32,11 @@ import { getPhoneQueryVariations } from '@/lib/phoneUtils'
  *                 type: string
  *               password:
  *                 type: string
+ *               mfaCode:
+ *                 type: string
  *     responses:
  *       200:
- *         description: Login successful
+ *         description: Login successful or MFA required
  *         content:
  *           application/json:
  *             schema:
@@ -42,6 +46,8 @@ import { getPhoneQueryVariations } from '@/lib/phoneUtils'
  *                   type: string
  *                 token:
  *                   type: string
+ *                 mfaRequired:
+ *                   type: boolean
  *                 userId:
  *                   type: string
  *                 tutorialGuide:
@@ -50,12 +56,25 @@ import { getPhoneQueryVariations } from '@/lib/phoneUtils'
  *                   type: boolean
  *       400:
  *         description: Missing fields or invalid credentials
+ *       429:
+ *         description: Too many attempts
  *       500:
  *         description: Internal server error
  */
 export async function POST(request: Request) {
   try {
-    const { email, cel, password } = await request.json()
+    const { email, cel, password, mfaCode } = await request.json()
+
+    // 1. Rate Limiting Check
+    const ip = request.headers.get("x-forwarded-for") || "unknown";
+    const isAllowed = await checkRateLimit(loginLimiter, ip);
+
+    if (!isAllowed) {
+      return NextResponse.json(
+        { error: 'Muitas tentativas de login. Tente novamente em 15 minutos.' },
+        { status: 429 }
+      );
+    }
 
     if (!password || (!email && !cel)) {
       return NextResponse.json({ error: 'Preencha todos os campos obrigatórios.' }, { status: 400 });
@@ -84,6 +103,19 @@ export async function POST(request: Request) {
     const isPasswordValid = await bcrypt.compare(password, user.password)
     if (!isPasswordValid) {
       return NextResponse.json({ error: 'Senha incorreta. Tente novamente.' }, { status: 400 })
+    }
+
+    // [NEW] MFA Check
+    if (user.mfaEnabled) {
+      if (!mfaCode) {
+        // Tell frontend to show MFA Input
+        return NextResponse.json({ mfaRequired: true, userId: user._id }, { status: 200 });
+      }
+
+      const isValid = verifyMfaToken(mfaCode, user.mfaSecret);
+      if (!isValid) {
+        return NextResponse.json({ error: 'Código de autenticação inválido.' }, { status: 400 });
+      }
     }
 
     // Generate JWT token

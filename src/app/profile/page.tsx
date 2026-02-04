@@ -13,6 +13,7 @@ import { User, Mail, Phone, ArrowLeft, Edit, Save, X, Users, Shield, Eye, EyeOff
 import Swal from "sweetalert2"
 import { IUser } from "@/interfaces/IUser"
 import { ThemeToggle } from "@/components/ui/atoms/ThemeToggle"
+import { MfaSetup } from "@/components/profile/MfaSetup"
 
 export default function ProfilePage() {
     const [user, setUser] = useState<IUser | null>(null)
@@ -301,6 +302,16 @@ export default function ProfilePage() {
                     </Card>
                 </div>
                 */}
+
+                {/* Security Section (MFA) */}
+                <div className="mb-6">
+                    {user && (
+                        <MfaSetup
+                            mfaEnabled={user.mfaEnabled || false}
+                            onUpdate={fetchUserProfile}
+                        />
+                    )}
+                </div>
 
                 {/* Profile Information */}
                 <Card className="mb-6">

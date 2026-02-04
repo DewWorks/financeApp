@@ -1,5 +1,6 @@
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { cleanTransactionDescription } from "@/lib/sanitizer";
 
 const apiKey = process.env.GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(apiKey || "");
@@ -146,7 +147,7 @@ export class AiService {
         Input JSON:
         ${JSON.stringify(transactionsToEnrich.map(t => ({
             id: t.id,
-            description: t.description,
+            description: cleanTransactionDescription(t.description),
             amount: t.amount,
             originalCategory: t.category
         })))}
