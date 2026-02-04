@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/atoms/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/atoms/dialog"
 import { Button } from "@/components/ui/atoms/button"
 import { Input } from "@/components/ui/atoms/input"
 import { Label } from "@/components/ui/atoms/label"
@@ -89,6 +89,9 @@ export function AddIncomeDialog({ onAddIncome, initialData, trigger, open: exter
       <DialogContent className="bg-white sm:max-w-[425px] dark:bg-gray-800 dark:text-white max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold text-center">{isEditMode ? 'Editar Receita' : 'Adicionar Receita'}</DialogTitle>
+          <DialogDescription className="text-center text-sm text-gray-500">
+            Preencha os dados abaixo para {isEditMode ? 'atualizar' : 'adicionar'} uma receita.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit, (errors) => alert("Erro validação: " + JSON.stringify(errors)))} className="space-y-4 mt-4">
           <div className="space-y-2">

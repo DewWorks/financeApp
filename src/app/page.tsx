@@ -496,8 +496,14 @@ function DashboardContent() {
 }
 
 function Dashboard() {
+  const { currentProfileId, isLoading } = useCurrentProfile();
+
+  if (isLoading) {
+    return <GlobalLoader />;
+  }
+
   return (
-    <TransactionsProvider>
+    <TransactionsProvider profileId={currentProfileId}>
       <GoalsProvider>
         <DashboardContent />
       </GoalsProvider>
