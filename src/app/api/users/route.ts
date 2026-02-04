@@ -63,7 +63,20 @@ async function getUserIdFromToken() {
 export async function GET() {
     try {
         const userId = await getUserIdFromToken();
-        const client = await getMongoClient();
+
+        // Debug DB Connection
+        let client;
+        try {
+            client = await getMongoClient();
+        } catch (dbError: any) {
+            console.error("DB Connection Failed:", dbError);
+            return NextResponse.json({
+                error: 'Falha na conexão com o banco de dados',
+                details: dbError.message,
+                env_check: !!process.env.MONGODB_URI
+            }, { status: 500 });
+        }
+
         const db = client.db('financeApp');
 
         const user = await db.collection('users').findOne(
