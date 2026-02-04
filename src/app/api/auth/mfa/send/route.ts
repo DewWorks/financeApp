@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { MfaService } from '@/lib/MfaService';
 
+// Required for Vercel
+export const dynamic = 'force-dynamic'
+
 /**
  * @swagger
  * /api/auth/mfa/send:

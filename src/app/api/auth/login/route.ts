@@ -10,6 +10,9 @@ import { loginLimiter, checkRateLimit } from '@/lib/rateLimit'
 import { verifyMfaToken } from '@/lib/mfa'
 import { MfaService } from '@/lib/MfaService'
 
+// Required to prevent 405 Method Not Allowed in production (Vercel)
+export const dynamic = 'force-dynamic'
+
 /**
  * @swagger
  * /api/auth/login:
