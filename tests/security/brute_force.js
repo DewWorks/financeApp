@@ -9,7 +9,7 @@ async function run() {
 
     for (const pass of passwords) {
         try {
-            console.log(`Trying password: "${pass}" for ${target}...`);
+            console.log(`Trying password: [REDACTED] for ${target}...`);
             const res = await fetch('http://localhost:3000/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
