@@ -70,13 +70,21 @@ export async function GET() {
             return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
         }
 
-        return NextResponse.json(user, { status: 200 });
-    } catch (error) {
+        // Convert ObjectId to string to ensure safe serialization
+        const safeUser = {
+            ...user,
+            _id: user._id.toString()
+        };
+
+        return NextResponse.json(safeUser, { status: 200 });
+    } catch (error: any) {
+        console.error('API Users Error:', error);
+
         if (error instanceof AuthError) {
             return NextResponse.json({ error: error.message }, { status: error.status });
         }
-        console.error('Erro ao buscar usuário:', error);
-        return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
+
+        return NextResponse.json({ error: 'Erro interno', details: error.message }, { status: 500 });
     }
 }
 
