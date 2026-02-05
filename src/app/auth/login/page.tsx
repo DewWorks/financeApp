@@ -107,54 +107,44 @@ export default function LoginPage() {
         payload.mfaCode = mfaCode
       }
 
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      const response = await axios.post("/api/auth/login", payload)
+
+      if (response.data.mfaRequired) {
+        setMfaRequired(true);
+        if (response.data.userId) setUserId(response.data.userId)
+        setIsLoading(false);
+        return;
+      }
+
+      localStorage.setItem("auth_token", response.data.token)
+      localStorage.setItem("tutorial-guide", response.data.tutorialGuide.toString())
+      localStorage.setItem("execute-query", response.data.executeQuery.toString())
+      localStorage.setItem("user-id", response.data.userId.toString())
+
+      try {
+        const userRes = await axios.get("/api/users");
+        if (userRes) {
+          localStorage.setItem("user_data", JSON.stringify(userRes.data));
+        }
+      } catch (e) {
+        console.error("Prefetch failed", e);
+      }
+
+      Swal.fire({
+        icon: "success",
+        title: "Sucesso!",
+        text: "Login realizado com sucesso.",
+        confirmButtonText: "Entrar",
+        timer: 1500,
+      }).then(() => {
+        router.push("/")
       })
 
-      const data = await response.json()
-
-      if (response.ok) {
-        if (data.mfaRequired) {
-          setMfaRequired(true);
-          if (data.userId) setUserId(data.userId)
-          setIsLoading(false);
-          return;
-        }
-
-        localStorage.setItem("auth_token", data.token)
-        localStorage.setItem("tutorial-guide", data.tutorialGuide.toString())
-        localStorage.setItem("execute-query", data.executeQuery.toString())
-        localStorage.setItem("user-id", data.userId.toString())
-
-        try {
-          const userRes = await axios.get("/api/users");
-          if (userRes) {
-            localStorage.setItem("user_data", JSON.stringify(userRes.data));
-          }
-        } catch (e) {
-          console.error("Prefetch failed", e);
-        }
-
-        Swal.fire({
-          icon: "success",
-          title: "Sucesso!",
-          text: "Login realizado com sucesso.",
-          confirmButtonText: "Entrar",
-          timer: 1500,
-        }).then(() => {
-          router.push("/")
-        })
-      } else {
-        console.error("Login API Error:", data)
-        const msg = data.error || data.message || "Erro ao processar login.";
-        setErrorMessage(msg);
-        Swal.fire({ icon: "error", title: "Erro!", text: msg })
-      }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login error:", error)
-      Swal.fire({ icon: "error", title: "Erro!", text: "Ocorreu um erro inesperado." })
+      const msg = error.response?.data?.error || error.response?.data?.message || "Ocorreu um erro inesperado.";
+      setErrorMessage(msg);
+      Swal.fire({ icon: "error", title: "Erro!", text: msg })
     } finally {
       setIsLoading(false)
     }
@@ -273,13 +263,6 @@ export default function LoginPage() {
               </>
             )}
           </form>
-
-          {!mfaRequired && inputType !== "unknown" && (
-            <div className="mt-6 flex justify-center">
-              {inputType === "email" && <span className="text-blue-600 text-xs flex gap-1 items-center bg-blue-50 px-2 py-1 rounded"><Mail className="w-3 h-3" /> Email detectado</span>}
-              {inputType === "phone" && <span className="text-green-600 text-xs flex gap-1 items-center bg-green-50 px-2 py-1 rounded"><Phone className="w-3 h-3" /> Telefone detectado</span>}
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

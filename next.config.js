@@ -6,12 +6,13 @@ const withSerwist = require("@serwist/next").default({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    // output: "standalone",
+    // FIX: Transpile the problematic package causing 405/500 errors
+    transpilePackages: ['@exodus/bytes'],
+
     reactStrictMode: false,
     typescript: {
         ignoreBuildErrors: true,
     },
-    // Garante compatibilidade
     webpack: (config) => {
         return config;
     },
