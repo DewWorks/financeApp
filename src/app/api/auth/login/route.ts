@@ -3,7 +3,6 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { getMongoClient } from '@/db/connectionDb'
 import { cookies } from 'next/headers'
-
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 import { getPhoneQueryVariations } from '@/lib/phoneUtils'
 import { loginLimiter, checkRateLimit } from '@/lib/rateLimit'
@@ -70,15 +69,22 @@ export async function POST(request: Request) {
     const ip = request.headers.get("x-forwarded-for") || "unknown";
     const isAllowed = await checkRateLimit(loginLimiter, ip);
 
+    // Manual CORS Headers
+    const headers = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    };
+
     if (!isAllowed) {
       return NextResponse.json(
         { error: 'Muitas tentativas de login. Tente novamente em 15 minutos.' },
-        { status: 429 }
+        { status: 429, headers }
       );
     }
 
     if (!password || (!email && !cel)) {
-      return NextResponse.json({ error: 'Preencha todos os campos obrigatórios.' }, { status: 400 });
+      return NextResponse.json({ error: 'Preencha todos os campos obrigatórios.' }, { status: 400, headers });
     }
     const client = await getMongoClient();
 
@@ -97,26 +103,26 @@ export async function POST(request: Request) {
     const user = await db.collection('users').findOne(query);
 
     if (!user) {
-      return NextResponse.json({ error: 'Usuário não encontrado. Verifique se o email ou telefone estão corretos.' }, { status: 400 })
+      return NextResponse.json({ error: 'Usuário não encontrado. Verifique se o email ou telefone estão corretos.' }, { status: 400, headers })
     }
 
     // Check password
     const isPasswordValid = await bcrypt.compare(password, user.password)
     if (!isPasswordValid) {
-      return NextResponse.json({ error: 'Senha incorreta. Tente novamente.' }, { status: 400 })
+      return NextResponse.json({ error: 'Senha incorreta. Tente novamente.' }, { status: 400, headers })
     }
 
     // [NEW] MFA Check
     if (user.mfaEnabled) {
       if (!mfaCode) {
         // Tell frontend to show MFA Input
-        return NextResponse.json({ mfaRequired: true, userId: user._id }, { status: 200 });
+        return NextResponse.json({ mfaRequired: true, userId: user._id }, { status: 200, headers });
       }
 
       // Use MfaService to verify (handles both TOTP and Email/WhatsApp OTP)
       const isValid = await MfaService.verifyLoginCode(user._id.toString(), mfaCode);
       if (!isValid) {
-        return NextResponse.json({ error: 'Código de autenticação inválido.' }, { status: 400 });
+        return NextResponse.json({ error: 'Código de autenticação inválido.' }, { status: 400, headers });
       }
     }
 
@@ -133,9 +139,23 @@ export async function POST(request: Request) {
           maxAge: 60 * 60 * 24, // 1 day
           path: '/',
         })
-    return NextResponse.json({ message: 'Login successful', token: token, userId: user._id, tutorialGuide: user.tutorialGuide, executeQuery: user.executeQuery }, { status: 200 })
+    return NextResponse.json({ message: 'Login successful', token: token, userId: user._id, tutorialGuide: user.tutorialGuide, executeQuery: user.executeQuery }, { status: 200, headers })
   } catch (error) {
     console.error('Login error:', error)
-    return NextResponse.json({ error: 'Erro interno do servidor. Tente novamente mais tarde.' }, { status: 500 })
+    const headers = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    };
+    return NextResponse.json({ error: 'Erro interno do servidor. Tente novamente mais tarde.' }, { status: 500, headers })
   }
+}
+
+export async function OPTIONS() {
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  };
+  return NextResponse.json({}, { status: 200, headers });
 }
