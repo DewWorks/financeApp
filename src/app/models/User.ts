@@ -57,4 +57,23 @@ const UserSchema = new Schema<IUser>({
     }
 });
 
+import { CryptoService } from "@/lib/crypto";
+
+// Encryption Middleware (Privacy)
+UserSchema.pre('save', function (next) {
+    if (this.isModified('cpf') && this.cpf) {
+        this.cpf = CryptoService.encrypt(this.cpf);
+    }
+    if (this.isModified('address') && this.address) {
+        this.address = CryptoService.encrypt(this.address);
+    }
+    next();
+});
+
+// Decryption Middleware (Transparency)
+UserSchema.post('init', function (doc) {
+    if (doc.cpf) doc.cpf = CryptoService.decrypt(doc.cpf);
+    if (doc.address) doc.address = CryptoService.decrypt(doc.address);
+});
+
 export const User = mongoose.models.User || mongoose.model<IUser>("User", UserSchema);

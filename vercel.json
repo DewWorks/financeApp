@@ -1,7 +1,7 @@
 {
     "crons": [
         {
-            "path": "/api/cron/daily-smart-digest",
+            "path": "/api/cron/backup",
             "schedule": "0 23 * * *"
         }
     ]
