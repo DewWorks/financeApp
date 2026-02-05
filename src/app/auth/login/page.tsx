@@ -16,7 +16,6 @@ import { validatePhoneDetails } from "@/lib/phoneUtils"
 import axios from "axios"
 
 export default function LoginPage() {
-  // State Normal
   const [emailOrPhone, setEmailOrPhone] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -25,11 +24,12 @@ export default function LoginPage() {
   const [errorMessage, setErrorMessage] = useState("")
   const router = useRouter()
 
+  // MFA States
   const [mfaRequired, setMfaRequired] = useState(false)
   const [mfaCode, setMfaCode] = useState("")
-  // Fallback MFA States
   const [userId, setUserId] = useState("")
   const [sendingCode, setSendingCode] = useState(false)
+
   const handleSendOtp = async (channel: 'email' | 'whatsapp') => {
     setSendingCode(true)
     try {
@@ -50,7 +50,6 @@ export default function LoginPage() {
     }
   }
 
-
   useEffect(() => {
     const cookies = document.cookie
     const token = cookies.includes("auth_token=")
@@ -59,11 +58,11 @@ export default function LoginPage() {
     }
   }, [])
 
-  // Detectar se é email ou telefone conforme o usuário digita
   const handleEmailOrPhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setEmailOrPhone(value)
     setErrorMessage("")
+
     if (value.includes("@")) {
       setInputType("email")
     } else if (/^\(?\d{2}\)?\s?\d{4,5}-?\d{4}$/.test(value) || /^\d+$/.test(value) || value.startsWith('+')) {
@@ -86,7 +85,6 @@ export default function LoginPage() {
       return;
     }
 
-    // Validação de telefone (apenas se não for MFA)
     if (!mfaRequired && !emailOrPhone.includes("@") && (/\d/.test(emailOrPhone) || emailOrPhone.startsWith('+'))) {
       const validation = validatePhoneDetails(emailOrPhone);
       if (!validation.isValid) {
@@ -105,7 +103,6 @@ export default function LoginPage() {
         password,
       }
 
-      // If MFA is active, send the code
       if (mfaRequired) {
         payload.mfaCode = mfaCode
       }
@@ -185,7 +182,6 @@ export default function LoginPage() {
 
             {!mfaRequired ? (
               <>
-                {/* Login Form Normal */}
                 <div className="space-y-2">
                   <Label className="text-xl" htmlFor="emailOrPhone">Email ou Telefone</Label>
                   <div className="relative">
@@ -208,7 +204,6 @@ export default function LoginPage() {
                 </div>
               </>
             ) : (
-              /* MFA Challenge Form */
               <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg text-center">
                   <p className="text-blue-800 dark:text-blue-300 font-medium mb-1">Conta Protegida</p>
@@ -227,7 +222,6 @@ export default function LoginPage() {
                   />
                 </div>
 
-                {/* Fallback Options */}
                 <div className="flex gap-2 justify-center pt-2">
                   <Button
                     type="button"
