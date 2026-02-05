@@ -1,8 +1,16 @@
 import { NextResponse } from 'next/server'
+import bcrypt from 'bcryptjs'
+import jwt from 'jsonwebtoken'
+import { getMongoClient } from '@/db/connectionDb'
+import { cookies } from 'next/headers'
 
-// Required to prevent 405 Method Not Allowed in production (Vercel)
-export const dynamic = 'force-dynamic'
-export const runtime = 'nodejs'
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+import { getPhoneQueryVariations } from '@/lib/phoneUtils'
+import { loginLimiter, checkRateLimit } from '@/lib/rateLimit'
+import { verifyMfaToken } from '@/lib/mfa'
+import { MfaService } from '@/lib/MfaService'
+
+
 
 export async function POST(request: Request) {
   try {
