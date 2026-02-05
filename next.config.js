@@ -1,7 +1,8 @@
 const withSerwist = require("@serwist/next").default({
     swSrc: "src/app/sw.ts",
     swDest: "public/sw.js",
-    disable: process.env.NODE_ENV === "development",
+    // Temporarily disabled for production debugging
+    disable: true, // process.env.NODE_ENV === "development",
 });
 
 /** @type {import('next').NextConfig} */
