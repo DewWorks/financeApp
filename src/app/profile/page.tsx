@@ -344,6 +344,21 @@ export default function ProfilePage() {
                                 </div>
                             </CardContent>
                         </Card>
+
+                        <Card
+                            className="cursor-pointer hover:shadow-md transition-shadow hover:bg-accent/50 mt-4"
+                            onClick={() => router.push('/profile/privacy')}
+                        >
+                            <CardContent className="p-4">
+                                <div className="flex items-center gap-3">
+                                    <Shield className="w-6 h-6 text-purple-500" />
+                                    <div>
+                                        <h3 className="font-medium text-foreground">Minha Privacidade (LGPD)</h3>
+                                        <p className="text-sm text-muted-foreground">Baixar dados ou excluir conta</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </CardHeader>
 
                     <CardContent className="space-y-6">
