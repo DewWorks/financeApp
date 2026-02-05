@@ -5,14 +5,21 @@ import { useEffect } from "react";
 export function ServiceWorkerRegister() {
     useEffect(() => {
         if ("serviceWorker" in navigator) {
-            navigator.serviceWorker
-                .register("/sw.js")
-                .then((registration) => {
-                    console.log("Service Worker registered");
-                })
-                .catch((error) => {
-                    console.error("Service Worker registration failed:", error);
+            // FORCE UNREGISTER ALL SERVICE WORKERS
+            navigator.serviceWorker.getRegistrations().then(function (registrations) {
+                for (let registration of registrations) {
+                    registration.unregister();
+                    console.log("Service Worker unregistered:", registration);
+                }
+            });
+
+            // Also explicitly remove the controller
+            if (window.caches) {
+                caches.keys().then(function (names) {
+                    for (let name of names)
+                        caches.delete(name);
                 });
+            }
         }
     }, []);
 
