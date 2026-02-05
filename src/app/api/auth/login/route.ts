@@ -59,6 +59,8 @@ import { loginLimiter, checkRateLimit } from '@/lib/rateLimit'
  *       500:
  *         description: Internal server error
  */
+import { AuditService } from '@/services/AuditService';
+
 export async function POST(request: Request) {
   try {
     const { email, cel, password, mfaCode } = await request.json()
@@ -67,6 +69,7 @@ export async function POST(request: Request) {
     const ip = request.headers.get("x-forwarded-for") || "unknown";
     const isAllowed = await checkRateLimit(loginLimiter, ip);
     if (!isAllowed) {
+      // Audit blocked attempt? Maybe too noisy.
       return NextResponse.json({ error: 'Muitas tentativas. Tente novamente em 15 minutos.' }, { status: 429 });
     }
 
@@ -90,12 +93,14 @@ export async function POST(request: Request) {
     const user = await db.collection('users').findOne(query);
 
     if (!user) {
+      await AuditService.log('LOGIN_FAILURE', undefined, { reason: 'User not found', email, cel }, request);
       return NextResponse.json({ error: 'Usuário não encontrado. Verifique se o email ou telefone estão corretos.' }, { status: 400 })
     }
 
     // Check password
     const isPasswordValid = await bcrypt.compare(password, user.password)
     if (!isPasswordValid) {
+      await AuditService.log('LOGIN_FAILURE', user._id.toString(), { reason: 'Invalid password' }, request);
       return NextResponse.json({ error: 'Senha incorreta. Tente novamente.' }, { status: 400 })
     }
 
@@ -106,6 +111,7 @@ export async function POST(request: Request) {
       }
       const isValid = await MfaService.verifyLoginCode(user._id.toString(), mfaCode);
       if (!isValid) {
+        await AuditService.log('LOGIN_FAILURE_MFA', user._id.toString(), { reason: 'Invalid code' }, request);
         return NextResponse.json({ error: 'Código de autenticação inválido.' }, { status: 400 });
       }
     }
@@ -123,6 +129,8 @@ export async function POST(request: Request) {
           maxAge: 60 * 60 * 24, // 1 day
           path: '/',
         })
+
+    await AuditService.log('LOGIN_SUCCESS', user._id.toString(), { method: email ? 'email' : 'phone' }, request);
     return NextResponse.json({ message: 'Login successful', token: token, userId: user._id, tutorialGuide: user.tutorialGuide, executeQuery: user.executeQuery }, { status: 200 })
   } catch (error) {
     console.error('Login error:', error)
