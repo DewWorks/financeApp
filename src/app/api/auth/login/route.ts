@@ -10,13 +10,9 @@ import { loginLimiter, checkRateLimit } from '@/lib/rateLimit'
 import { verifyMfaToken } from '@/lib/mfa'
 import { MfaService } from '@/lib/MfaService'
 
-// Required to prevent 405 Method Not Allowed in production (Vercel)
-export const dynamic = 'force-dynamic'
-export const runtime = 'nodejs'
-
 /**
  * @swagger
- * /api/auth/signin:
+ * /api/auth/login:
  *   post:
  *     tags:
  *       - Auth
@@ -142,4 +138,12 @@ export async function POST(request: Request) {
     console.error('Login error:', error)
     return NextResponse.json({ error: 'Erro interno do servidor. Tente novamente mais tarde.' }, { status: 500 })
   }
+}
+
+export async function GET() {
+  return NextResponse.json({ message: "Login endpoint is reachable via GET" });
+}
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { status: 200 });
 }

@@ -30,7 +30,6 @@ export default function LoginPage() {
   // Fallback MFA States
   const [userId, setUserId] = useState("")
   const [sendingCode, setSendingCode] = useState(false)
-
   const handleSendOtp = async (channel: 'email' | 'whatsapp') => {
     setSendingCode(true)
     try {
@@ -111,7 +110,7 @@ export default function LoginPage() {
         payload.mfaCode = mfaCode
       }
 
-      const response = await fetch("/api/auth/signin", {
+      const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -120,11 +119,11 @@ export default function LoginPage() {
       const data = await response.json()
 
       if (response.ok) {
-        // [NEW] Check if MFA is required
         if (data.mfaRequired) {
           setMfaRequired(true);
+          if (data.userId) setUserId(data.userId)
           setIsLoading(false);
-          return; // Stop here, show MFA UI
+          return;
         }
 
         localStorage.setItem("auth_token", data.token)
