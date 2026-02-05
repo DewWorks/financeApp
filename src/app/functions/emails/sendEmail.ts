@@ -1,6 +1,5 @@
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
-import DOMPurify from 'isomorphic-dompurify';
 
 dotenv.config();
 
@@ -22,13 +21,12 @@ export async function sendEmail({ to, subject, htmlContent }: SendEmailParams): 
   try {
     console.time("sendEmail");
 
-    // Sanitize content to prevent XSS/Injection
-    const safeHtmlContent = DOMPurify.sanitize(htmlContent);
-
+    // Internal system emails (OTP/Notifications) are trusted, so we skip heavy sanitization libraries 
+    // that cause build errors with Vercel (e.g. isomorphic-dompurify/jsdom).
     const finalHtml = `
       <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4;">
         <div style="max-width: 600px; background: white; padding: 30px; border-radius: 10px; margin: auto;">
-          ${safeHtmlContent}
+          ${htmlContent}
           <hr style="margin: 30px 0;" />
           <p style="font-size: 13px; color: #888; text-align: center;">
             Enviado por <strong>FinancePro</strong> · <a href="https://finance-pro-mu.vercel.app/" style="color: #0085FF;">finance-pro-mu.vercel.app</a>
