@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
-import { MfaService } from '@/lib/MfaService';
-
-// Required for Vercel
-export const dynamic = 'force-dynamic'
+import { NextResponse } from 'next/server'
+import { getMongoClient } from '@/db/connectionDb'
+import { MfaService } from '@/lib/MfaService'
+import { mfaRequestLimiter, checkRateLimit } from '@/lib/rateLimit'
+import { ObjectId } from 'mongodb'
 
 /**
  * @swagger
@@ -37,22 +37,38 @@ export const dynamic = 'force-dynamic'
  */
 export async function POST(request: Request) {
     try {
-        const { userId, channel } = await request.json();
+        const { userId, channel } = await request.json()
 
-        if (!userId || !['email', 'whatsapp'].includes(channel)) {
-            return NextResponse.json({ error: 'Invalid parameters' }, { status: 400 });
+        if (!userId || !channel) {
+            return NextResponse.json({ error: 'Dados incompletos.' }, { status: 400 })
         }
 
-        const success = await MfaService.sendOtp(userId, channel as 'email' | 'whatsapp');
+        // 1. Rate Limit (Prevent spamming codes)
+        const ip = request.headers.get("x-forwarded-for") || "unknown";
+        const isAllowed = await checkRateLimit(mfaRequestLimiter, ip);
+        if (!isAllowed) {
+            return NextResponse.json({ error: 'Muitos códigos solicitados. Aguarde 1 minuto.' }, { status: 429 });
+        }
+
+        const client = await getMongoClient()
+        const db = client.db("financeApp")
+        const user = await db.collection("users").findOne({ _id: new ObjectId(userId) })
+
+        if (!user) {
+            return NextResponse.json({ error: 'Usuário não encontrado.' }, { status: 404 })
+        }
+
+        // 2. Generate and Send OTP
+        const success = await MfaService.sendOtp(userId, channel)
 
         if (success) {
-            return NextResponse.json({ message: 'Code sent successfully' }, { status: 200 });
+            return NextResponse.json({ message: `Código enviado via ${channel}.` }, { status: 200 })
         } else {
-            return NextResponse.json({ error: 'Failed to send code. Check user contact info.' }, { status: 500 });
+            return NextResponse.json({ error: 'Falha ao enviar código.' }, { status: 500 })
         }
 
     } catch (error) {
-        console.error('Send MFA Error:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        console.error("MFA Send Error:", error)
+        return NextResponse.json({ error: 'Erro interno.' }, { status: 500 })
     }
 }
