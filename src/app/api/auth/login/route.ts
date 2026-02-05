@@ -7,6 +7,7 @@ import { MfaService } from '@/lib/MfaService'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 import { getPhoneQueryVariations } from '@/lib/phoneUtils'
+import { loginLimiter, checkRateLimit } from '@/lib/rateLimit'
 
 /**
  * @swagger
@@ -61,6 +62,13 @@ import { getPhoneQueryVariations } from '@/lib/phoneUtils'
 export async function POST(request: Request) {
   try {
     const { email, cel, password, mfaCode } = await request.json()
+
+    // 1. Rate Limiting Check (Security: Brute Force Protection)
+    const ip = request.headers.get("x-forwarded-for") || "unknown";
+    const isAllowed = await checkRateLimit(loginLimiter, ip);
+    if (!isAllowed) {
+      return NextResponse.json({ error: 'Muitas tentativas. Tente novamente em 15 minutos.' }, { status: 429 });
+    }
 
     if (!password || (!email && !cel)) {
       return NextResponse.json({ error: 'Preencha todos os campos obrigatórios.' }, { status: 400 });
