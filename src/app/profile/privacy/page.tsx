@@ -41,8 +41,19 @@ export default function PrivacyPage() {
                     </CardHeader>
                 </Card>
 
+
                 {/* Content */}
                 <PrivacyPanel />
+
+                {/* Footer Links */}
+                <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-800 flex justify-center gap-6 text-xs text-muted-foreground">
+                    <a href="mailto:devworks.company.io@gmail.com" className="hover:text-foreground transition-colors">
+                        Contato
+                    </a>
+                    <a href="/terms" className="hover:text-foreground transition-colors">
+                        Termos de Uso
+                    </a>
+                </div>
             </div>
         </div>
     );

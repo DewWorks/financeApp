@@ -436,6 +436,16 @@ function DashboardContent() {
           </div >
 
           <UpsellBanner />
+
+          {/* Footer Links - Visible on all tabs at the bottom */}
+          <div className="mt-12 pt-6 border-t border-border flex justify-center gap-6 text-xs text-muted-foreground pb-24 md:pb-6">
+            <a href="mailto:devworks.company.io@gmail.com" className="hover:text-foreground transition-colors">
+              Contato
+            </a>
+            <a href="/terms" className="hover:text-foreground transition-colors">
+              Termos de Uso
+            </a>
+          </div>
         </main >
 
         <div className="hidden md:block" id="desktop-add-btn">
