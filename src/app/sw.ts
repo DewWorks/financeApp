@@ -13,4 +13,15 @@ installSerwist({
     clientsClaim: true,
     navigationPreload: true,
     runtimeCaching: defaultCache,
+    fallbacks: {
+        entries: [
+            {
+                url: "/~offline",
+                revision: "offline-v1",
+                matcher({ request }) {
+                    return request.destination === "document";
+                },
+            },
+        ],
+    },
 });
