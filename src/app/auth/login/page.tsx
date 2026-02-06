@@ -43,8 +43,9 @@ export default function LoginPage() {
       } else {
         Swal.fire("Erro", "Falha ao enviar código. Tente novamente.", "error")
       }
-    } catch (error) {
-      Swal.fire("Erro", "Erro de conexão.", "error")
+    } catch (error: any) {
+      console.error("OTP Error:", error);
+      Swal.fire("Erro de Conexão", "Não foi possível conectar ao servidor.", "error")
     } finally {
       setSendingCode(false)
     }
@@ -142,9 +143,28 @@ export default function LoginPage() {
 
     } catch (error: any) {
       console.error("Login error:", error)
-      const msg = error.response?.data?.error || error.response?.data?.message || "Ocorreu um erro inesperado.";
+
+      let msg = "Ocorreu um erro inesperado.";
+
+      // Robust Error Extraction
+      if (error.response?.data) {
+        const data = error.response.data;
+        if (typeof data.error === 'string') msg = data.error;
+        else if (typeof data.message === 'string') msg = data.message;
+        else if (data.error && typeof data.error === 'object') msg = JSON.stringify(data.error); // Fallback for objects
+      } else if (error.message) {
+        msg = error.message;
+      }
+
       setErrorMessage(msg);
-      Swal.fire({ icon: "error", title: "Erro!", text: msg })
+
+      Swal.fire({
+        icon: "error",
+        title: "Ops!",
+        text: msg,
+        confirmButtonColor: "#d33",
+        confirmButtonText: "Tentar novamente"
+      })
     } finally {
       setIsLoading(false)
     }
