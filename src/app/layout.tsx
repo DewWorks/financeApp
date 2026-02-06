@@ -20,6 +20,11 @@ const geistMono = localFont({
 
 export const viewport = {
   themeColor: "#ffffff",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  minimumScale: 1, // Fix for some PWA validators
+  userScalable: false, // Ensures native app feel
 };
 
 export const metadata: Metadata = {
