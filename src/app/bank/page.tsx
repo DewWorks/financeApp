@@ -9,6 +9,7 @@ import { Loader2, ShieldCheck, Landmark, Plus, RefreshCw, Wallet, ChevronLeft, T
 import Swal from "sweetalert2"
 import dynamic from 'next/dynamic';
 import { getBankDetails } from "@/lib/utils"
+import { PluggyItemStatus } from "@/interfaces/IBankConnection";
 
 // Carregamento dinâmico para evitar erros de SSR e Tipagem
 const PluggyConnect = dynamic(
@@ -48,11 +49,17 @@ export default function BankConnectPage() {
         fetchConnections()
     }, [])
 
-    const handleStartConnection = async () => {
+    const handleStartConnection = async (updateItemId?: string) => {
         setLoadingToken(true)
         setShowWidget(true)
         try {
-            const response = await fetch('/api/pluggy/create-token', { method: 'POST' })
+            const body = updateItemId ? JSON.stringify({ updateItemItemId: updateItemId }) : undefined;
+
+            const response = await fetch('/api/pluggy/create-token', {
+                method: 'POST',
+                headers: body ? { 'Content-Type': 'application/json' } : undefined,
+                body: body
+            })
             const data = await response.json()
 
             if (!response.ok) {
@@ -83,7 +90,7 @@ export default function BankConnectPage() {
 
             Swal.fire({
                 icon: 'success',
-                title: 'Conexão Realizada!',
+                title: 'Conexão Atualizada!',
                 text: 'Seus dados bancários foram sincronizados.',
                 timer: 3000
             })
@@ -203,8 +210,30 @@ export default function BankConnectPage() {
                 method: 'POST'
             });
 
+            const data = await response.json();
+
+            // Handling Status 428 (Precondition Required -> Login Required)
+            if (response.status === 428) {
+                // Fechar o Loading anterior
+                Swal.close();
+
+                await Swal.fire({
+                    icon: 'warning',
+                    title: 'Ação Necessária',
+                    text: data.error || 'O banco solicitou uma atualização de credenciais ou token.',
+                    confirmButtonText: 'Atualizar Conexão',
+                    showCancelButton: true,
+                    cancelButtonText: 'Cancelar'
+                }).then((res) => {
+                    if (res.isConfirmed) {
+                        // Abrir Widget em modo de atualização
+                        handleStartConnection(itemId);
+                    }
+                });
+                return;
+            }
+
             if (response.ok) {
-                const data = await response.json();
                 await fetchConnections();
 
                 const newCount = data.transactions?.new || 0;
@@ -226,7 +255,6 @@ export default function BankConnectPage() {
                     showConfirmButton: false
                 });
             } else {
-                const data = await response.json();
 
                 // Connection Broken / Invalid
                 if (response.status === 400 || response.status === 404) {
@@ -244,7 +272,7 @@ export default function BankConnectPage() {
                         const conn = connections.find(c => c.itemId === itemId);
                         const bankName = conn?.accounts?.[0]?.name || "Banco";
                         await handleDeleteConnection(itemId, bankName);
-                        // Open new connection modal
+                        // Open new connection modal (Clean start)
                         handleStartConnection();
                     }
                     return; // Exit
@@ -286,7 +314,7 @@ export default function BankConnectPage() {
                         <p className="text-gray-500 dark:text-gray-400 mt-1">Gerencie suas conexões bancárias via Open Finance</p>
                     </div>
                     {!showWidget && (
-                        <Button onClick={handleStartConnection} size="lg" className="shadow-lg text-white gap-2">
+                        <Button onClick={() => handleStartConnection()} size="lg" className="shadow-lg text-white gap-2">
                             <Plus className="h-5 w-5" /> Nova Conexão
                         </Button>
                     )}
@@ -309,7 +337,7 @@ export default function BankConnectPage() {
                                     <p className="text-muted-foreground mb-6 max-w-md">
                                         Conecte suas contas bancárias para sincronizar transações e saldo automaticamente.
                                     </p>
-                                    <Button onClick={handleStartConnection}>Conectar minha primeira conta</Button>
+                                    <Button onClick={() => handleStartConnection()}>Conectar minha primeira conta</Button>
                                 </CardContent>
                             </Card>
                         ) : (
@@ -340,9 +368,9 @@ export default function BankConnectPage() {
                                                             {mainAccount.name.split(' - ')[0]}
                                                         </CardTitle>
                                                         <CardDescription className="flex items-center gap-2 mt-1">
-                                                            <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${conn.status === 'UPDATED' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                                                            <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${conn.status === PluggyItemStatus.UPDATED ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
                                                                 }`}>
-                                                                {conn.status === 'UPDATED' ? 'Atualizado' : conn.status}
+                                                                {conn.status === PluggyItemStatus.UPDATED ? 'Atualizado' : conn.status}
                                                             </span>
                                                             <span className="text-xs text-gray-400">
                                                                 • Atualizado em: {new Date(conn.lastSyncAt).toLocaleString()}
@@ -493,7 +521,7 @@ export default function BankConnectPage() {
                                     <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded text-sm text-red-600 dark:text-red-400">
                                         {errorMsg || "Tente novamente mais tarde."}
                                     </div>
-                                    <Button onClick={handleStartConnection}>Tentar Novamente</Button>
+                                    <Button onClick={() => handleStartConnection()}>Tentar Novamente</Button>
                                 </div>
                             )}
                         </CardContent>

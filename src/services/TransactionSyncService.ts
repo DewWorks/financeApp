@@ -3,6 +3,7 @@ import { getMongoClient } from "@/db/connectionDb";
 import { Transaction } from "@/app/models/Transaction";
 import { ITransaction, expenseTags, incomeTags } from "@/interfaces/ITransaction";
 import { ObjectId } from "mongodb";
+import { PluggyItemStatus } from "@/interfaces/IBankConnection";
 
 export class TransactionSyncService {
 
@@ -103,36 +104,77 @@ export class TransactionSyncService {
         await mongoClient.connect();
 
         try {
-            // 1. Fetch transactions from Pluggy
+            // 1. Fetch transactions from Pluggy with Pagination
             const fromDate = new Date();
-            fromDate.setDate(fromDate.getDate() - 60);
+            fromDate.setDate(fromDate.getDate() - 60); // Look back 60 days to be safe
 
             // Fetch Accounts
-            const accountsRes = await client.fetchAccounts(itemId);
+            let accountsRes;
+            try {
+                accountsRes = await client.fetchAccounts(itemId);
+            } catch (err: any) {
+                console.warn(`[SyncService] Failed to fetch accounts for item ${itemId}: ${err.message}`);
+                // If we can't fetch accounts, likely the item is broken or requires login
+                throw err;
+            }
+
             const accountTypeMap = new Map<string, string>(); // accountId -> type
             accountsRes.results.forEach(acc => accountTypeMap.set(acc.id, acc.type));
 
             let pluggyTransactions: any[] = [];
 
-            try {
-                const response = await client.fetchTransactions(itemId, {
-                    from: fromDate.toISOString().split('T')[0],
-                    pageSize: 500
-                });
-                pluggyTransactions = response.results;
-            } catch (e) {
-                console.warn("[SyncService] Failed to fetch by ItemId, will try accounts.");
-            }
+            // Helper to fetch all pages for a given resource (account or item)
+            // Note: client.fetchTransactions(itemId) fetches for ALL accounts if they support it.
+            // Some connectors require fetching per account.
 
-            if (pluggyTransactions.length === 0) {
-                console.log(`[SyncService] No transactions found for Item ${itemId}. Trying per-account fetch...`);
+            const fetchAllPages = async (resourceId: string, isAccount = false) => {
+                let allTx: any[] = [];
+                let page = 1;
+                let totalPages = 1;
+
+                while (page <= totalPages) {
+                    try {
+                        const response = await client.fetchTransactions(resourceId, {
+                            from: fromDate.toISOString().split('T')[0],
+                            pageSize: 500,
+                            page: page
+                        });
+
+                        allTx = [...allTx, ...response.results];
+                        totalPages = response.totalPages;
+                        page++;
+
+                        // Safety break to prevent infinite loops in case of API weirdness
+                        if (page > 20) break;
+                    } catch (e: any) {
+                        console.warn(`[SyncService] Error fetching page ${page} for ${resourceId}: ${e.message}`);
+                        // If one page fails, we might still want to process what we have, or stop.
+                        // For now, if page 1 fails, it's critical.
+                        if (page === 1) throw e;
+                        break;
+                    }
+                }
+                return allTx;
+            };
+
+            try {
+                // Try Item-level fetch first
+                pluggyTransactions = await fetchAllPages(itemId);
+            } catch (e: any) {
+                // If Item-level fetch is not supported or fails, fall back to Account-level
+                console.warn(`[SyncService] Item-level fetch failed (${e.message}), trying per-account...`);
+
+                // Check if error is actionable (e.g. LOGIN_REQUIRED)
+                if (e.code === 'LOGIN_REQUIRED' || e.message?.includes('LOGIN_REQUIRED')) {
+                    throw e; // Bubble up for manual sync handling
+                }
+
                 for (const account of accountsRes.results) {
-                    const accResponse = await client.fetchTransactions(account.id, {
-                        from: fromDate.toISOString().split('T')[0],
-                        pageSize: 500
-                    });
-                    if (accResponse.results.length > 0) {
-                        pluggyTransactions = [...pluggyTransactions, ...accResponse.results];
+                    try {
+                        const accTx = await fetchAllPages(account.id, true);
+                        pluggyTransactions = [...pluggyTransactions, ...accTx];
+                    } catch (accErr: any) {
+                        console.warn(`[SyncService] Failed to fetch for account ${account.id}: ${accErr.message}`);
                     }
                 }
             }
@@ -238,6 +280,8 @@ export class TransactionSyncService {
                     };
                 } else {
                     // EXISTING: Update only Status/Metadata (Protect User Edits)
+                    // We DO NOT overwrite description/tag if user might have edited it manually?
+                    // Ideally we should have a flag 'userEdited'. For now, we trust the DB state for description/tag.
                     return {
                         updateOne: {
                             filter: { pluggyTransactionId: pt.id },
@@ -267,8 +311,9 @@ export class TransactionSyncService {
 
             return { success: true, new: 0, updated: 0 };
 
-        } catch (error) {
+        } catch (error: any) {
             console.error(`[SyncService] Error syncing transactions:`, error);
+            // Re-throw to let the caller handle it (e.g. Manual Sync needs to know)
             throw error;
         }
     }
@@ -282,20 +327,27 @@ export class TransactionSyncService {
         const mongoClient = await getMongoClient();
 
         try {
-            // 1. Fetch Fresh Account Data
+            // 1. Fetch Latest Item Status First (Critical for error handling)
+            const item = await client.fetchItem(itemId);
+
+            // 2. Fetch Fresh Account Data
             const accountsResponse = await client.fetchAccounts(itemId);
             const accounts = accountsResponse.results;
 
-            if (accounts.length === 0) return;
-
-            // 2. Fetch Latest Item Status (to update 'lastUpdatedAt' etc)
-            const item = await client.fetchItem(itemId);
+            if (accounts.length === 0 &&
+                item.status !== PluggyItemStatus.WAITING_USER_INPUT &&
+                item.status !== PluggyItemStatus.LOGIN_ERROR
+            ) return { success: true, itemStatus: item.status };
 
             // 3. Update BankConnection Document
-            const updateData = {
-                status: item.status,
-                lastSyncAt: new Date(), // Now
-                accounts: accounts.map((acc: any) => ({
+            const updateData: any = {
+                status: item.status as PluggyItemStatus, // Update status regardless
+                lastSyncAt: new Date(),
+                updatedAt: new Date()
+            };
+
+            if (accounts.length > 0) {
+                updateData.accounts = accounts.map((acc: any) => ({
                     accountId: acc.id,
                     name: acc.name,
                     number: acc.number,
@@ -303,9 +355,13 @@ export class TransactionSyncService {
                     currency: acc.currencyCode,
                     type: acc.type,
                     subtype: acc.subtype
-                })),
-                updatedAt: new Date()
-            };
+                }));
+            }
+
+            // Add execution status details if available (helpful for frontend)
+            if (item.executionStatus) {
+                (updateData as any).executionStatus = item.executionStatus;
+            }
 
             const db = mongoClient.db("financeApp");
             await db.collection('bankConnections').updateOne(
@@ -313,10 +369,8 @@ export class TransactionSyncService {
                 { $set: updateData }
             );
 
-            console.log(`[SyncService] Accounts updated for Item ${itemId}`);
-
-            console.log(`[SyncService] Accounts updated for Item ${itemId}`);
-            return { success: true };
+            console.log(`[SyncService] Accounts updated for Item ${itemId}. Status: ${item.status}`);
+            return { success: true, itemStatus: item.status };
 
         } catch (error: any) {
             console.error(`[SyncService] Error syncing accounts:`, error);
@@ -324,9 +378,10 @@ export class TransactionSyncService {
             // Handle Pluggy 400/404
             if (error.response?.status === 400 || error.code === 400) {
                 console.warn(`[SyncService] Item ${itemId} seems invalid or deleted on Pluggy.`);
-                return { success: false, error: "Item inválido ou removido na origem." };
+                return { success: false, error: "Item inválido ou removido na origem.", code: "ITEM_NOT_FOUND" };
             }
-            return { success: false, error: error.message };
+            // Pass identifying codes
+            return { success: false, error: error.message, code: error.code || "UNKNOWN" };
         }
     }
 }
