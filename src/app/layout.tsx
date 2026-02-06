@@ -35,6 +35,9 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "default",
     title: "FinancePro",
+    startupImage: [
+      "/splash-screen.png",
+    ],
   },
   formatDetection: {
     telephone: false,
