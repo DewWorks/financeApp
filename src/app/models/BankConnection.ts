@@ -1,5 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import { IBankConnection } from "@/interfaces/IBankConnection";
+import { PluggyItemStatus } from "@/interfaces/IBankConnection";
 
 const BankAccountSchema = new Schema({
     accountId: { type: String, required: true },
@@ -15,7 +16,7 @@ const BankConnectionSchema = new Schema<IBankConnection>({
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     provider: { type: String, enum: ['pluggy', 'belvo'], default: 'pluggy', required: true },
     itemId: { type: String, required: true, unique: true },
-    status: { type: String, default: 'UPDATING' },
+    status: { type: String, enum: Object.values(PluggyItemStatus), default: PluggyItemStatus.UPDATING },
     accounts: [BankAccountSchema],
     lastSyncAt: { type: Date }
 }, {

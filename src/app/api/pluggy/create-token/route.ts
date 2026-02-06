@@ -52,9 +52,17 @@ export async function POST(req: NextRequest) {
         const webhookUrl = process.env.PLUGGY_WEBHOOK_URL;
         const isLocal = webhookUrl?.includes("localhost") || webhookUrl?.includes("127.0.0.1");
 
+        const body = await req.json().catch(() => ({}));
+
         const options: any = {
             clientUserId: userId,
         };
+
+        // Support for Update Mode
+        if (body.updateItemItemId) {
+            console.log(`[CreateToken] Generating Update Token for Item: ${body.updateItemItemId}`);
+            options.updateItemItemId = body.updateItemItemId;
+        }
 
         // DEBUG: Force disable webhook to isolate cause
         if (webhookUrl && !isLocal && webhookUrl.startsWith("http")) {
