@@ -57,6 +57,7 @@
     "react-pluggy-connect": "^2.12.0",
     "react-to-print": "^3.0.5",
     "recharts": "^2.13.3",
+    "replica-failover-mongodb-ts": "^3.0.9",
     "speakeasy": "^2.0.0",
     "stripe": "^20.2.0",
     "swagger-ui-react": "^5.31.0",
@@ -102,5 +103,8 @@
     "typescript": "^5",
     "vite": "^7.3.1",
     "vitest": "^4.0.17"
+  },
+  "overrides": {
+    "xml2js": "^0.6.2"
   }
 }
