@@ -6,7 +6,6 @@ declare global {
 }
 
 const uri = process.env.MONGODB_URI
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const options: any = {}
 
 let client: MongoClient

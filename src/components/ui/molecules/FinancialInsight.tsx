@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { TrendingUp, TrendingDown, Sun, Moon, Lightbulb, CheckCircle, ArrowRight, Info } from "lucide-react"
+import { TrendingUp, TrendingDown, Sun, Moon, Lightbulb, CheckCircle, ArrowRight, Info, ThumbsUp, ThumbsDown } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/atoms/dialog"
 import { Button } from "@/components/ui/atoms/button"
 import { usePlanGate } from "@/context/PlanGateContext"
@@ -18,6 +18,7 @@ interface InsightItem {
     trend: "positive" | "negative" | "neutral";
     details?: string;
     recommendation?: string;
+    mathBasis?: string;
     richData?: {
         projection?: {
             current: number;
@@ -81,6 +82,25 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
     const [isModalOpen, setIsModalOpen] = useState(false)
     const timerRef = useRef<NodeJS.Timeout | null>(null)
     const { checkFeature, openUpgradeModal, currentPlan, isLoading: isPlanLoading } = usePlanGate()
+    const [feedbackGiven, setFeedbackGiven] = useState<Record<string, 'up'|'down'>>({});
+
+    const handleFeedback = async (insightId: string, type: 'up'|'down') => {
+        setFeedbackGiven(prev => ({...prev, [insightId]: type}));
+        
+        try {
+            await fetch('/api/insights/feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    insightId,
+                    feedback: type,
+                    contextType: data?.insights.find(i => i.id === insightId)?.type || 'unknown',
+                })
+            });
+        } catch (e) {
+            console.error("Failed to send feedback", e);
+        }
+    };
 
     // Static Teaser Data for Free Users
     const teaserData: InsightData = {
@@ -143,9 +163,50 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
         }
     }, [data, isPaused, isModalOpen]);
 
+    const [loadingMessage, setLoadingMessage] = useState("Sincronizando transações...");
+
+    useEffect(() => {
+        if (!isLoading && !loading && !isPlanLoading) return;
+        const messages = [
+            "Analisando métricas de consumo...",
+            "Cruzando dados com a Inteligência Artificial...",
+            "Calculando salto de patrimônio...",
+            "Gerando recomendações financeiras (Nudge)..."
+        ];
+        let i = 0;
+        const interval = setInterval(() => {
+            i = (i + 1) % messages.length;
+            setLoadingMessage(messages[i]);
+        }, 1800);
+        return () => clearInterval(interval);
+    }, [isLoading, loading, isPlanLoading]);
+
     if (loading || isLoading || isPlanLoading) {
         return (
-            <div className={`animate-pulse bg-gray-200 dark:bg-gray-800 rounded-xl ${compact ? 'h-20 w-full' : 'h-24 w-full'}`}></div>
+            <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br flex items-center justify-center from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 w-full ${compact ? 'h-20' : 'h-24'}`}>
+                {/* Efeito de Shimmer Refinado */}
+                <motion.div
+                    className="absolute inset-0 -translate-x-full z-0 bg-gradient-to-r from-transparent via-white/50 dark:via-white/5 to-transparent"
+                    animate={{ x: ["-100%", "200%"] }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                />
+                <div className="flex flex-col items-center gap-2.5 z-10 opacity-80">
+                    <div className="flex gap-1.5 items-center justify-center">
+                        <motion.div className="w-1.5 h-1.5 rounded-full bg-blue-500" animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1, delay: 0 }} />
+                        <motion.div className="w-1.5 h-1.5 rounded-full bg-purple-500" animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} />
+                        <motion.div className="w-1.5 h-1.5 rounded-full bg-emerald-500" animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} />
+                    </div>
+                    <motion.span 
+                        key={loadingMessage} 
+                        initial={{ opacity: 0, y: 2 }} 
+                        animate={{ opacity: 1, y: 0 }} 
+                        exit={{ opacity: 0, y: -2 }} 
+                        className="text-[11px] font-medium text-gray-500 dark:text-gray-400"
+                    >
+                        {loadingMessage}
+                    </motion.span>
+                </div>
+            </div>
         )
     }
 
@@ -409,6 +470,43 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
                                 </p>
                             </div>
                         )}
+
+                        {currentInsight.mathBasis && (
+                            <details className="group border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden transition-all duration-300 bg-white dark:bg-gray-900/50 mt-1">
+                                <summary className="flex cursor-pointer items-center justify-between bg-gray-50 dark:bg-gray-800/50 p-3 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/80 transition outline-none">
+                                    <span className="flex items-center gap-2">
+                                        <Info className="w-4 h-4 text-blue-500" />
+                                        Entenda a Matemática
+                                    </span>
+                                    <span className="transition duration-300 group-open:rotate-180">
+                                        <svg fill="none" height="14" shapeRendering="crispEdges" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="14"><path d="M6 9l6 6 6-6"></path></svg>
+                                    </span>
+                                </summary>
+                                <div className="p-3.5 text-[11px] sm:text-xs text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-900 leading-relaxed border-t border-gray-100 dark:border-gray-800 break-words whitespace-pre-wrap">
+                                    {currentInsight.mathBasis}
+                                </div>
+                            </details>
+                        )}
+
+                        <div className="flex gap-2 mt-4 justify-end border-t border-gray-100 dark:border-gray-800 pt-3">
+                            <span className="text-xs text-gray-500 mr-2 self-center">Este insight foi útil?</span>
+                            <Button 
+                                variant={feedbackGiven[currentInsight.id] === 'up' ? 'default' : 'outline'} 
+                                size="sm" 
+                                className="h-7 px-2"
+                                onClick={() => handleFeedback(currentInsight.id, 'up')}
+                            >
+                                <ThumbsUp className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button 
+                                variant={feedbackGiven[currentInsight.id] === 'down' ? 'destructive' : 'outline'} 
+                                size="sm" 
+                                className="h-7 px-2"
+                                onClick={() => handleFeedback(currentInsight.id, 'down')}
+                            >
+                                <ThumbsDown className="w-3.5 h-3.5" />
+                            </Button>
+                        </div>
                     </div>
 
                     {/* Internal Upsell Removed - Gated on Entry */}
@@ -428,7 +526,7 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
                                 Próximo Insight
                             </Button>
                         )}
-                        <Button type="button" variant="default" onClick={() => setIsModalOpen(false)} className="flex-1 sm:flex-none">
+                        <Button type="button" variant="default" onClick={() => setIsModalOpen(false)} className="flex-1 sm:flex-none text-white">
                             Entendi
                         </Button>
                     </DialogFooter>
