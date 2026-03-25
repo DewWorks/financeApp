@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { TrendingUp, TrendingDown, Sun, Moon, Lightbulb, CheckCircle, ArrowRight, Info } from "lucide-react"
+import { TrendingUp, TrendingDown, Sun, Moon, Lightbulb, CheckCircle, ArrowRight, Info, ThumbsUp, ThumbsDown } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/atoms/dialog"
 import { Button } from "@/components/ui/atoms/button"
 import { usePlanGate } from "@/context/PlanGateContext"
@@ -81,6 +81,25 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
     const [isModalOpen, setIsModalOpen] = useState(false)
     const timerRef = useRef<NodeJS.Timeout | null>(null)
     const { checkFeature, openUpgradeModal, currentPlan, isLoading: isPlanLoading } = usePlanGate()
+    const [feedbackGiven, setFeedbackGiven] = useState<Record<string, 'up'|'down'>>({});
+
+    const handleFeedback = async (insightId: string, type: 'up'|'down') => {
+        setFeedbackGiven(prev => ({...prev, [insightId]: type}));
+        
+        try {
+            await fetch('/api/insights/feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    insightId,
+                    feedback: type,
+                    contextType: data?.insights.find(i => i.id === insightId)?.type || 'unknown',
+                })
+            });
+        } catch (e) {
+            console.error("Failed to send feedback", e);
+        }
+    };
 
     // Static Teaser Data for Free Users
     const teaserData: InsightData = {
@@ -409,6 +428,26 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
                                 </p>
                             </div>
                         )}
+
+                        <div className="flex gap-2 mt-4 justify-end border-t border-gray-100 dark:border-gray-800 pt-3">
+                            <span className="text-xs text-gray-500 mr-2 self-center">Este insight foi útil?</span>
+                            <Button 
+                                variant={feedbackGiven[currentInsight.id] === 'up' ? 'default' : 'outline'} 
+                                size="sm" 
+                                className="h-7 px-2"
+                                onClick={() => handleFeedback(currentInsight.id, 'up')}
+                            >
+                                <ThumbsUp className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button 
+                                variant={feedbackGiven[currentInsight.id] === 'down' ? 'destructive' : 'outline'} 
+                                size="sm" 
+                                className="h-7 px-2"
+                                onClick={() => handleFeedback(currentInsight.id, 'down')}
+                            >
+                                <ThumbsDown className="w-3.5 h-3.5" />
+                            </Button>
+                        </div>
                     </div>
 
                     {/* Internal Upsell Removed - Gated on Entry */}

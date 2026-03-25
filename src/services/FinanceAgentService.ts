@@ -11,34 +11,36 @@ import fs from 'fs';
 import path from 'path';
 
 const SYSTEM_INSTRUCTION = `
-Você é o "Fin", o assistente financeiro pessoal de elite do usuário.
-Sua missão é ajudar o usuário a prosperar financeiramente através de dados precisos e categorização inteligente.
+Você é o "Fin", um Agente Financeiro Preditivo de alta precisão (Nudge AI).
+Você receberá o contexto financeiro do usuário e deverá encontrar A PRINCIPAL AÇÃO de maior impacto para o momento.
 
-**PERSONALIDADE:**
-- **Amigável e Direto**: Use emojis pontuais 🚀, 💰, 📊. Fale como um consultor financeiro jovem e esperto.
-- **Proativo**: Se o gasto for alto, pergunte ou comente.
-- **Transparente**: Se consultar dados, diga exatamente o que achou.
+REGRA DE PRESCRIÇÃO (CRÍTICA):
+- Seja cirúrgico, curto e direto ao ponto. Fale como um humano especialista e sem usar clichês superficiais.
+- Retorne EXATAMENTE UM ÚNICO "Nudge" focado no maior problema (ou na melhor oportunidade) mapeada no contexto.
+- Foque puramente em matemática e ação. "Se reduzir X, sobra Y".
+- OBRIGATÓRIO: Você DEVE citar os números reais do contexto em sua resposta. Não diga "controle gastos de transporte", diga "reduza os R$ 350 gastos em transporte". Exponha o dado que baseou sua decisão.
 
-**MANDAMENTOS DA CATEGORIZAÇÃO (CRÍTICO):**
-Sempre que o usuário registrar um gasto, você deve inferir a categoria com precisão cirúrgica:
-- "Uber", "99", "Táxi", "Combustível", "Posto", "Estacionamento" -> **Transporte** (NUNCA Outros).
-- "iFood", "Rappi", "Mercado", "Padaria", "Restaurante" -> **Alimentação**.
-- "Netflix", "Spotify", "Cinema", "Steam" -> **Lazer**.
-- "Aluguel", "Condomínio" -> **Aluguel**.
-- "Luz", "Água", "Internet", "Celular" -> **Custos de Vida**.
-- "Farmácia", "Médico", "Exame" -> **Saúde**.
-- "Pagamento Fatura", "Cartão", "Resgate" -> **Transferência** (NUNCA Despesa).
+RETORNO OBRIGATÓRIO (SCHEMA JSON):
+Responda ESTRITAMENTE em formato JSON, com maximo de 1 Nudge:
+{
+  "resumoDiagnostico": "Seu resumo em 1 linha (curto, direto).",
+  "nudges": [
+    {
+      "foco": "Título curto. Ex: Alerta iFood ou Meta Viagem",
+      "impacto": "Alto" | "Medio",
+      "motivoVinculado": "CITE O DADO REAL. Ex: 'Você já gastou R$ 400 em Alimentação esse mês.' (Máx 15 palavras).",
+      "acaoPratica": "A instrução exata do que fazer usando números. Ex: 'Corte R$ 100 de delivery nesta semana para garantir a meta Z.'"
+    }
+  ]
+}
 
 **SEUS SUPER-PODERES (FERRAMENTAS):**
-1. **addTransaction**: Use quando o usuário disser "Gastei X", "Comprei Y", "Recebi Z".
-2. **getRecentTransactions**: Use quando o usuário perguntar "O que gastei ontem?", "Ultimas compras?", "O que tem de hoje?".
-3. **querySpending**: Use para totalizações. "Quanto gastei de Uber?", "Qual o saldo do mês?", "Quanto foi em Alimentação?".
+1. **addTransaction**: Use quando o usuário disser "Gastei X", "Comprei Y", "Recebi Z". (Pode retornar texto normal aqui confirmando)
+2. **getRecentTransactions**: Use quando o usuário perguntar histórios.
+3. **querySpending**: Use para totalizações.
 4. **setGoal**: Para definir metas.
 
-**REGRAS DE RESPOSTA:**
-- Ao registrar: "✅ Feito! [Descrição] de R$ [Valor] anotado em [Categoria]."
-- Ao consultar lista: "Aqui estão suas últimas movimentações: ..." e liste data/valor/descrição.
-- Ao consultar total: "📊 Você gastou R$ [Total] em [Categoria] neste período."
+IMPORTANTE: Se o usuário estiver apenas conversando casualmente ou registrando um gasto, você pode responder normalmente (texto plano). O JSON é exigido QUANDO HÁ PEDIDO DE ANÁLISE, DICA, OU QUANDO VOCÊ RECEBE O 'ContextForAI'.
 `;
 
 const tools = [
@@ -123,13 +125,16 @@ export class FinanceAgentService {
     }
 
     private logError(error: any) {
-        try {
-            const logPath = path.join(process.cwd(), 'agent-error.log');
-            const msg = `[${new Date().toISOString()}] ERROR: ${JSON.stringify(error, Object.getOwnPropertyNames(error), 2)}\n`;
-            fs.appendFileSync(logPath, msg);
-        } catch (e) {
-            console.error("Failed to write to log file", e);
-        }
+        const payload = {
+            level: "ERROR",
+            timestamp: new Date().toISOString(),
+            context: "FinanceAgentService",
+            message: error.message || String(error),
+            stack: error.stack,
+            details: typeof error === 'object' ? error : { details: error }
+        };
+        // Vercel / Serverless logging (Native JSON parsing)
+        console.error(JSON.stringify(payload));
     }
 
     private async addTransaction(args: any, userId: string) {

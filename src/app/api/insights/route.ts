@@ -73,6 +73,40 @@ export async function GET(request: Request) {
         const service = new InsightService();
         const insight = await service.generateDailyInsight(userId, profileId, scope);
 
+        // 🚀 O CORAÇÃO PREDITIVO (Nudge Engine)
+        if (insight.contextForAI) {
+            try {
+                // Instancia o agente para invocar o LLM
+                const { FinanceAgentService } = await import('@/services/FinanceAgentService');
+                const agent = new FinanceAgentService();
+                
+                const aiPrompt = `Gere Nudges prescritivos baseados neste contexto financeiro exato: ${JSON.stringify(insight.contextForAI)}. Lembre-se, retorne APENAS o JSON válido.`;
+                const aiResponseRaw = await agent.processMessage(aiPrompt, userId);
+                
+                // Limpeza de possíveis blocos markdown que o Gemini possa retornar
+                const cleanJsonStr = aiResponseRaw.replace(/```json/g, '').replace(/```/g, '').trim();
+                const aiData = JSON.parse(cleanJsonStr);
+
+                if (aiData.nudges && Array.isArray(aiData.nudges)) {
+                    // Inserimos os Nudges no topo da lista de Insights para destaque
+                    aiData.nudges.reverse().forEach((nudge: any, idx: number) => {
+                        insight.insights.unshift({
+                            id: `ai-nudge-${Date.now()}-${idx}`,
+                            type: "tip",
+                            text: nudge.foco || "Recomendação Preditiva",
+                            value: nudge.impacto === "Alto" ? "🔥 Alto Impacto" : "💡 Dica",
+                            trend: "neutral",
+                            details: nudge.motivoVinculado || "Dica baseada no seu padrão de consumo recente.",
+                            recommendation: nudge.acaoPratica
+                        });
+                    });
+                }
+            } catch (e) {
+                console.error("Falha ao gerar AI Nudges (Timeout ou JSON Parse Error):", e);
+                // Retorna silenciosamente apenas os insights determinísticos do MongoDB
+            }
+        }
+
         return NextResponse.json(insight);
     } catch (error) {
         console.error("Error generating insights:", error);
