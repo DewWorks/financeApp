@@ -162,9 +162,50 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
         }
     }, [data, isPaused, isModalOpen]);
 
+    const [loadingMessage, setLoadingMessage] = useState("Sincronizando transações...");
+
+    useEffect(() => {
+        if (!isLoading && !loading && !isPlanLoading) return;
+        const messages = [
+            "Analisando métricas de consumo...",
+            "Cruzando dados com a Inteligência Artificial...",
+            "Calculando salto de patrimônio...",
+            "Gerando recomendações financeiras (Nudge)..."
+        ];
+        let i = 0;
+        const interval = setInterval(() => {
+            i = (i + 1) % messages.length;
+            setLoadingMessage(messages[i]);
+        }, 1800);
+        return () => clearInterval(interval);
+    }, [isLoading, loading, isPlanLoading]);
+
     if (loading || isLoading || isPlanLoading) {
         return (
-            <div className={`animate-pulse bg-gray-200 dark:bg-gray-800 rounded-xl ${compact ? 'h-20 w-full' : 'h-24 w-full'}`}></div>
+            <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br flex items-center justify-center from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 w-full ${compact ? 'h-20' : 'h-24'}`}>
+                {/* Efeito de Shimmer Refinado */}
+                <motion.div
+                    className="absolute inset-0 -translate-x-full z-0 bg-gradient-to-r from-transparent via-white/50 dark:via-white/5 to-transparent"
+                    animate={{ x: ["-100%", "200%"] }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                />
+                <div className="flex flex-col items-center gap-2.5 z-10 opacity-80">
+                    <div className="flex gap-1.5 items-center justify-center">
+                        <motion.div className="w-1.5 h-1.5 rounded-full bg-blue-500" animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1, delay: 0 }} />
+                        <motion.div className="w-1.5 h-1.5 rounded-full bg-purple-500" animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} />
+                        <motion.div className="w-1.5 h-1.5 rounded-full bg-emerald-500" animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} />
+                    </div>
+                    <motion.span 
+                        key={loadingMessage} 
+                        initial={{ opacity: 0, y: 2 }} 
+                        animate={{ opacity: 1, y: 0 }} 
+                        exit={{ opacity: 0, y: -2 }} 
+                        className="text-[11px] font-medium text-gray-500 dark:text-gray-400"
+                    >
+                        {loadingMessage}
+                    </motion.span>
+                </div>
+            </div>
         )
     }
 

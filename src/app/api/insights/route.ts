@@ -73,22 +73,53 @@ export async function GET(request: Request) {
         const service = new InsightService();
         const insight = await service.generateDailyInsight(userId, profileId, scope);
 
-        // 🚀 O CORAÇÃO PREDITIVO (Nudge Engine)
+        // 🚀 O CORAÇÃO PREDITIVO (Nudge Engine) com Caching Diário
         if (insight.contextForAI) {
             try {
-                // Instancia o agente para invocar o LLM
-                const { FinanceAgentService } = await import('@/services/FinanceAgentService');
-                const agent = new FinanceAgentService();
+                const { getMongoClient } = await import('@/db/connectionDb');
+                const client = await getMongoClient();
+                const db = client.db('financeApp');
                 
-                const aiPrompt = `Gere Nudges prescritivos baseados neste contexto financeiro exato: ${JSON.stringify(insight.contextForAI)}. Lembre-se, retorne APENAS o JSON válido.`;
-                const aiResponseRaw = await agent.processMessage(aiPrompt, userId);
-                
-                // Limpeza de possíveis blocos markdown que o Gemini possa retornar
-                const cleanJsonStr = aiResponseRaw.replace(/```json/g, '').replace(/```/g, '').trim();
-                const aiData = JSON.parse(cleanJsonStr);
+                // Chave de cache sensível a novas transações (Invalida se o saldo ou dia mudar)
+                const todayStr = new Date().toISOString().split('T')[0];
+                const cacheHash = `${insight.monthSummary.total.toFixed(0)}_${insight.dailySummary.total.toFixed(0)}`;
+                const cacheKey = `nudge_${userId}_${todayStr}_hash_${cacheHash}`;
 
-                if (aiData.nudges && Array.isArray(aiData.nudges)) {
-                    // Inserimos os Nudges no topo da lista de Insights para destaque
+                let aiData;
+                const cachedNudge = await db.collection("ai_insights_cache").findOne({ _id: cacheKey as any });
+
+                if (cachedNudge && cachedNudge.aiData) {
+                    // Cache Hit: Usa dado já gerado para este momento financeiro
+                    aiData = cachedNudge.aiData;
+                } else {
+                    // Cache Miss: Chama a IA pois é a primeira vez hoje ou a pessoa gastou algo novo
+                    const { FinanceAgentService } = await import('@/services/FinanceAgentService');
+                    const agent = new FinanceAgentService();
+                    
+                    const aiPrompt = `Gere Nudges prescritivos baseados neste contexto financeiro exato: ${JSON.stringify(insight.contextForAI)}. Lembre-se, retorne APENAS o JSON válido.`;
+                    const aiResponseRaw = await agent.processMessage(aiPrompt, userId);
+                    
+                    const cleanJsonStr = aiResponseRaw.replace(/```json/g, '').replace(/```/g, '').trim();
+                    aiData = JSON.parse(cleanJsonStr);
+
+                    // Adicionar Timestamp de Geração da Máquina
+                    aiData.generatedAt = new Date().toISOString();
+
+                    if (aiData?.nudges) {
+                        db.collection("ai_insights_cache").updateOne(
+                            { _id: cacheKey as any },
+                            { $set: { aiData, createdAt: new Date() } },
+                            { upsert: true }
+                        ).catch(e => console.error("Erro ao salvar cache de nudge:", e));
+                    }
+                }
+
+                if (aiData?.nudges && Array.isArray(aiData.nudges)) {
+                    // Formatar hora para exibição limpa do status de atualização ("Atualizado às 16:30")
+                    const timeString = aiData.generatedAt 
+                        ? new Date(aiData.generatedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' }) 
+                        : new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
+
                     aiData.nudges.reverse().forEach((nudge: any, idx: number) => {
                         insight.insights.unshift({
                             id: `ai-nudge-${Date.now()}-${idx}`,
@@ -96,7 +127,7 @@ export async function GET(request: Request) {
                             text: nudge.foco || "Recomendação Preditiva",
                             value: nudge.impacto === "Alto" ? "🔥 Alto Impacto" : "💡 Dica",
                             trend: "neutral",
-                            details: nudge.motivoVinculado || "Dica baseada no seu padrão de consumo recente.",
+                            details: `(Atualizado às ${timeString}) • ` + (nudge.motivoVinculado || "Baseado nos dados em tempo real."),
                             recommendation: nudge.acaoPratica
                         });
                     });
