@@ -73,7 +73,7 @@ export async function GET(request: Request) {
         const service = new InsightService();
         const insight = await service.generateDailyInsight(userId, profileId, scope);
 
-        // 🚀 O CORAÇÃO PREDITIVO (Nudge Engine) com Caching Diário
+        // O CORAÇÃO PREDITIVO (Nudge Engine) com Caching Diário
         if (insight.contextForAI) {
             try {
                 const { getMongoClient } = await import('@/db/connectionDb');
