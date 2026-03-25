@@ -17,7 +17,6 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^3.9.1",
-    "@nestjs/common": "^11.1.17",
     "@radix-ui/react-popover": "^1.1.2",
     "@radix-ui/themes": "^3.1.4",
     "@serwist/next": "^9.5.3",
@@ -58,9 +57,6 @@
     "react-pluggy-connect": "^2.12.0",
     "react-to-print": "^3.0.5",
     "recharts": "^2.13.3",
-    "reflect-metadata": "^0.2.2",
-    "replica-failover-mongodb-ts": "^3.0.9",
-    "rxjs": "^7.8.2",
     "speakeasy": "^2.0.0",
     "stripe": "^20.2.0",
     "swagger-ui-react": "^5.31.0",
