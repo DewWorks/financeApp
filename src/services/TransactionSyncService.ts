@@ -1,5 +1,5 @@
 import { getPluggyClient } from "@/lib/pluggy";
-import { getConnectionManager } from "@/db/connectionDb";
+import { getMongoClient } from "@/db/connectionDb";
 import { Transaction } from "@/app/models/Transaction";
 import { ITransaction, expenseTags, incomeTags } from "@/interfaces/ITransaction";
 import { ObjectId } from "mongodb";
@@ -99,9 +99,8 @@ export class TransactionSyncService {
         console.log(`[SyncService] Starting sync for user ${userId} and item ${itemId}`);
 
         const client = getPluggyClient();
-        const db = await getConnectionManager();
-        // Ensure connection
-        await db.init().catch(err => console.warn("ConnectionManager init warning:", err)); // Ideally init at startup
+        const mongoClient = await getMongoClient();
+        const db = mongoClient.db('financeApp');
 
         try {
             // 1. Fetch transactions from Pluggy with Pagination
@@ -193,9 +192,9 @@ export class TransactionSyncService {
             const pluggyIds = pluggyTransactions.map(t => t.id);
             if (pluggyIds.length === 0) return { success: true, new: 0, updated: 0 };
 
-            const existingDocs = await db.read('transactions', c => c.find(
+            const existingDocs = await db.collection('transactions').find(
                 { pluggyTransactionId: { $in: pluggyIds } }
-            ).project({ pluggyTransactionId: 1 }).toArray());
+            ).project({ pluggyTransactionId: 1 }).toArray();
 
             const existingIds = new Set(existingDocs.map(d => d.pluggyTransactionId));
             const newTransactions = pluggyTransactions.filter(t => !existingIds.has(t.id));
@@ -296,7 +295,7 @@ export class TransactionSyncService {
 
             // D. Execute Bulk
             if (bulkOps.length > 0) {
-                const res = await db.write('transactions', c => c.bulkWrite(bulkOps));
+                const res = await db.collection('transactions').bulkWrite(bulkOps as any);
                 console.log(`[SyncService] Bulk Write Result: ${res.upsertedCount} inserted, ${res.modifiedCount} updated.`);
 
                 // NEW: Trigger Smart Alerts if we have new transactions
@@ -325,7 +324,8 @@ export class TransactionSyncService {
     static async syncAccountBalances(userId: string | ObjectId, itemId: string) {
         console.log(`[SyncService] Syncing Account Balances for item ${itemId}`);
         const client = getPluggyClient();
-        const db = await getConnectionManager();
+        const mongoClient = await getMongoClient();
+        const db = mongoClient.db('financeApp');
 
         try {
             // 1. Fetch Latest Item Status First (Critical for error handling)
@@ -364,10 +364,10 @@ export class TransactionSyncService {
                 (updateData as any).executionStatus = item.executionStatus;
             }
 
-            await db.write('bankConnections', c => c.updateOne(
+            await db.collection('bankConnections').updateOne(
                 { itemId: itemId },
                 { $set: updateData }
-            ));
+            );
 
             console.log(`[SyncService] Accounts updated for Item ${itemId}. Status: ${item.status}`);
             return { success: true, itemStatus: item.status };
