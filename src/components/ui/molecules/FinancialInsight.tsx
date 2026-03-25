@@ -18,6 +18,7 @@ interface InsightItem {
     trend: "positive" | "negative" | "neutral";
     details?: string;
     recommendation?: string;
+    mathBasis?: string;
     richData?: {
         projection?: {
             current: number;
@@ -470,6 +471,23 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
                             </div>
                         )}
 
+                        {currentInsight.mathBasis && (
+                            <details className="group border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden transition-all duration-300 bg-white dark:bg-gray-900/50 mt-1">
+                                <summary className="flex cursor-pointer items-center justify-between bg-gray-50 dark:bg-gray-800/50 p-3 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/80 transition outline-none">
+                                    <span className="flex items-center gap-2">
+                                        <Info className="w-4 h-4 text-blue-500" />
+                                        Entenda a Matemática
+                                    </span>
+                                    <span className="transition duration-300 group-open:rotate-180">
+                                        <svg fill="none" height="14" shapeRendering="crispEdges" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="14"><path d="M6 9l6 6 6-6"></path></svg>
+                                    </span>
+                                </summary>
+                                <div className="p-3.5 text-[11px] sm:text-xs text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-900 leading-relaxed border-t border-gray-100 dark:border-gray-800 break-words whitespace-pre-wrap">
+                                    {currentInsight.mathBasis}
+                                </div>
+                            </details>
+                        )}
+
                         <div className="flex gap-2 mt-4 justify-end border-t border-gray-100 dark:border-gray-800 pt-3">
                             <span className="text-xs text-gray-500 mr-2 self-center">Este insight foi útil?</span>
                             <Button 
@@ -508,7 +526,7 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
                                 Próximo Insight
                             </Button>
                         )}
-                        <Button type="button" variant="default" onClick={() => setIsModalOpen(false)} className="flex-1 sm:flex-none">
+                        <Button type="button" variant="default" onClick={() => setIsModalOpen(false)} className="flex-1 sm:flex-none text-white">
                             Entendi
                         </Button>
                     </DialogFooter>

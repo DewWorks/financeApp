@@ -10,6 +10,7 @@ export interface InsightItem {
     trend: "positive" | "negative" | "neutral";
     details?: string;
     recommendation?: string;
+    mathBasis?: string;
     richData?: {
         projection?: {
             current: number;

@@ -88,8 +88,8 @@ export async function GET(request: Request) {
                 let aiData;
                 const cachedNudge = await db.collection("ai_insights_cache").findOne({ _id: cacheKey as any });
 
-                if (cachedNudge && cachedNudge.aiData) {
-                    // Cache Hit: Usa dado já gerado para este momento financeiro
+                if (cachedNudge && cachedNudge.aiData && cachedNudge.aiData.nudges && cachedNudge.aiData.nudges[0]?.explicacaoMatematica) {
+                    // Cache Hit: Usa dado já gerado para este momento financeiro (validado para o novo schema)
                     aiData = cachedNudge.aiData;
                 } else {
                     // Cache Miss: Chama a IA pois é a primeira vez hoje ou a pessoa gastou algo novo
@@ -128,7 +128,8 @@ export async function GET(request: Request) {
                             value: nudge.impacto === "Alto" ? "🔥 Alto Impacto" : "💡 Dica",
                             trend: "neutral",
                             details: `(Atualizado às ${timeString}) • ` + (nudge.motivoVinculado || "Baseado nos dados em tempo real."),
-                            recommendation: nudge.acaoPratica
+                            recommendation: nudge.acaoPratica,
+                            mathBasis: nudge.explicacaoMatematica
                         });
                     });
                 }

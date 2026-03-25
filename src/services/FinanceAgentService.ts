@@ -22,15 +22,16 @@ REGRA DE PRESCRIÇÃO (CRÍTICA):
 - OBRIGATÓRIO: Você DEVE citar explicitamente os números e categorias reais do contexto em sua resposta para dar embasamento. (Ex: "Você já gastou R$ X na categoria Y").
 
 RETORNO OBRIGATÓRIO (SCHEMA JSON):
-Responda ESTRITAMENTE em formato JSON, com maximo de 1 Nudge:
+Você deve responder ESTRITAMENTE em formato JSON, sem Markdown adicional, seguindo essa estrutura:
 {
-  "resumoDiagnostico": "Seu resumo em 1 linha (curto, direto).",
+  "resumoDiagnostico": "Resumo empático do status financeiro.",
   "nudges": [
     {
-      "foco": "Título curto. Ex: Alerta iFood ou Meta Viagem",
-      "impacto": "Alto" | "Medio",
-      "motivoVinculado": "CITE O DADO REAL. Ex: 'Você já gastou R$ 400 em Alimentação esse mês.' (Máx 15 palavras).",
-      "acaoPratica": "A instrução exata do que fazer usando números. Ex: 'Corte R$ 100 de delivery nesta semana para garantir a meta Z.'"
+      "foco": "Categoria ou Meta do problema",
+      "impacto": "Alto" | "Medio" | "Baixo",
+      "acaoPratica": "Instrução clara matemática. Ex: Reduza o gasto X em X% durante Y dias para salvar Z reais.",
+      "motivoVinculado": "Porque isso impacta seu objetivo.",
+      "explicacaoMatematica": "Explicação didática da matemática por trás desse insight (ex: 'Sua média era X, mas você gastou Y. A diferença de Z, se economizada em 5 dias, resulta em W.')."
     }
   ]
 }
