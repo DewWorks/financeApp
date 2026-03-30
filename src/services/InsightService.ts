@@ -1,6 +1,7 @@
 import { getMongoClient } from "@/db/connectionDb";
 import { ObjectId } from "mongodb";
 import { areStringsSimilar } from "@/utils/stringUtils";
+import { calculatePearsonCorrelation, calculateLinearRegression, removeOutliers } from "@/utils/mathUtils";
 
 export interface InsightItem {
     id: string;
@@ -139,6 +140,22 @@ export class InsightService {
                     "globalContext": scope === 'recent' ? [] : [
                         { $match: { type: 'expense', date: { $gte: new Date(new Date().setFullYear(new Date().getFullYear() - 1)) } } },
                         { $group: { _id: { month: { $month: "$date" }, year: { $year: "$date" } }, total: { $sum: "$amount" } } }
+                    ],
+                    // Novo: Dados para análise estatística (Pillar 8)
+                    "timeSeriesData": [
+                        { $match: { type: 'expense', date: { $gte: historyLimitDate } } },
+                        {
+                            $group: {
+                                _id: {
+                                    day: { $dayOfMonth: "$date" },
+                                    month: { $month: "$date" },
+                                    year: { $year: "$date" },
+                                    tag: "$tag"
+                                },
+                                total: { $sum: "$amount" }
+                            }
+                        },
+                        { $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 } }
                     ]
                 }
             }
@@ -237,13 +254,83 @@ export class InsightService {
 
         // Context for Agent (NUDGE ENGINE - Pillar 1 pre-feed)
         // Enviamos esse payload bruto para o LLM gerar a Ação Prática
-        const contextForAI = {
+        const contextForAI: any = {
             monthlyTotals: { expense: monthTotal, income: monthIncome },
             categoryBreakdown: categoryMap,
             fixedCosts: Array.from(fixedItemsSet),
             variableCosts: Array.from(variableItemsSet),
-            detectedAnomalies: [] as string[]
+            detectedAnomalies: [] as string[],
+            statistics: {
+                regression: null as any,
+                correlations: [] as any[]
+            }
         };
+
+        // 4. Análise Estatística V3 (Regressão e Correlação)
+        const timeSeries = results.timeSeriesData || [];
+        
+        // A. Regressão Linear do Mês Atual (Projeção)
+        const currentMonthDataPoints: { x: number, y: number }[] = [];
+        let runningTotal = 0;
+        const daysInCurrentMonth = new Set(timeSeries
+            .filter((d: any) => d._id.month === (now.getUTCMonth() + 1) && d._id.year === now.getUTCFullYear())
+            .map((d: any) => d._id.day));
+
+        const sortedDays = Array.from(daysInCurrentMonth).sort((a: any, b: any) => a - b);
+        sortedDays.forEach((day: any) => {
+            const dayTotal = timeSeries
+                .filter((d: any) => d._id.day === day && d._id.month === (now.getUTCMonth() + 1))
+                .reduce((sum: number, curr: any) => sum + curr.total, 0);
+            runningTotal += dayTotal;
+            currentMonthDataPoints.push({ x: day, y: runningTotal });
+        });
+
+        if (currentMonthDataPoints.length >= 2) {
+            const { slope, intercept } = calculateLinearRegression(currentMonthDataPoints);
+            const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+            const projectedTotal = slope * daysInMonth + intercept;
+            
+            contextForAI.statistics.regression = {
+                slope,
+                intercept,
+                projectedTotal,
+                confidence: currentMonthDataPoints.length / now.getDate() // Simplificação
+            };
+        }
+
+        // B. Correlação de Pearson entre as duas categorias mais pesadas
+        const topCategories = Object.entries(categoryMap)
+            .sort(([, a], [, b]) => (b as number) - (a as number))
+            .slice(0, 2)
+            .map(([name]) => name);
+
+        if (topCategories.length === 2) {
+            const seriesA: number[] = [];
+            const seriesB: number[] = [];
+            
+            // Agrupar por dia (últimos 90 dias)
+            const dailyGroups: { [key: string]: { a: number, b: number } } = {};
+            timeSeries.forEach((d: any) => {
+                const dayKey = `${d._id.year}-${d._id.month}-${d._id.day}`;
+                if (!dailyGroups[dayKey]) dailyGroups[dayKey] = { a: 0, b: 0 };
+                if (d._id.tag === topCategories[0]) dailyGroups[dayKey].a += d.total;
+                if (d._id.tag === topCategories[1]) dailyGroups[dayKey].b += d.total;
+            });
+
+            Object.values(dailyGroups).forEach(g => {
+                seriesA.push(g.a);
+                seriesB.push(g.b);
+            });
+
+            const correlation = calculatePearsonCorrelation(seriesA, seriesB);
+            if (Math.abs(correlation) > 0.4) { // Relevante se > 0.4
+                contextForAI.statistics.correlations.push({
+                    categories: topCategories,
+                    coefficient: correlation,
+                    interpretation: correlation > 0.7 ? "Forte Dependência" : correlation > 0 ? "Tendência Positiva" : "Oposta"
+                });
+            }
+        }
 
         // =========================================================
         // GOAL & BUDGET STRATEGY
