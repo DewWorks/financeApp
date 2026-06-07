@@ -36,7 +36,7 @@ import { RecentTransactionsChart } from "@/components/ui/charts/RecentTransactio
 import { IncomeVsExpensesChart } from "@/components/ui/charts/IncomeVsExpensesChart"
 import { ChartTypeSelector } from "@/components/ui/charts/ChartTypeSelection"
 import { Card, CardContent, CardTitle } from "@/components/ui/atoms/card"
-import { PieChart, TrendingUp, TrendingDown } from "lucide-react"
+import { Bell, PieChart, TrendingUp, TrendingDown } from "lucide-react"
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
@@ -46,6 +46,7 @@ import { ObjectId } from "mongodb"
 import { TransactionsProvider } from "@/context/TransactionsContext"
 import { GoalsProvider } from "@/context/GoalsContext"
 import { ITransaction } from "@/interfaces/ITransaction"
+import { Button } from "@/components/ui/atoms/button"
 
 const COLORS = ["#0088FE", "#ff6666", "#FFBB28", "#FF8042", "#8884D8"]
 
@@ -139,6 +140,70 @@ function DashboardContent() {
   const [displayBalance, setDisplayBalance] = useState(0);
   const [displayIncome, setDisplayIncome] = useState(0);
   const [displayExpense, setDisplayExpense] = useState(0);
+
+  const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
+
+  useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      "Notification" in window &&
+      "serviceWorker" in navigator &&
+      Notification.permission === "default"
+    ) {
+      setShowNotificationPrompt(true);
+    }
+  }, []);
+
+  const urlBase64ToUint8Array = (base64String: string) => {
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/\-/g, "+").replace(/_/g, "/");
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  };
+
+  const handleSubscribeNotifications = async () => {
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") {
+        setShowNotificationPrompt(false);
+        return;
+      }
+
+      const registration = await navigator.serviceWorker.ready;
+      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      if (!vapidKey) {
+        console.error("NEXT_PUBLIC_VAPID_PUBLIC_KEY is not defined.");
+        setToast({ message: "Erro de configuração de chaves Push.", type: "error" });
+        return;
+      }
+
+      const convertedVapidKey = urlBase64ToUint8Array(vapidKey);
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: convertedVapidKey
+      });
+
+      const response = await fetch("/api/notifications/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(subscription)
+      });
+
+      if (response.ok) {
+        setToast({ message: "Notificações ativadas com sucesso! 🔔", type: "success" });
+      } else {
+        setToast({ message: "Erro ao registrar as notificações no servidor.", type: "error" });
+      }
+      setShowNotificationPrompt(false);
+    } catch (err) {
+      console.error("Error subscribing to push notifications:", err);
+      setShowNotificationPrompt(false);
+    }
+  };
 
   // Effect to update summary values based on profile/month
   useEffect(() => {
@@ -307,6 +372,45 @@ function DashboardContent() {
 
           {/* SECURITY NUDGE */}
           <MfaNudge mfaEnabled={user?.mfaEnabled} />
+
+          {/* NOTIFICATION PROMPT NUDGE */}
+          {showNotificationPrompt && (
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-blue-600/90 to-indigo-600/90 backdrop-blur-md text-white shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-blue-500/20"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-white/10 rounded-xl">
+                  <Bell className="h-6 w-6 text-blue-200 animate-bounce" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-sm sm:text-base">🔔 Ative as Dicas Diárias do Fin AI</h4>
+                  <p className="text-xs text-blue-100 max-w-lg mt-0.5">
+                    Receba desafios de economia ativa, ROI em tempo real e nudges diretamente no seu dispositivo, mesmo com o app fechado!
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 self-end sm:self-center">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setShowNotificationPrompt(false)} 
+                  className="bg-transparent border-white/20 text-white hover:bg-white/10 text-xs px-3 py-1.5 rounded-lg border-none"
+                >
+                  Depois
+                </Button>
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  onClick={handleSubscribeNotifications} 
+                  className="bg-white text-blue-600 hover:bg-blue-50 font-bold text-xs px-4 py-1.5 rounded-lg shadow-sm"
+                >
+                  Ativar
+                </Button>
+              </div>
+            </motion.div>
+          )}
 
           {/* SECTION: HOME */}
           <div className={activeTab === 'home' ? 'block min-h-[80vh] pb-32 md:min-h-0 md:pb-0' : 'hidden md:block'}>

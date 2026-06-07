@@ -113,6 +113,7 @@ import { NotificationService } from "./NotificationService";
 export class FinanceAgentService {
     private genAI: GoogleGenerativeAI;
     private model: GenerativeModel;
+    private transcriptionModel: GenerativeModel;
     private insightService: InsightService;
     private notificationService: NotificationService;
 
@@ -127,8 +128,31 @@ export class FinanceAgentService {
             systemInstruction: SYSTEM_INSTRUCTION,
             tools: tools
         });
+        this.transcriptionModel = this.genAI.getGenerativeModel({
+            model: "gemini-1.5-flash",
+            systemInstruction: "Você é um transcritor de áudio financeiro em português brasileiro. Transcreva o áudio de forma literal e precisa. Retorne APENAS a transcrição direta do texto falado, sem introdução, explicações, aspas ou comentários extras."
+        });
         this.insightService = new InsightService();
         this.notificationService = new NotificationService();
+    }
+
+    async transcribeAudio(base64Data: string, mimeType: string): Promise<string> {
+        try {
+            const result = await this.transcriptionModel.generateContent([
+                {
+                    inlineData: {
+                        data: base64Data,
+                        mimeType: mimeType
+                    }
+                },
+                "Transcreva o áudio acima de forma literal. Retorne apenas o texto transcrito em português brasileiro."
+            ]);
+            return result.response.text().trim();
+        } catch (error) {
+            console.error("Error transcribing audio with Gemini:", error);
+            this.logError(error);
+            return "";
+        }
     }
 
     private logError(error: any) {
