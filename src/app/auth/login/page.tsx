@@ -98,10 +98,16 @@ export default function LoginPage() {
 
     try {
       const isPhone = !emailOrPhone.includes("@") && /\d/.test(emailOrPhone);
+      
+      let isPwa = false;
+      if (typeof window !== "undefined") {
+        isPwa = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
+      }
 
       const payload: any = {
         [isPhone ? "cel" : "email"]: emailOrPhone,
         password,
+        isPwa,
       }
 
       if (mfaRequired) {

@@ -39,8 +39,8 @@ export async function POST(request: Request) {
         }
 
         const body = await request.json().catch(() => ({}));
-        const customTitle = body.title || "Economia Ativa: Nudge Fin AI 🤖";
-        const customMessage = body.message || "Olá! Notei que você economizou R$ 45,00 hoje evitando gastos de Lazer. Continue assim para completar o desafio! 🚀";
+        const customTitle = body.title || "Dica do Fin 🤖";
+        const customMessage = body.message || "Olá! Que tal registrar seus gastos de hoje para manter seu orçamento atualizado? É rapidinho! 🚀";
 
         const client = await getMongoClient();
         const db = client.db("financeApp");

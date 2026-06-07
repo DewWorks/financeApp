@@ -39,10 +39,9 @@ export async function POST(request: Request) {
     try {
         const formData = await request.formData();
         const from = formData.get('From') as string;
-        const body = (formData.get('Body') as string) || '';
-        const numMedia = Number(formData.get('NumMedia') || '0');
+        const body = formData.get('Body') as string;
 
-        if (!from || (!body && numMedia === 0)) {
+        if (!from || !body) {
             return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
         }
 
@@ -70,54 +69,10 @@ export async function POST(request: Request) {
             });
         }
 
-        let processedText = body;
-        let isAudio = false;
-
-        // Process audio attachment if present
-        if (numMedia > 0) {
-            const mediaUrl = formData.get('MediaUrl0') as string;
-            const mimeType = formData.get('MediaContentType0') as string;
-
-            if (mediaUrl && mimeType && mimeType.startsWith('audio/')) {
-                console.log(`Downloading WhatsApp voice note from Twilio CDN: ${mediaUrl} (${mimeType})`);
-                try {
-                    const mediaResponse = await fetch(mediaUrl);
-                    if (mediaResponse.ok) {
-                        const audioBuffer = Buffer.from(await mediaResponse.arrayBuffer());
-                        const base64Audio = audioBuffer.toString('base64');
-                        
-                        // Transcribe using Gemini 1.5 Flash
-                        const transcription = await financeAgent.transcribeAudio(base64Audio, mimeType);
-                        if (transcription) {
-                            console.log(`Gemini Voice Ingestion Transcription: "${transcription}"`);
-                            processedText = transcription;
-                            isAudio = true;
-                        }
-                    } else {
-                        console.error(`Failed to download audio from Twilio CDN: ${mediaResponse.statusText}`);
-                    }
-                } catch (e) {
-                    console.error("Error downloading or transcribing Twilio audio:", e);
-                }
-            }
-        }
-
-        if (!processedText.trim()) {
-            twiml.message('🎙️ Desculpe, não consegui entender o áudio enviado. Poderia repetir ou digitar? 😅');
-            return new NextResponse(twiml.toString(), {
-                headers: { 'Content-Type': 'text/xml' },
-            });
-        }
-
         // 3. Process with Finance Agent
-        const agentResponseText = await financeAgent.processMessage(processedText, user._id.toString());
+        const responseText = await financeAgent.processMessage(body, user._id.toString());
 
-        let finalResponse = agentResponseText;
-        if (isAudio) {
-            finalResponse = `🎙️ *Fin ouviu:* "${processedText}"\n\n${agentResponseText}`;
-        }
-
-        twiml.message(finalResponse);
+        twiml.message(responseText);
 
         return new NextResponse(twiml.toString(), {
             headers: { 'Content-Type': 'text/xml' },

@@ -112,6 +112,21 @@ function DashboardContent() {
   const [selectedChartType, setSelectedChartType] = useState("pie")
   const [isFinChatOpen, setIsFinChatOpen] = useState(false)
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
+  const [autoStartVoice, setAutoStartVoice] = useState(false)
+
+  // Check for PWA shortcut/voice parameters on load
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get("startVoice") === "true") {
+        // Clear param from URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        setActiveTab("fin");
+        setIsFinChatOpen(true);
+        setAutoStartVoice(true);
+      }
+    }
+  }, []);
 
   // Custom Hooks
   const filters = useDashboardFilters({
@@ -385,9 +400,9 @@ function DashboardContent() {
                   <Bell className="h-6 w-6 text-blue-200 animate-bounce" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm sm:text-base">🔔 Ative as Dicas Diárias do Fin AI</h4>
+                  <h4 className="font-bold text-sm sm:text-base">🔔 Ative as Notificações de Economia</h4>
                   <p className="text-xs text-blue-100 max-w-lg mt-0.5">
-                    Receba desafios de economia ativa, ROI em tempo real e nudges diretamente no seu dispositivo, mesmo com o app fechado!
+                    Receba alertas de gastos, dicas rápidas do Fin AI e lembretes para manter suas finanças organizadas sem esforço!
                   </p>
                 </div>
               </div>
@@ -644,8 +659,10 @@ function DashboardContent() {
           onClose={() => {
             setIsFinChatOpen(false)
             setActiveTab('home')
+            setAutoStartVoice(false)
           }} 
           onRefresh={refreshData}
+          autoStartVoice={autoStartVoice}
         />
         <SmartImportDialog 
           isOpen={isImportModalOpen} 

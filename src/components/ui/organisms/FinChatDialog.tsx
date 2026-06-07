@@ -11,7 +11,11 @@ import {
     Sparkles, 
     Loader2, 
     MessageCircle,
-    ArrowLeft
+    ArrowLeft,
+    Info,
+    Copy,
+    Check,
+    ExternalLink
 } from "lucide-react"
 import { Button } from "@/components/ui/atoms/button"
 
@@ -26,15 +30,26 @@ interface FinChatDialogProps {
     isOpen: boolean
     onClose: () => void
     onRefresh?: () => Promise<void>
+    autoStartVoice?: boolean
 }
 
-export function FinChatDialog({ isOpen, onClose, onRefresh }: FinChatDialogProps) {
+export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: FinChatDialogProps) {
     const [messages, setMessages] = useState<Message[]>([])
     const [isListening, setIsListening] = useState(false)
     const [isProcessing, setIsProcessing] = useState(false)
     const [typedMessage, setTypedMessage] = useState("")
     const [supportVoice, setSupportVoice] = useState(true)
     const [errorMsg, setErrorMsg] = useState<string | null>(null)
+    const [showShortcutInfo, setShowShortcutInfo] = useState(false)
+    const [userId, setUserId] = useState("")
+    const [copied, setCopied] = useState(false)
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const id = localStorage.getItem("user-id") || ""
+            setUserId(id)
+        }
+    }, [isOpen])
     
     const recognitionRef = useRef<any>(null)
     const chatEndRef = useRef<HTMLDivElement>(null)
@@ -99,6 +114,20 @@ export function FinChatDialog({ isOpen, onClose, onRefresh }: FinChatDialogProps
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: "smooth" })
     }, [messages, isProcessing])
+
+    // Auto-start voice capture if requested
+    useEffect(() => {
+        if (isOpen && autoStartVoice && supportVoice) {
+            const timer = setTimeout(() => {
+                try {
+                    recognitionRef.current?.start()
+                } catch (e) {
+                    console.error("Failed to autostart speech recognition", e)
+                }
+            }, 600); // Aguarda a animação do modal concluir
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen, autoStartVoice, supportVoice])
 
     const toggleListening = () => {
         if (!supportVoice) return
@@ -209,13 +238,23 @@ export function FinChatDialog({ isOpen, onClose, onRefresh }: FinChatDialogProps
                         </div>
                     </div>
 
-                    <button 
-                        onClick={onClose} 
-                        className="hidden sm:block p-1.5 hover:bg-white/10 rounded-full transition-colors"
-                        title="Fechar conversa"
-                    >
-                        <X className="w-5 h-5" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={() => setShowShortcutInfo(true)}
+                            className="p-1.5 hover:bg-white/10 rounded-full transition-colors flex items-center gap-1 text-[10px] font-semibold text-indigo-100 bg-white/5 border border-white/10 rounded-lg shadow-sm"
+                            title="Configurar atalho Siri / Comando de Voz"
+                        >
+                            <Info className="w-3.5 h-3.5 text-indigo-200" />
+                            <span>Atalho de Voz</span>
+                        </button>
+                        <button 
+                            onClick={onClose} 
+                            className="hidden sm:block p-1.5 hover:bg-white/10 rounded-full transition-colors"
+                            title="Fechar conversa"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Background decorative styling */}
@@ -342,6 +381,104 @@ export function FinChatDialog({ isOpen, onClose, onRefresh }: FinChatDialogProps
                         <Send className="w-4 h-4" />
                     </Button>
                 </div>
+
+                {/* Voice Shortcut Configuration Overlay */}
+                <AnimatePresence>
+                    {showShortcutInfo && (
+                        <motion.div 
+                            initial={{ opacity: 0, y: 100 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 100 }}
+                            className="absolute inset-0 z-20 bg-white dark:bg-gray-900 flex flex-col overflow-y-auto p-5"
+                        >
+                            <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3 mb-4">
+                                <h3 className="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-2">
+                                    <Sparkles className="w-4 h-4 text-indigo-500 animate-pulse" />
+                                    Atalho de Voz no Celular
+                                </h3>
+                                <button 
+                                    onClick={() => {
+                                        setShowShortcutInfo(false)
+                                        setCopied(false)
+                                    }}
+                                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-500 dark:text-gray-400"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
+                                Escolha uma das formas abaixo para falar com o Fin sem precisar abrir o app manualmente:
+                            </p>
+
+                            <div className="space-y-4">
+                                {/* Option 1: Native PWA Shortcut */}
+                                <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800">
+                                    <span className="inline-block text-[10px] font-bold px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-md mb-2">
+                                        Método 1: Atalho do Ícone (Sem Configurar Nada)
+                                    </span>
+                                    <h4 className="text-xs font-bold text-gray-800 dark:text-gray-200 mb-1">
+                                        Pressione e Segure o Ícone
+                                    </h4>
+                                    <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-normal">
+                                        Na tela inicial do seu celular, **pressione e segure o ícone** do FinancePro. Um menu se abrirá com a opção **"Falar com o Fin 🎙️"**. Toque nela e o app abrirá gravando seu áudio instantaneamente!
+                                    </p>
+                                </div>
+
+                                {/* Option 2: Siri Shortcut integration */}
+                                <div className="p-3 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-xl border border-indigo-100/30 dark:border-indigo-950/30">
+                                    <span className="inline-block text-[10px] font-bold px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-md mb-2">
+                                        Método 2: Atalho Siri (iPhone - Mãos Livres)
+                                    </span>
+                                    <h4 className="text-xs font-bold text-gray-800 dark:text-gray-200 mb-1">
+                                        Registrar por Voz por Comando da Siri
+                                    </h4>
+                                    <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-normal mb-3">
+                                        Copie seu token de segurança e instale nosso Atalho da Siri oficial. Você poderá apenas dizer *"E aí Siri, Registrar Gasto"* para cadastrar em segundo plano!
+                                    </p>
+
+                                    <div className="flex flex-col gap-2">
+                                        <button
+                                            onClick={() => {
+                                                if (navigator.clipboard) {
+                                                    navigator.clipboard.writeText(userId)
+                                                    setCopied(true)
+                                                    setTimeout(() => setCopied(false), 2000)
+                                                }
+                                            }}
+                                            className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-xs font-medium text-gray-700 dark:text-gray-200 rounded-lg transition-colors"
+                                        >
+                                            {copied ? (
+                                                <>
+                                                    <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                                    <span className="text-emerald-500">Chave Copiada!</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Copy className="w-3.5 h-3.5" />
+                                                    <span>1. Copiar Chave de Acesso</span>
+                                                </>
+                                            )}
+                                        </button>
+
+                                        <a
+                                            href="https://www.icloud.com/shortcuts/c7e8e74a88bc4d4eb0ea772412852277"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-indigo-600 hover:bg-indigo-700 text-xs font-bold text-white rounded-lg transition-colors text-center"
+                                        >
+                                            <span>2. Instalar Atalho Siri</span>
+                                            <ExternalLink className="w-3.5 h-3.5" />
+                                        </a>
+                                    </div>
+                                    <p className="text-[9px] text-indigo-400/80 dark:text-indigo-500/70 mt-2 text-center">
+                                        *Ao instalar, cole a Chave de Acesso quando solicitado pelo app Atalhos.
+                                    </p>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
             </div>
         </div>
