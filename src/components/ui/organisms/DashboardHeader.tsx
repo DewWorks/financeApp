@@ -6,7 +6,7 @@ import { ThemeToggle } from "@/components/ui/atoms/ThemeToggle"
 import { Button } from "@/components/ui/atoms/button"
 import { Tooltip } from "@/components/ui/atoms/tooltip"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/atoms/popover"
-import { LogOut, User, LogIn, Menu } from "lucide-react"
+import { LogOut, User, LogIn, Menu, UploadCloud, Target, PieChart } from "lucide-react"
 import { motion } from "framer-motion"
 import { PWAInstallButton } from "@/components/ui/molecules/PWAInstallButton"
 
@@ -16,6 +16,8 @@ interface DashboardHeaderProps {
     handleProfileSwitch: (profileId: string | null) => void
     handleProfile: () => void
     toggleTheme: () => void
+    onOpenImportModal?: () => void
+    setActiveTab?: (tab: string) => void
 }
 
 export function DashboardHeader({
@@ -23,7 +25,9 @@ export function DashboardHeader({
     handleLogout,
     handleProfileSwitch,
     handleProfile,
-    toggleTheme
+    toggleTheme,
+    onOpenImportModal,
+    setActiveTab
 }: DashboardHeaderProps) {
     // Fallback: If prop is null, try to read from localStorage (Visual redundancy)
     const [localUser, setLocalUser] = React.useState<IUser | null>(user);
@@ -155,6 +159,30 @@ export function DashboardHeader({
                                             >
                                                 <User className="h-4 w-4 mr-2 text-blue-500" />
                                                 Perfil
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                className="w-full justify-start px-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                onClick={() => setActiveTab && setActiveTab('goals')}
+                                            >
+                                                <Target className="h-4 w-4 mr-2 text-blue-500" />
+                                                Metas
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                className="w-full justify-start px-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                onClick={() => setActiveTab && setActiveTab('analytics')}
+                                            >
+                                                <PieChart className="h-4 w-4 mr-2 text-purple-500" />
+                                                Análise
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                className="w-full justify-start px-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                onClick={onOpenImportModal}
+                                            >
+                                                <UploadCloud className="h-4 w-4 mr-2 text-emerald-500" />
+                                                Importar Extrato
                                             </Button>
                                             <Button
                                                 variant="ghost"
