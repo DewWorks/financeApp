@@ -5,6 +5,70 @@ import { ITransaction } from "@/interfaces/ITransaction";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { usePlanGate } from "@/context/PlanGateContext";
+import Swal from "sweetalert2";
+
+const MOCK_TRANSACTIONS = [
+  {
+    _id: "mock-1",
+    description: "Salário Recebido 💼",
+    amount: 6000,
+    type: "income",
+    tag: "Salário",
+    date: new Date().toISOString().split('T')[0],
+    isRecurring: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    _id: "mock-2",
+    description: "Aluguel Apartamento 🏠",
+    amount: 1500,
+    type: "expense",
+    tag: "Aluguel",
+    date: new Date().toISOString().split('T')[0],
+    isRecurring: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    _id: "mock-3",
+    description: "Supermercado Semanal 🛒",
+    amount: 800,
+    type: "expense",
+    tag: "Alimentação",
+    date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
+    isRecurring: false,
+    createdAt: new Date(Date.now() - 86400000).toISOString()
+  },
+  {
+    _id: "mock-4",
+    description: "Assinatura Netflix 🍿",
+    amount: 55.90,
+    type: "expense",
+    tag: "Lazer",
+    date: new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0],
+    isRecurring: true,
+    createdAt: new Date(Date.now() - 2 * 86400000).toISOString()
+  },
+  {
+    _id: "mock-5",
+    description: "Pix Recebido 💸",
+    amount: 350,
+    type: "income",
+    tag: "Outros",
+    date: new Date(Date.now() - 3 * 86400000).toISOString().split('T')[0],
+    isRecurring: false,
+    createdAt: new Date(Date.now() - 3 * 86400000).toISOString()
+  },
+  {
+    _id: "mock-6",
+    description: "Investimento Tesouro Direto 📈",
+    amount: 500,
+    type: "expense",
+    tag: "Outros",
+    date: new Date(Date.now() - 4 * 86400000).toISOString().split('T')[0],
+    isRecurring: false,
+    createdAt: new Date(Date.now() - 4 * 86400000).toISOString()
+  }
+];
 
 interface TransactionsContextType {
     transactions: ITransaction[];
@@ -61,6 +125,11 @@ export function TransactionsProvider({ children, profileId }: { children: ReactN
     };
 
     const getChartData = useCallback(async () => {
+        const isDemoMode = typeof window !== "undefined" && !localStorage.getItem("auth_token");
+        if (isDemoMode) {
+            setChartData(MOCK_TRANSACTIONS as any);
+            return;
+        }
         try {
             let url = `/api/transactions?limit=1000`;
             if (selectedMonth) {
@@ -87,6 +156,13 @@ export function TransactionsProvider({ children, profileId }: { children: ReactN
     }, [selectedMonth, profileId]);
 
     const getAllTransactions = useCallback(async () => {
+        const isDemoMode = typeof window !== "undefined" && !localStorage.getItem("auth_token");
+        if (isDemoMode) {
+            setLoading(true);
+            setAllTransactions(MOCK_TRANSACTIONS as any);
+            setLoading(false);
+            return;
+        }
         try {
             setLoading(true);
             const response = await axios.get('/api/transactions/all');
@@ -107,6 +183,14 @@ export function TransactionsProvider({ children, profileId }: { children: ReactN
     }, []);
 
     const getTransactions = useCallback(async (page = 1) => {
+        const isDemoMode = typeof window !== "undefined" && !localStorage.getItem("auth_token");
+        if (isDemoMode) {
+            setLoading(true);
+            setTransactions(MOCK_TRANSACTIONS.slice((page - 1) * 10, page * 10) as any);
+            setTotalPages(Math.ceil(MOCK_TRANSACTIONS.length / 10));
+            setLoading(false);
+            return;
+        }
         try {
             setLoading(true);
             const response = await axios.get(`/api/transactions`, {
@@ -143,6 +227,14 @@ export function TransactionsProvider({ children, profileId }: { children: ReactN
     }, [selectedMonth, router, profileId]);
 
     const getAllTransactionsPage = useCallback(async (page = 1) => {
+        const isDemoMode = typeof window !== "undefined" && !localStorage.getItem("auth_token");
+        if (isDemoMode) {
+            setLoading(true);
+            setTransactions(MOCK_TRANSACTIONS.slice((page - 1) * 10, page * 10) as any);
+            setTotalPages(Math.ceil(MOCK_TRANSACTIONS.length / 10));
+            setLoading(false);
+            return;
+        }
         try {
             setLoading(true);
             showToast("Buscando transações paginadas.", "warning");
@@ -173,6 +265,15 @@ export function TransactionsProvider({ children, profileId }: { children: ReactN
     }, [profileId]);
 
     const getSummary = useCallback(async () => {
+        const isDemoMode = typeof window !== "undefined" && !localStorage.getItem("auth_token");
+        if (isDemoMode) {
+            setSummaryData({
+                income: 6350,
+                expense: 2855.90,
+                balance: 3494.10
+            });
+            return;
+        }
         try {
             let url = '/api/transactions/summary';
             const params: any = {};
@@ -220,6 +321,22 @@ export function TransactionsProvider({ children, profileId }: { children: ReactN
     }, [isAllTransactions, currentPage, getAllTransactionsPage, profileId]);
 
     const addTransaction = async (transaction: Partial<ITransaction>) => {
+        const isDemoMode = typeof window !== "undefined" && !localStorage.getItem("auth_token");
+        if (isDemoMode) {
+            Swal.fire({
+                title: "Acesso Restrito",
+                text: "Para salvar movimentações e usar todas as funções da plataforma, você precisa criar uma conta.",
+                icon: "info",
+                showCancelButton: true,
+                confirmButtonText: "Criar Conta / Login",
+                cancelButtonText: "Continuar Testando",
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = "/auth/login";
+                }
+            });
+            return;
+        }
         try {
             showToast("Inserindo transação...", "warning");
             // Ensure profileId is attached if available and not present
@@ -252,6 +369,22 @@ export function TransactionsProvider({ children, profileId }: { children: ReactN
     };
 
     const editTransaction = async (updatedTransaction: Partial<ITransaction>) => {
+        const isDemoMode = typeof window !== "undefined" && !localStorage.getItem("auth_token");
+        if (isDemoMode) {
+            Swal.fire({
+                title: "Acesso Restrito",
+                text: "Para editar movimentações e usar todas as funções da plataforma, você precisa criar uma conta.",
+                icon: "info",
+                showCancelButton: true,
+                confirmButtonText: "Criar Conta / Login",
+                cancelButtonText: "Continuar Testando",
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = "/auth/login";
+                }
+            });
+            return;
+        }
         try {
             showToast("Editando transação...", "warning");
             const response = await axios.put(`/api/transactions/${updatedTransaction._id}`, updatedTransaction);
@@ -279,6 +412,22 @@ export function TransactionsProvider({ children, profileId }: { children: ReactN
     };
 
     const deleteTransaction = async (transactionId: string) => {
+        const isDemoMode = typeof window !== "undefined" && !localStorage.getItem("auth_token");
+        if (isDemoMode) {
+            Swal.fire({
+                title: "Acesso Restrito",
+                text: "Para excluir movimentações e usar todas as funções da plataforma, você precisa criar uma conta.",
+                icon: "info",
+                showCancelButton: true,
+                confirmButtonText: "Criar Conta / Login",
+                cancelButtonText: "Continuar Testando",
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = "/auth/login";
+                }
+            });
+            return;
+        }
         try {
             showToast("Excluindo transação...", "warning");
             const response = await axios.delete(`/api/transactions/${transactionId}`);
@@ -306,6 +455,11 @@ export function TransactionsProvider({ children, profileId }: { children: ReactN
     };
 
     const getTransaction = async (transactionId: string): Promise<ITransaction | null> => {
+        const isDemoMode = typeof window !== "undefined" && !localStorage.getItem("auth_token");
+        if (isDemoMode) {
+            const found = MOCK_TRANSACTIONS.find(t => t._id === transactionId);
+            return (found as any) || null;
+        }
         try {
             showToast("Buscando transação...", "warning");
             const response = await axios.get(`/api/transactions/${transactionId}`);

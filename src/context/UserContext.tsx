@@ -64,8 +64,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
             // Only wipe if it is strictly a 401 (Unauthorized) which means our token is dead.
             if (axios.isAxiosError(error) && error.response?.status === 401) {
                 setUser(null);
+                localStorage.removeItem("auth_token");
                 localStorage.removeItem("user-id");
                 localStorage.removeItem("user_data");
+                localStorage.removeItem("current-profile-id");
+                localStorage.removeItem("current-profile-name");
             } else {
                 console.warn("Keeping existing user session due to non-critical error");
             }

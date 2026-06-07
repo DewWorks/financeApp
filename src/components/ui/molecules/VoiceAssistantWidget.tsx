@@ -113,6 +113,32 @@ export function VoiceAssistantWidget({ onRefresh }: VoiceAssistantWidgetProps) {
         setReply(null)
         setErrorMsg(null)
 
+        const isDemoMode = typeof window !== "undefined" && !localStorage.getItem("auth_token");
+        if (isDemoMode) {
+            setTimeout(async () => {
+                let replyText = "Desculpe, não entendi o formato dessa transação. Você pode tentar algo como: 'Gastei R$ 40 com mercado' ou 'Recebi R$ 3000 de salário'.";
+                const lowerText = messageText.toLowerCase();
+                if (
+                    lowerText.includes("gastei") || 
+                    lowerText.includes("recebi") || 
+                    lowerText.includes("paguei") || 
+                    lowerText.includes("comi") || 
+                    lowerText.includes("comprar") || 
+                    lowerText.includes("padaria") || 
+                    lowerText.includes("almoço") || 
+                    lowerText.includes("netflix") || 
+                    lowerText.includes("pix") ||
+                    lowerText.includes("salário") ||
+                    lowerText.includes("aluguel")
+                ) {
+                    replyText = `Entendido! Processei o seu comando de voz/texto e registrei a transação com sucesso no seu painel temporário. 🚀\n\nDescrição: "${messageText}"\n\n*(Lembre-se: em Modo de Demonstração as transações não são salvas permanentemente. Crie uma conta ou faça login para começar de verdade!)*`;
+                }
+                setReply(replyText)
+                setIsProcessing(false)
+            }, 1200);
+            return;
+        }
+
         try {
             const response = await fetch("/api/agent/chat", {
                 method: "POST",
@@ -204,6 +230,22 @@ export function VoiceAssistantWidget({ onRefresh }: VoiceAssistantWidgetProps) {
         const formData = new FormData()
         formData.append("file", file)
 
+        const isDemoMode = typeof window !== "undefined" && !localStorage.getItem("auth_token");
+        if (isDemoMode) {
+            setTimeout(() => {
+                setImportedCount(5)
+                setImportedList([
+                    "Despesa de Teste: Uber R$ 22,90 (Transporte)",
+                    "Despesa de Teste: Padaria R$ 15,50 (Alimentação)",
+                    "Despesa de Teste: Netflix R$ 55,90 (Assinaturas)",
+                    "Receita de Teste: Pix Recebido R$ 120,00 (Outros)",
+                    "Despesa de Teste: Posto Shell R$ 150,00 (Transporte)"
+                ])
+                setImportStatus("success")
+            }, 2000);
+            return;
+        }
+
         try {
             const response = await fetch("/api/transactions/import-file", {
                 method: "POST",
@@ -249,7 +291,7 @@ export function VoiceAssistantWidget({ onRefresh }: VoiceAssistantWidgetProps) {
     }
 
     return (
-        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6 flex flex-col justify-between min-h-[300px] transition-all duration-300">
+        <div id="voice-assistant-widget" className="relative overflow-hidden rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6 flex flex-col justify-between min-h-[300px] transition-all duration-300">
             {/* Background decorative glow */}
             <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl pointer-events-none transition-colors duration-500 ${
                 activeTab === "voice" 

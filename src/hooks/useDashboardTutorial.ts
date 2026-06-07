@@ -7,28 +7,25 @@ interface UseDashboardTutorialProps {
     setActiveTab: (tab: string) => void
     setViewMode: (mode: 'list' | 'card' | 'table') => void
     userRequestName?: string
+    isLoading?: boolean
 }
 
-export function useDashboardTutorial({ setActiveTab, setViewMode, userRequestName }: UseDashboardTutorialProps) {
+export function useDashboardTutorial({ setActiveTab, setViewMode, userRequestName, isLoading }: UseDashboardTutorialProps) {
     const [runTutorial, setRunTutorial] = useState(false)
 
-    // Check availability on mount
+    // Check availability when page loading is complete and dashboard is fully mounted
     useEffect(() => {
-        const checkTutorial = () => {
-            const isCompleted = localStorage.getItem("tutorial-guide-v2")
-            // Wait a bit for loading? Or check immediately?
-            // Page usually checks loading first. 
-            // We'll let page.tsx handle the "loading" check and runTutorial will be false until explicitly set?
-            // Actually, page.tsx logic was: useEffect(() => { if (!loading && !isCompleted) setRunTutorial(true) }, [loading])
-            // We can expose setRunTutorial or handle it inside if we pass 'loading' prop.
-            // Let's expose setRunTutorial and checks.
-            if (!isCompleted) {
-                // Delay to ensure UI is ready
-                setTimeout(() => setRunTutorial(true), 2000)
-            }
+        if (isLoading) return; // Wait until loading skeleton transitions out
+
+        const isCompleted = localStorage.getItem("tutorial-guide-v2")
+        if (!isCompleted && !runTutorial) {
+            // Short delay to allow dashboard entry animations to finish
+            const timer = setTimeout(() => {
+                setRunTutorial(true)
+            }, 600)
+            return () => clearTimeout(timer)
         }
-        checkTutorial()
-    }, [])
+    }, [isLoading])
 
     useEffect(() => {
         if (runTutorial) {
@@ -38,11 +35,18 @@ export function useDashboardTutorial({ setActiveTab, setViewMode, userRequestNam
 
     const getUserIdLocal = () => {
         if (typeof window !== "undefined") {
-            const userStr = localStorage.getItem("user_data"); // Assuming stored here? Or decoded token?
-            // Fallback
-            return "user";
+            try {
+                const userStr = localStorage.getItem("user_data")
+                if (userStr) {
+                    const parsed = JSON.parse(userStr)
+                    return parsed._id || parsed.id || "user"
+                }
+            } catch (e) {
+                console.error("Failed to parse user data", e)
+            }
+            return "user"
         }
-        return null;
+        return null
     }
 
     const startTutorial = () => {
@@ -70,8 +74,25 @@ export function useDashboardTutorial({ setActiveTab, setViewMode, userRequestNam
         localStorage.setItem("tutorial-guide-v2", "true")
         setRunTutorial(false)
 
+        const token = typeof window !== "undefined" && localStorage.getItem("auth_token");
+        if (!token) {
+            Swal.fire({
+                title: "🎉 Tour Concluído!",
+                text: "Você está no modo de demonstração. Sinta-se à vontade para interagir com o Fin AI ou fazer upload de faturas. Cadastre-se quando quiser salvar seus dados!",
+                icon: "success",
+                showCancelButton: true,
+                confirmButtonText: "Criar Conta / Entrar",
+                cancelButtonText: "Continuar Testando",
+                allowOutsideClick: true,
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = "/auth/login";
+                }
+            });
+            return;
+        }
+
         const userId = getUserIdLocal()
-        // API Call (Fire and forget)
         try {
             if (userId) {
                 await fetch("/api/admin/users/tutorialFinished", {
@@ -97,8 +118,8 @@ export function useDashboardTutorial({ setActiveTab, setViewMode, userRequestNam
     const getMobileSteps = () => [
         {
             popover: {
-                title: "🚀 Seu Dinheiro no Bolso!",
-                description: "Bem-vindo ao FinancePro Mobile! Vamos te mostrar como controlar suas finanças com agilidade.",
+                title: "🚀 FinancePro Mobile!",
+                description: "Seja muito bem-vindo! Vamos te mostrar como controlar suas finanças em poucos toques com inteligência artificial.",
                 showButtons: ["next"],
             },
         },
@@ -106,55 +127,55 @@ export function useDashboardTutorial({ setActiveTab, setViewMode, userRequestNam
             element: "#transactions-values",
             popover: {
                 title: "💰 Visão Geral",
-                description: "Acompanhe seus indicadores principais: Saldo, Receitas e Despesas do mês.",
+                description: "Aqui você acompanha o seu Saldo Atual, as Receitas do mês e as Despesas consolidadas.",
             },
             onHighlightStarted: () => setActiveTab('home'),
         },
         {
             element: "#mobile-bottom-nav",
             popover: {
-                title: "📲 Navegação Rápida",
-                description: "Use esta barra para transitar entre Início, Tabela, Metas e Análises.",
+                title: "📲 Barra de Navegação",
+                description: "Navegue de forma intuitiva por todas as telas do aplicativo a partir desta barra inferior.",
             },
             onHighlightStarted: () => setActiveTab('home'),
+        },
+        {
+            element: "#mobile-tab-transactions",
+            popover: {
+                title: "📝 Histórico Completo",
+                description: "Acesse todas as transações, realize buscas rápidas e filtre lançamentos por tags ou categorias.",
+            },
+            onHighlightStarted: () => setActiveTab('transactions'),
         },
         {
             element: "#mobile-add-btn",
             popover: {
-                title: "➕ Adicionar Rápido",
-                description: "Toque no botão central para lançar uma nova Receita ou Despesa em segundos!",
+                title: "➕ Menu de Acesso Rápido",
+                description: "Toque aqui para abrir o menu suspenso e lançar receitas, despesas ou fazer upload de arquivos de forma ágil.",
             },
             onHighlightStarted: () => setActiveTab('home'),
         },
         {
-            element: "#filter-bar",
+            element: "#mobile-tab-fin",
             popover: {
-                title: "🔍 Filtros",
-                description: "Filtre seus dados por Tipo (Receita/Despesa) ou Categoria. Use a busca para encontrar itens específicos.",
+                title: "🎙️ Fin AI — Seu Co-piloto de Voz",
+                description: "Nosso recurso estrela! Toque na aba do Fin AI para iniciar o chat por voz/texto e lançar gastos sem digitar nada.",
             },
-            onHighlightStarted: () => setActiveTab('transactions'),
+            onHighlightStarted: () => setActiveTab('fin'),
         },
         {
-            element: "#transactions-table",
+            element: "#fin-chat-container",
             popover: {
-                title: "📝 Lista de Transações",
-                description: "Veja seu histórico. DICA: Arraste o card para a esquerda/direita para editar ou excluir!",
+                title: "💬 Interação Inteligente",
+                description: "Essa é a janela do Fin AI. Toque no microfone ou digite, por exemplo: 'gastei R$ 40 em padaria hoje' e assista o Fin processar e registrar tudo!",
             },
-            onHighlightStarted: () => setActiveTab('transactions'),
+            onHighlightStarted: () => setActiveTab('fin'),
         },
         {
-            element: "#transactions-goals",
+            element: "#mobile-tab-analytics",
             popover: {
-                title: "🎯 Suas Metas",
-                description: "Defina objetivos financeiros e acompanhe seu progresso mês a mês.",
-            },
-            onHighlightStarted: () => setActiveTab('goals'),
-        },
-        {
-            element: "#transactions-chart",
-            popover: {
-                title: "📈 Análise",
-                description: "Entenda para onde vai seu dinheiro com gráficos detalhados.",
+                title: "📈 Painel & Metas",
+                description: "Acompanhe gráficos detalhados de despesas e visualize o progresso das suas metas de poupança mensais.",
             },
             onHighlightStarted: () => setActiveTab('analytics'),
         }
@@ -163,31 +184,39 @@ export function useDashboardTutorial({ setActiveTab, setViewMode, userRequestNam
     const getDesktopSteps = () => [
         {
             popover: {
-                title: "📊 Gestão Profissional",
-                description: "Bem-vindo ao seu Painel FinancePro! Controle total das suas finanças em tela cheia.",
+                title: "📊 Gestão Inteligente de Finanças",
+                description: `Olá ${userRequestName || "Visitante"}! Bem-vindo ao FinancePro. Vamos te apresentar as principais ferramentas do seu painel em tela cheia.`,
                 showButtons: ["next"],
             },
         },
         {
             element: "#profile-switcher",
             popover: {
-                title: "👥 Perfis e Conta",
-                description: "Alterne entre finanças pessoais e contas compartilhadas aqui.",
+                title: "👥 Multi-Perfis & Compartilhamento",
+                description: "Alterne instantaneamente entre suas finanças pessoais, familiares ou da sua empresa por aqui.",
             },
         },
         {
             element: "#transactions-values",
             popover: {
-                title: "💰 Resumo Executivo",
-                description: "Seus KPIs principais: Saldo Atual, Entradas e Saídas do período.",
+                title: "💰 Resumo Financeiro",
+                description: "Seus KPIs mais importantes do mês: saldo líquido atual, soma de receitas e despesas totais.",
+            },
+            onHighlightStarted: () => setActiveTab('home'),
+        },
+        {
+            element: "#voice-assistant-widget",
+            popover: {
+                title: "🎙️ Fin AI — Voz & Importação Avançada",
+                description: "Aqui você fala naturalmente para registrar transações ('recebi 2000 reais de bônus') ou faz upload de faturas em PDF/CSV para conciliação automática com IA!",
             },
             onHighlightStarted: () => setActiveTab('home'),
         },
         {
             element: "#filter-bar",
             popover: {
-                title: "🔍 Filtros Avançados",
-                description: "Encontre exatamente o que precisa. Filtre por Tipo, Tag ou use a busca textual.",
+                title: "🔍 Busca e Filtros Rápidos",
+                description: "Consulte transações rapidamente digitando termos de busca ou selecionando períodos específicos.",
             },
             onHighlightStarted: () => {
                 setActiveTab('transactions')
@@ -197,33 +226,34 @@ export function useDashboardTutorial({ setActiveTab, setViewMode, userRequestNam
         {
             element: "#view-toggles",
             popover: {
-                title: "👁️ Modos de Visualização",
-                description: "Escolha como visualizar seus dados: Lista, Grade de Cards ou Tabela Detalhada.",
+                title: "👁️ Visualizações Personalizadas",
+                description: "Alterne o layout da tabela entre tabela clássica, listagem simples ou uma moderna grade de cards.",
             },
             onHighlightStarted: () => setActiveTab('transactions'),
         },
         {
             element: "#desktop-add-btn",
             popover: {
-                title: "➕ Lançamentos",
-                description: "Registre novas movimentações rapidamente por aqui.",
+                title: "➕ Lançamento Tradicional",
+                description: "Prefere preencher manualmente? Clique aqui para abrir o formulário detalhado de receitas ou despesas.",
             },
+            onHighlightStarted: () => setActiveTab('home'),
         },
         {
             element: "#transactions-goals",
             popover: {
-                title: "🎯 Metas Financeiras",
-                description: "Defina e monitore seus objetivos de curto e longo prazo.",
+                title: "🎯 Suas Metas Mensais",
+                description: "Defina objetivos financeiros (ex: 'Poupar R$ 1.000 para viagem') e acompanhe a barra de progresso em tempo real.",
             },
-            onHighlightStarted: () => setActiveTab('goals'),
+            onHighlightStarted: () => setActiveTab('home'),
         },
         {
             element: "#transactions-chart",
             popover: {
-                title: "📈 Análise e Projeções",
-                description: "Gráficos de fluxo de caixa, distribuição de gastos e projeções futuras.",
+                title: "📈 Gráficos Interativos",
+                description: "Compare suas receitas e despesas ou veja a distribuição percentual dos seus gastos por categoria.",
             },
-            onHighlightStarted: () => setActiveTab('analytics'),
+            onHighlightStarted: () => setActiveTab('home'),
         }
     ]
 

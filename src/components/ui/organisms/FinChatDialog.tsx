@@ -159,6 +159,41 @@ export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: Fi
         setIsProcessing(true)
         setErrorMsg(null)
 
+        const isDemoMode = typeof window !== "undefined" && !localStorage.getItem("auth_token");
+        if (isDemoMode) {
+            // Wait for 1.2 seconds to simulate AI thinking
+            setTimeout(async () => {
+                let replyText = "Desculpe, não entendi o formato dessa transação. Você pode tentar algo como: 'Gastei R$ 40 com mercado' ou 'Recebi R$ 3000 de salário'.";
+                const lowerText = textToSend.toLowerCase();
+                if (
+                    lowerText.includes("gastei") || 
+                    lowerText.includes("recebi") || 
+                    lowerText.includes("paguei") || 
+                    lowerText.includes("comi") || 
+                    lowerText.includes("comprar") || 
+                    lowerText.includes("padaria") || 
+                    lowerText.includes("almoço") || 
+                    lowerText.includes("netflix") || 
+                    lowerText.includes("pix") ||
+                    lowerText.includes("salário") ||
+                    lowerText.includes("aluguel")
+                ) {
+                    replyText = `Entendido! Processei o seu comando de voz/texto e registrei a transação com sucesso no seu painel temporário. 🚀\n\nDescrição: "${textToSend}"\n\n*(Lembre-se: em Modo de Demonstração as transações não são salvas permanentemente. Crie uma conta ou faça login para começar de verdade!)*`;
+                }
+
+                const finMsg: Message = {
+                    id: `fin-${Date.now()}`,
+                    text: replyText,
+                    sender: "fin",
+                    timestamp: new Date()
+                }
+                setMessages(prev => [...prev, finMsg])
+                speakReply(replyText)
+                setIsProcessing(false)
+            }, 1200);
+            return;
+        }
+
         try {
             // 2. Query Gemini chat agent
             const response = await fetch("/api/agent/chat", {
@@ -210,7 +245,7 @@ export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: Fi
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 dark:bg-black/80 backdrop-blur-sm p-0 sm:p-4 animate-fade-in">
             {/* Main Chat Container: Full screen on mobile, WhatsApp size on desktop */}
-            <div className="relative w-full h-full sm:max-w-md sm:h-[600px] sm:rounded-2xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-2xl flex flex-col overflow-hidden transition-all">
+            <div id="fin-chat-container" className="relative w-full h-full sm:max-w-md sm:h-[600px] sm:rounded-2xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-2xl flex flex-col overflow-hidden transition-all">
                 
                 {/* Header (WhatsApp look-alike) */}
                 <div className="bg-indigo-600 dark:bg-gray-800 text-white px-4 py-3 flex items-center justify-between border-b border-indigo-500/20 dark:border-gray-700/50 shadow-md">
@@ -340,6 +375,7 @@ export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: Fi
                     {/* Keyboard text input field */}
                     <div className="flex-1 relative">
                         <input
+                            id="fin-chat-input"
                             type="text"
                             placeholder="Mensagem"
                             value={typedMessage}
@@ -355,6 +391,7 @@ export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: Fi
                     {/* Microphone button */}
                     {supportVoice && (
                         <Button
+                            id="fin-chat-mic-btn"
                             type="button"
                             onClick={toggleListening}
                             variant="ghost"
@@ -372,6 +409,7 @@ export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: Fi
 
                     {/* Send button */}
                     <Button
+                        id="fin-chat-send-btn"
                         type="button"
                         size="icon"
                         disabled={!typedMessage.trim() || isProcessing || isListening}
@@ -425,10 +463,31 @@ export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: Fi
                                     </p>
                                 </div>
 
-                                {/* Option 2: Siri Shortcut integration */}
+                                {/* Option 2: Google Assistant (Android) */}
+                                <div className="p-3 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-xl border border-emerald-100/30 dark:border-emerald-950/30">
+                                    <span className="inline-block text-[10px] font-bold px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-md mb-2">
+                                        Método 2: Google Assistente (Android - Mãos Livres)
+                                    </span>
+                                    <h4 className="text-xs font-bold text-gray-800 dark:text-gray-200 mb-1">
+                                        Chame "Ok Google, Fin me ajude" com o app fechado
+                                    </h4>
+                                    <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-normal mb-2">
+                                        Você pode configurar o Google Assistente para abrir a voz mesmo com o celular bloqueado ou app fechado:
+                                    </p>
+                                    <ol className="text-[10px] text-gray-600 dark:text-gray-400 space-y-1 list-decimal pl-4 mb-2">
+                                        <li>Abra o app **Google** → toque no seu avatar → **Configurações** → **Google Assistente** → **Rotinas**.</li>
+                                        <li>Toque em **Nova** e adicione o comando: *"Fin me ajude"* ou *"Registrar no Fin"*.</li>
+                                        <li>Em ações, adicione: **Abrir a URL**: `https://finance-pro-mu.vercel.app/?startVoice=true`</li>
+                                    </ol>
+                                    <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                                        Pronto! Basta dizer "Ok Google, Fin me ajude" para o celular abrir o app e iniciar a captura na hora.
+                                    </p>
+                                </div>
+
+                                {/* Option 3: Siri Shortcut integration */}
                                 <div className="p-3 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-xl border border-indigo-100/30 dark:border-indigo-950/30">
                                     <span className="inline-block text-[10px] font-bold px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-md mb-2">
-                                        Método 2: Atalho Siri (iPhone - Mãos Livres)
+                                        Método 3: Atalho Siri (iPhone - Mãos Livres)
                                     </span>
                                     <h4 className="text-xs font-bold text-gray-800 dark:text-gray-200 mb-1">
                                         Registrar por Voz por Comando da Siri

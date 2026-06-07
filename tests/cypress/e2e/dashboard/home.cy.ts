@@ -23,7 +23,7 @@ describe('Dashboard Home', () => {
         cy.wait(1000); // Wait for tutorial to pop
         cy.get('body').then(($body) => {
             if ($body.find('.driver-popover').length > 0) {
-                cy.get('.driver-close-btn').click();
+                cy.get('.driver-popover-close-btn').click();
             }
         });
 
