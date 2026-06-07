@@ -29,7 +29,7 @@ async function connectToDatabase() {
     if (!cached.promise) {
         const opts = {
             bufferCommands: false, // Handle buffering logic manually if needed, or rely on drivers
-            dbName: 'financeApp',
+            dbName: process.env.MONGODB_DB_NAME || 'financeApp',
         };
 
         cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {

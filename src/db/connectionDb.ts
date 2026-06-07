@@ -30,7 +30,22 @@ if (!uri) {
 export async function getMongoClient(): Promise<MongoClient> {
   try {
     const client = await clientPromise;
-    return client;
+    
+    // Proxy the MongoClient to dynamically map the db name
+    return new Proxy(client, {
+      get(target, prop, receiver) {
+        if (prop === 'db') {
+          return function(dbName?: string, options?: any) {
+            // Override database name using process.env.MONGODB_DB_NAME if provided,
+            // otherwise fallback to the requested dbName, or 'financeApp'
+            const targetDbName = process.env.MONGODB_DB_NAME || dbName || 'financeApp';
+            return target.db(targetDbName, options);
+          };
+        }
+        const value = Reflect.get(target, prop, receiver);
+        return typeof value === 'function' ? value.bind(target) : value;
+      }
+    });
   } catch (error) {
     console.error("Falha ao conectar ao MongoDB:", error);
     throw error;

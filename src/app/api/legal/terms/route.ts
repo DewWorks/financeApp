@@ -12,7 +12,7 @@ async function connectMongoose() {
         throw new Error("MONGODB_URI missing");
     }
     await mongoose.connect(process.env.MONGODB_URI, {
-        dbName: 'financeApp'
+        dbName: process.env.MONGODB_DB_NAME || 'financeApp'
     });
 }
 
