@@ -63,7 +63,7 @@ import { AuditService } from '@/services/AuditService';
 
 export async function POST(request: Request) {
   try {
-    const { email, cel, password, mfaCode } = await request.json()
+    const { email, cel, password, mfaCode, isPwa } = await request.json()
 
     // 1. Rate Limiting Check (Security: Brute Force Protection)
     const ip = request.headers.get("x-forwarded-for") || "unknown";
@@ -117,8 +117,11 @@ export async function POST(request: Request) {
       }
     }
 
-    // Generate JWT token
-    const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '1d' })
+    const sessionDuration = isPwa ? '365d' : '1d';
+    const cookieMaxAge = isPwa ? 60 * 60 * 24 * 365 : 60 * 60 * 24;
+
+    // Generate JWT token (persists for 365 days for smooth PWA mobile experience, 1 day for standard web)
+    const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: sessionDuration })
       ; (await
         // Set the token in a secure HTTP-only cookie
         cookies()).set({
@@ -127,7 +130,7 @@ export async function POST(request: Request) {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'strict',
-          maxAge: 60 * 60 * 24, // 1 day
+          maxAge: cookieMaxAge,
           path: '/',
         })
 

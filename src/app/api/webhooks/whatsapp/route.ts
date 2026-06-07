@@ -70,7 +70,6 @@ export async function POST(request: Request) {
         }
 
         // 3. Process with Finance Agent
-        // Pass userId as string
         const responseText = await financeAgent.processMessage(body, user._id.toString());
 
         twiml.message(responseText);

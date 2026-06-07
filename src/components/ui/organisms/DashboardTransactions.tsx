@@ -8,12 +8,16 @@ import { TransactionsTable } from "@/components/ui/molecules/TransactionsTable"
 import { ITransaction } from "@/interfaces/ITransaction"
 import { useDashboardFilters } from "@/hooks/useDashboardFilters"
 import { motion } from "framer-motion"
+import { AddIncomeDialog } from "@/components/ui/organisms/AddIncomeDialog"
+import { AddExpenseDialog } from "@/components/ui/organisms/AddExpenseDialog"
 
 interface DashboardTransactionsProps {
     transactions: ITransaction[] // The list to display (already filtered or paginated)
     filters: ReturnType<typeof useDashboardFilters>
     onEdit: (t: ITransaction) => void
     onDelete: (id: string) => void
+    onAddIncome?: (description: string, amount: number, tag: string, date: string, isRecurring: boolean, recurrenceCount: number) => void
+    onAddExpense?: (description: string, amount: number, tag: string, date: string, isRecurring: boolean, recurrenceCount: number) => void
     pagination: {
         currentPage: number
         totalPages: number
@@ -45,6 +49,8 @@ export function DashboardTransactions({
     filters,
     onEdit,
     onDelete,
+    onAddIncome,
+    onAddExpense,
     pagination,
     monthSelector,
     onToggleAll,
@@ -76,11 +82,31 @@ export function DashboardTransactions({
                     >
                         Tabela de Transações
                     </CardTitle>
-                    <div className="flex flex-col sm:flex-row gap-2 justify-center sm:justify-start">
+                    <div className="flex flex-row gap-2 justify-center sm:justify-start items-center sm:p-4">
+                        {onAddIncome && (
+                            <AddIncomeDialog
+                                onAddIncome={onAddIncome}
+                                trigger={
+                                    <Button variant="outline" size="sm" className="hidden sm:inline-flex bg-green-500 hover:bg-green-600 text-white border-none font-semibold text-xs sm:text-sm">
+                                        + Receita
+                                    </Button>
+                                }
+                            />
+                        )}
+                        {onAddExpense && (
+                            <AddExpenseDialog
+                                onAddExpense={onAddExpense}
+                                trigger={
+                                    <Button variant="outline" size="sm" className="hidden sm:inline-flex bg-red-500 hover:bg-red-600 text-white border-none font-semibold text-xs sm:text-sm">
+                                        + Despesa
+                                    </Button>
+                                }
+                            />
+                        )}
                         <Button
                             variant="default"
                             size="sm"
-                            className={`transition-all sm:m-2 ${isAllTransactions ? "bg-red-600 text-white" : "bg-blue-600 text-white"}`}
+                            className={`transition-all ${isAllTransactions ? "bg-red-600 text-white" : "bg-blue-600 text-white"}`}
                             onClick={onToggleAll}
                         >
                             {isAllTransactions ? (

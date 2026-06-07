@@ -25,6 +25,9 @@ import { AddIncomeDialog } from "@/components/ui/organisms/AddIncomeDialog"
 import { AddExpenseDialog } from "@/components/ui/organisms/AddExpenseDialog"
 import { Toast } from "@/components/ui/atoms/toast"
 import { MfaNudge } from "@/components/dashboard/MfaNudge"
+import { VoiceAssistantWidget } from "@/components/ui/molecules/VoiceAssistantWidget"
+import { FinChatDialog } from "@/components/ui/organisms/FinChatDialog"
+import { SmartImportDialog } from "@/components/ui/organisms/SmartImportDialog"
 
 // Charts (Analytics Section)
 import { CashFlowChart } from "@/components/ui/charts/CashFlowChart"
@@ -33,7 +36,7 @@ import { RecentTransactionsChart } from "@/components/ui/charts/RecentTransactio
 import { IncomeVsExpensesChart } from "@/components/ui/charts/IncomeVsExpensesChart"
 import { ChartTypeSelector } from "@/components/ui/charts/ChartTypeSelection"
 import { Card, CardContent, CardTitle } from "@/components/ui/atoms/card"
-import { PieChart, TrendingUp, TrendingDown } from "lucide-react"
+import { Bell, PieChart, TrendingUp, TrendingDown } from "lucide-react"
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
@@ -43,6 +46,7 @@ import { ObjectId } from "mongodb"
 import { TransactionsProvider } from "@/context/TransactionsContext"
 import { GoalsProvider } from "@/context/GoalsContext"
 import { ITransaction } from "@/interfaces/ITransaction"
+import { Button } from "@/components/ui/atoms/button"
 
 const COLORS = ["#0088FE", "#ff6666", "#FFBB28", "#FF8042", "#8884D8"]
 
@@ -106,6 +110,23 @@ function DashboardContent() {
 
   const [activeTab, setActiveTab] = useState("home")
   const [selectedChartType, setSelectedChartType] = useState("pie")
+  const [isFinChatOpen, setIsFinChatOpen] = useState(false)
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false)
+  const [autoStartVoice, setAutoStartVoice] = useState(false)
+
+  // Check for PWA shortcut/voice parameters on load
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get("startVoice") === "true") {
+        // Clear param from URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        setActiveTab("fin");
+        setIsFinChatOpen(true);
+        setAutoStartVoice(true);
+      }
+    }
+  }, []);
 
   // Custom Hooks
   const filters = useDashboardFilters({
@@ -135,6 +156,70 @@ function DashboardContent() {
   const [displayIncome, setDisplayIncome] = useState(0);
   const [displayExpense, setDisplayExpense] = useState(0);
 
+  const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
+
+  useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      "Notification" in window &&
+      "serviceWorker" in navigator &&
+      Notification.permission === "default"
+    ) {
+      setShowNotificationPrompt(true);
+    }
+  }, []);
+
+  const urlBase64ToUint8Array = (base64String: string) => {
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/\-/g, "+").replace(/_/g, "/");
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  };
+
+  const handleSubscribeNotifications = async () => {
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") {
+        setShowNotificationPrompt(false);
+        return;
+      }
+
+      const registration = await navigator.serviceWorker.ready;
+      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      if (!vapidKey) {
+        console.error("NEXT_PUBLIC_VAPID_PUBLIC_KEY is not defined.");
+        setToast({ message: "Erro de configuração de chaves Push.", type: "error" });
+        return;
+      }
+
+      const convertedVapidKey = urlBase64ToUint8Array(vapidKey);
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: convertedVapidKey
+      });
+
+      const response = await fetch("/api/notifications/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(subscription)
+      });
+
+      if (response.ok) {
+        setToast({ message: "Notificações ativadas com sucesso! 🔔", type: "success" });
+      } else {
+        setToast({ message: "Erro ao registrar as notificações no servidor.", type: "error" });
+      }
+      setShowNotificationPrompt(false);
+    } catch (err) {
+      console.error("Error subscribing to push notifications:", err);
+      setShowNotificationPrompt(false);
+    }
+  };
+
   // Effect to update summary values based on profile/month
   useEffect(() => {
     if (summaryData) {
@@ -143,6 +228,15 @@ function DashboardContent() {
       setDisplayExpense(summaryData.expense);
     }
   }, [summaryData]);
+
+  // Sync activeTab to modal visibility for Fin Chat and Document Importer tabs
+  useEffect(() => {
+    if (activeTab === 'fin') {
+      setIsFinChatOpen(true);
+    } else if (activeTab === 'import') {
+      setIsImportModalOpen(true);
+    }
+  }, [activeTab]);
 
   // Derived Props for Sub-Components
   const isFree = currentPlan === PlanType.FREE;
@@ -245,6 +339,18 @@ function DashboardContent() {
     }
   }
 
+  const refreshData = async () => {
+    try {
+      await Promise.all([
+        getTransactions(),
+        getSummary(),
+        getChartData()
+      ]);
+    } catch (err) {
+      console.error("Error refreshing dashboard data:", err);
+    }
+  };
+
   // Loading State
   // Ensure we don't flash "Logged Out" state while verifying auth
   if ((loading && !isAllTransactions && transactions.length === 0 && allTransactions.length === 0) || isUserLoading) {
@@ -273,12 +379,53 @@ function DashboardContent() {
           handleProfileSwitch={handleProfileSwitch}
           handleProfile={() => router.push('/profile')}
           toggleTheme={toggleTheme}
+          onOpenImportModal={() => setIsImportModalOpen(true)}
+          setActiveTab={setActiveTab}
         />
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
           {/* SECURITY NUDGE */}
           <MfaNudge mfaEnabled={user?.mfaEnabled} />
+
+          {/* NOTIFICATION PROMPT NUDGE */}
+          {showNotificationPrompt && (
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-blue-600/90 to-indigo-600/90 backdrop-blur-md text-white shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-blue-500/20"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-white/10 rounded-xl">
+                  <Bell className="h-6 w-6 text-blue-200 animate-bounce" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-sm sm:text-base">🔔 Ative as Notificações de Economia</h4>
+                  <p className="text-xs text-blue-100 max-w-lg mt-0.5">
+                    Receba alertas de gastos, dicas rápidas do Fin AI e lembretes para manter suas finanças organizadas sem esforço!
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 self-end sm:self-center">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setShowNotificationPrompt(false)} 
+                  className="bg-transparent border-white/20 text-white hover:bg-white/10 text-xs px-3 py-1.5 rounded-lg border-none"
+                >
+                  Depois
+                </Button>
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  onClick={handleSubscribeNotifications} 
+                  className="bg-white text-blue-600 hover:bg-blue-50 font-bold text-xs px-4 py-1.5 rounded-lg shadow-sm"
+                >
+                  Ativar
+                </Button>
+              </div>
+            </motion.div>
+          )}
 
           {/* SECTION: HOME */}
           <div className={activeTab === 'home' ? 'block min-h-[80vh] pb-32 md:min-h-0 md:pb-0' : 'hidden md:block'}>
@@ -291,7 +438,15 @@ function DashboardContent() {
               loading={loading}
               isAllTransactions={isAllTransactions}
               refreshTrigger={dataToUse}
+              onAddIncome={handleAddIncome}
+              onAddExpense={handleAddExpense}
             />
+
+            {/* Fin — Co-Piloto de IA */}
+            <div className="mb-8">
+              <VoiceAssistantWidget onRefresh={refreshData} />
+            </div>
+
             <div className="mb-8">
               <OpenFinanceWidget />
             </div>
@@ -342,6 +497,8 @@ function DashboardContent() {
               filters={filters}
               onEdit={(t) => setEditingTransaction(t)}
               onDelete={transactionActions.handleDeleteTransaction}
+              onAddIncome={handleAddIncome}
+              onAddExpense={handleAddExpense}
               pagination={{
                 currentPage,
                 totalPages,
@@ -495,6 +652,26 @@ function DashboardContent() {
             }}
           />
         )}
+
+        {/* Fin AI Chat & File Import Modals */}
+        <FinChatDialog 
+          isOpen={isFinChatOpen} 
+          onClose={() => {
+            setIsFinChatOpen(false)
+            setActiveTab('home')
+            setAutoStartVoice(false)
+          }} 
+          onRefresh={refreshData}
+          autoStartVoice={autoStartVoice}
+        />
+        <SmartImportDialog 
+          isOpen={isImportModalOpen} 
+          onClose={() => {
+            setIsImportModalOpen(false)
+            setActiveTab('home')
+          }} 
+          onRefresh={refreshData}
+        />
 
         {toast && (
           <Toast

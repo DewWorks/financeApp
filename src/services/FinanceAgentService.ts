@@ -35,7 +35,8 @@ Você deve responder ESTRITAMENTE em formato JSON, sem Markdown adicional, segui
       "impacto": "Alto" | "Medio" | "Baixo",
       "acaoPratica": "Instrução clara matemática. Ex: Reduza o gasto X em X% durante Y dias para salvar Z reais.",
       "motivoVinculado": "Porque isso impacta seu objetivo.",
-      "explicacaoMatematica": "Explicação didática da estatística (ex: 'Pela regressão linear, seu gasto projeta R$ X no fim do mês, superando sua meta em Y. Além disso, notei que para cada R$ 10 em A, você gasta R$ 8 em B.')."
+      "explicacaoMatematica": "Explicação didática da estatística (ex: 'Pela regressão linear, seu gasto projeta R$ X no fim do mês, superando sua meta em Y. Além disso, notei que para cada R$ 10 em A, você gasta R$ 8 em B.').",
+      "estimativaEconomia": 120
     }
   ]
 }
@@ -112,6 +113,7 @@ import { NotificationService } from "./NotificationService";
 export class FinanceAgentService {
     private genAI: GoogleGenerativeAI;
     private model: GenerativeModel;
+    private transcriptionModel: GenerativeModel;
     private insightService: InsightService;
     private notificationService: NotificationService;
 
@@ -126,8 +128,31 @@ export class FinanceAgentService {
             systemInstruction: SYSTEM_INSTRUCTION,
             tools: tools
         });
+        this.transcriptionModel = this.genAI.getGenerativeModel({
+            model: "gemini-1.5-flash",
+            systemInstruction: "Você é um transcritor de áudio financeiro em português brasileiro. Transcreva o áudio de forma literal e precisa. Retorne APENAS a transcrição direta do texto falado, sem introdução, explicações, aspas ou comentários extras."
+        });
         this.insightService = new InsightService();
         this.notificationService = new NotificationService();
+    }
+
+    async transcribeAudio(base64Data: string, mimeType: string): Promise<string> {
+        try {
+            const result = await this.transcriptionModel.generateContent([
+                {
+                    inlineData: {
+                        data: base64Data,
+                        mimeType: mimeType
+                    }
+                },
+                "Transcreva o áudio acima de forma literal. Retorne apenas o texto transcrito em português brasileiro."
+            ]);
+            return result.response.text().trim();
+        } catch (error) {
+            console.error("Error transcribing audio with Gemini:", error);
+            this.logError(error);
+            return "";
+        }
     }
 
     private logError(error: any) {
