@@ -9,10 +9,13 @@ const RecommendationSchema = new Schema<IRecommendation>({
     message: { type: String, required: true },
     actionableStep: { type: String, required: true },
     impactEstimate: { type: Number, required: true },
-    status: { type: String, enum: ['PENDING', 'VIEWED', 'DISMISSED', 'APPLIED'], default: 'PENDING' },
+    status: { type: String, enum: ['PENDING', 'VIEWED', 'DISMISSED', 'APPLIED', 'ACTIVE', 'COMPLETED', 'FAILED'], default: 'PENDING' },
     generatedAt: { type: Date, default: Date.now },
     pushSent: { type: Boolean, default: false },
-    explanation: { type: String }
+    explanation: { type: String },
+    challengeStartDate: { type: Date },
+    challengeEndDate: { type: Date },
+    targetLimit: { type: Number }
 }, { timestamps: true });
 
 // Check if model exists to prevent overwrite error in hot-reload

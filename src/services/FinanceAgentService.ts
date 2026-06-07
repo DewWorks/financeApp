@@ -35,7 +35,8 @@ Você deve responder ESTRITAMENTE em formato JSON, sem Markdown adicional, segui
       "impacto": "Alto" | "Medio" | "Baixo",
       "acaoPratica": "Instrução clara matemática. Ex: Reduza o gasto X em X% durante Y dias para salvar Z reais.",
       "motivoVinculado": "Porque isso impacta seu objetivo.",
-      "explicacaoMatematica": "Explicação didática da estatística (ex: 'Pela regressão linear, seu gasto projeta R$ X no fim do mês, superando sua meta em Y. Além disso, notei que para cada R$ 10 em A, você gasta R$ 8 em B.')."
+      "explicacaoMatematica": "Explicação didática da estatística (ex: 'Pela regressão linear, seu gasto projeta R$ X no fim do mês, superando sua meta em Y. Além disso, notei que para cada R$ 10 em A, você gasta R$ 8 em B.').",
+      "estimativaEconomia": 120
     }
   ]
 }

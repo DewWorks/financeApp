@@ -3,6 +3,7 @@ import { InsightService } from "@/services/InsightService";
 import { PlanService } from "@/services/PlanService";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
+import { ObjectId } from "mongodb";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
@@ -120,24 +121,109 @@ export async function GET(request: Request) {
                         ? new Date(aiData.generatedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' }) 
                         : new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
 
-                    aiData.nudges.reverse().forEach((nudge: any, idx: number) => {
+                    // Reconcile user challenges first to make sure status is fresh
+                    const { ChallengeService } = await import("@/services/ChallengeService");
+                    await ChallengeService.reconcileUserChallenges(userId);
+
+                    for (const nudge of aiData.nudges) {
+                        const category = nudge.foco || "Outros";
+                        const impactEstimate = Number(nudge.estimativaEconomia) || 50;
+
+                        // Check existing recommendations
+                        const existingRec = await db.collection("recommendations").findOne({
+                            userId: new ObjectId(userId),
+                            category: category,
+                            status: { $in: ["PENDING", "ACTIVE"] }
+                        });
+
+                        let recId;
+                        let currentStatus: 'PENDING' | 'VIEWED' | 'DISMISSED' | 'APPLIED' | 'ACTIVE' | 'COMPLETED' | 'FAILED' = "PENDING";
+                        let targetLimit = 0;
+                        let challengeEndDate = null;
+
+                        if (existingRec) {
+                            recId = existingRec._id;
+                            currentStatus = existingRec.status as any;
+                            targetLimit = existingRec.targetLimit || 0;
+                            challengeEndDate = existingRec.challengeEndDate || null;
+
+                            if (existingRec.status === "PENDING") {
+                                await db.collection("recommendations").updateOne(
+                                    { _id: recId },
+                                    {
+                                        $set: {
+                                            title: nudge.motivoVinculado || "Dica de Economia",
+                                            message: nudge.acaoPratica,
+                                            actionableStep: nudge.acaoPratica,
+                                            impactEstimate: impactEstimate,
+                                            explanation: nudge.explicacaoMatematica
+                                        }
+                                    }
+                                );
+                            }
+                        } else {
+                            const newRec = {
+                                userId: new ObjectId(userId),
+                                type: "SAVING_OPPORTUNITY",
+                                category: category,
+                                title: nudge.motivoVinculado || "Dica de Economia",
+                                message: nudge.acaoPratica,
+                                actionableStep: nudge.acaoPratica,
+                                impactEstimate: impactEstimate,
+                                status: "PENDING",
+                                generatedAt: new Date(),
+                                pushSent: false,
+                                explanation: nudge.explicacaoMatematica
+                            };
+                            const insertRes = await db.collection("recommendations").insertOne(newRec);
+                            recId = insertRes.insertedId;
+                        }
+
+                        // Fetch current month spending in this category
+                        const startOfMonth = new Date();
+                        startOfMonth.setDate(1);
+                        startOfMonth.setHours(0, 0, 0, 0);
+                        const spentRes = await db.collection("transactions").aggregate([
+                            {
+                                $match: {
+                                    userId: new ObjectId(userId),
+                                    tag: category,
+                                    type: "expense",
+                                    date: { $gte: startOfMonth }
+                                }
+                            },
+                            { $group: { _id: null, total: { $sum: "$amount" } } }
+                        ]).toArray();
+                        const currentSpent = spentRes[0]?.total || 0;
+
+                        // Add to insights array returned to frontend
                         insight.insights.unshift({
-                            id: `ai-nudge-${Date.now()}-${idx}`,
+                            id: recId.toString(),
                             type: "tip",
-                            text: nudge.foco || "Recomendação Preditiva",
+                            text: category,
                             value: nudge.impacto === "Alto" ? "🔥 Alto Impacto" : "💡 Dica",
                             trend: "neutral",
                             details: `(Atualizado às ${timeString}) • ` + (nudge.motivoVinculado || "Baseado nos dados em tempo real."),
                             recommendation: nudge.acaoPratica,
-                            mathBasis: nudge.explicacaoMatematica
+                            mathBasis: nudge.explicacaoMatematica,
+                            status: currentStatus,
+                            impactEstimate: impactEstimate,
+                            targetLimit: targetLimit || Math.max(50, impactEstimate * 2),
+                            challengeEndDate: challengeEndDate,
+                            currentSpent: currentSpent
                         });
-                    });
+                    }
                 }
             } catch (e) {
                 console.error("Falha ao gerar AI Nudges (Timeout ou JSON Parse Error):", e);
                 // Retorna silenciosamente apenas os insights determinísticos do MongoDB
             }
         }
+
+        // Attach user savings ROI
+        const { ChallengeService } = await import("@/services/ChallengeService");
+        const stats = await ChallengeService.getUserSavingsROI(userId);
+        (insight as any).savingsROI = stats;
 
         return NextResponse.json(insight);
     } catch (error) {

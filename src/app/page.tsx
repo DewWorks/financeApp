@@ -25,6 +25,8 @@ import { AddIncomeDialog } from "@/components/ui/organisms/AddIncomeDialog"
 import { AddExpenseDialog } from "@/components/ui/organisms/AddExpenseDialog"
 import { Toast } from "@/components/ui/atoms/toast"
 import { MfaNudge } from "@/components/dashboard/MfaNudge"
+import { VoiceAssistantWidget } from "@/components/ui/molecules/VoiceAssistantWidget"
+import { SmartImportWidget } from "@/components/ui/molecules/SmartImportWidget"
 
 // Charts (Analytics Section)
 import { CashFlowChart } from "@/components/ui/charts/CashFlowChart"
@@ -245,6 +247,18 @@ function DashboardContent() {
     }
   }
 
+  const refreshData = async () => {
+    try {
+      await Promise.all([
+        getTransactions(),
+        getSummary(),
+        getChartData()
+      ]);
+    } catch (err) {
+      console.error("Error refreshing dashboard data:", err);
+    }
+  };
+
   // Loading State
   // Ensure we don't flash "Logged Out" state while verifying auth
   if ((loading && !isAllTransactions && transactions.length === 0 && allTransactions.length === 0) || isUserLoading) {
@@ -292,6 +306,13 @@ function DashboardContent() {
               isAllTransactions={isAllTransactions}
               refreshTrigger={dataToUse}
             />
+
+            {/* Inteligência Artificial & Entradas sem Custo */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <VoiceAssistantWidget onRefresh={refreshData} />
+              <SmartImportWidget onRefresh={refreshData} />
+            </div>
+
             <div className="mb-8">
               <OpenFinanceWidget />
             </div>
