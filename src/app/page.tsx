@@ -25,6 +25,9 @@ import { AddIncomeDialog } from "@/components/ui/organisms/AddIncomeDialog"
 import { AddExpenseDialog } from "@/components/ui/organisms/AddExpenseDialog"
 import { Toast } from "@/components/ui/atoms/toast"
 import { MfaNudge } from "@/components/dashboard/MfaNudge"
+import { VoiceAssistantWidget } from "@/components/ui/molecules/VoiceAssistantWidget"
+import { FinChatDialog } from "@/components/ui/organisms/FinChatDialog"
+import { SmartImportDialog } from "@/components/ui/organisms/SmartImportDialog"
 
 // Charts (Analytics Section)
 import { CashFlowChart } from "@/components/ui/charts/CashFlowChart"
@@ -106,6 +109,8 @@ function DashboardContent() {
 
   const [activeTab, setActiveTab] = useState("home")
   const [selectedChartType, setSelectedChartType] = useState("pie")
+  const [isFinChatOpen, setIsFinChatOpen] = useState(false)
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false)
 
   // Custom Hooks
   const filters = useDashboardFilters({
@@ -143,6 +148,15 @@ function DashboardContent() {
       setDisplayExpense(summaryData.expense);
     }
   }, [summaryData]);
+
+  // Sync activeTab to modal visibility for Fin Chat and Document Importer tabs
+  useEffect(() => {
+    if (activeTab === 'fin') {
+      setIsFinChatOpen(true);
+    } else if (activeTab === 'import') {
+      setIsImportModalOpen(true);
+    }
+  }, [activeTab]);
 
   // Derived Props for Sub-Components
   const isFree = currentPlan === PlanType.FREE;
@@ -245,6 +259,18 @@ function DashboardContent() {
     }
   }
 
+  const refreshData = async () => {
+    try {
+      await Promise.all([
+        getTransactions(),
+        getSummary(),
+        getChartData()
+      ]);
+    } catch (err) {
+      console.error("Error refreshing dashboard data:", err);
+    }
+  };
+
   // Loading State
   // Ensure we don't flash "Logged Out" state while verifying auth
   if ((loading && !isAllTransactions && transactions.length === 0 && allTransactions.length === 0) || isUserLoading) {
@@ -273,6 +299,8 @@ function DashboardContent() {
           handleProfileSwitch={handleProfileSwitch}
           handleProfile={() => router.push('/profile')}
           toggleTheme={toggleTheme}
+          onOpenImportModal={() => setIsImportModalOpen(true)}
+          setActiveTab={setActiveTab}
         />
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -291,7 +319,15 @@ function DashboardContent() {
               loading={loading}
               isAllTransactions={isAllTransactions}
               refreshTrigger={dataToUse}
+              onAddIncome={handleAddIncome}
+              onAddExpense={handleAddExpense}
             />
+
+            {/* Fin — Co-Piloto de IA */}
+            <div className="mb-8">
+              <VoiceAssistantWidget onRefresh={refreshData} />
+            </div>
+
             <div className="mb-8">
               <OpenFinanceWidget />
             </div>
@@ -342,6 +378,8 @@ function DashboardContent() {
               filters={filters}
               onEdit={(t) => setEditingTransaction(t)}
               onDelete={transactionActions.handleDeleteTransaction}
+              onAddIncome={handleAddIncome}
+              onAddExpense={handleAddExpense}
               pagination={{
                 currentPage,
                 totalPages,
@@ -495,6 +533,24 @@ function DashboardContent() {
             }}
           />
         )}
+
+        {/* Fin AI Chat & File Import Modals */}
+        <FinChatDialog 
+          isOpen={isFinChatOpen} 
+          onClose={() => {
+            setIsFinChatOpen(false)
+            setActiveTab('home')
+          }} 
+          onRefresh={refreshData}
+        />
+        <SmartImportDialog 
+          isOpen={isImportModalOpen} 
+          onClose={() => {
+            setIsImportModalOpen(false)
+            setActiveTab('home')
+          }} 
+          onRefresh={refreshData}
+        />
 
         {toast && (
           <Toast

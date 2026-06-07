@@ -9,8 +9,11 @@ export interface IRecommendation {
     message: string;
     actionableStep: string;
     impactEstimate: number;
-    status: 'PENDING' | 'VIEWED' | 'DISMISSED' | 'APPLIED';
+    status: 'PENDING' | 'VIEWED' | 'DISMISSED' | 'APPLIED' | 'ACTIVE' | 'COMPLETED' | 'FAILED';
     generatedAt: Date;
     pushSent: boolean;
     explanation?: string; // TCC: "Entenda por quê"
+    challengeStartDate?: Date;
+    challengeEndDate?: Date;
+    targetLimit?: number;
 }

@@ -12,6 +12,11 @@ export interface InsightItem {
     details?: string;
     recommendation?: string;
     mathBasis?: string;
+    status?: 'PENDING' | 'VIEWED' | 'DISMISSED' | 'APPLIED' | 'ACTIVE' | 'COMPLETED' | 'FAILED';
+    impactEstimate?: number;
+    targetLimit?: number;
+    challengeEndDate?: string | Date | null;
+    currentSpent?: number;
     richData?: {
         projection?: {
             current: number;

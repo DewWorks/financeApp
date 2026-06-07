@@ -19,6 +19,11 @@ interface InsightItem {
     details?: string;
     recommendation?: string;
     mathBasis?: string;
+    status?: 'PENDING' | 'VIEWED' | 'DISMISSED' | 'APPLIED' | 'ACTIVE' | 'COMPLETED' | 'FAILED';
+    impactEstimate?: number;
+    targetLimit?: number;
+    challengeEndDate?: string | null;
+    currentSpent?: number;
     richData?: {
         projection?: {
             current: number;
@@ -63,6 +68,11 @@ interface InsightData {
     dailySummary: {
         total: number;
     };
+    savingsROI?: {
+        totalSaved: number;
+        completedCount: number;
+        activeCount: number;
+    };
 }
 
 interface FinancialInsightProps {
@@ -83,6 +93,45 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
     const timerRef = useRef<NodeJS.Timeout | null>(null)
     const { checkFeature, openUpgradeModal, currentPlan, isLoading: isPlanLoading } = usePlanGate()
     const [feedbackGiven, setFeedbackGiven] = useState<Record<string, 'up'|'down'>>({});
+    const [challengeLoading, setChallengeLoading] = useState(false);
+
+    const handleChallengeAction = async (recommendationId: string, action: "accept" | "dismiss") => {
+        setChallengeLoading(true);
+        try {
+            const res = await fetch("/api/recommendations/challenges", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ recommendationId, action }),
+            });
+
+            if (res.ok) {
+                const updatedChallenge = await res.json();
+                
+                // Update local state instantly!
+                setData(prev => {
+                    if (!prev) return prev;
+                    return {
+                        ...prev,
+                        insights: prev.insights.map(item => {
+                            if (item.id === recommendationId) {
+                                return {
+                                    ...item,
+                                    status: action === "accept" ? "ACTIVE" : "DISMISSED",
+                                    targetLimit: updatedChallenge.targetLimit || item.targetLimit,
+                                    challengeEndDate: updatedChallenge.challengeEndDate || item.challengeEndDate,
+                                };
+                            }
+                            return item;
+                        })
+                    };
+                });
+            }
+        } catch (e) {
+            console.error("Failed to update challenge status", e);
+        } finally {
+            setChallengeLoading(false);
+        }
+    };
 
     const handleFeedback = async (insightId: string, type: 'up'|'down') => {
         setFeedbackGiven(prev => ({...prev, [insightId]: type}));
@@ -266,10 +315,15 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
                     {/* Left: Dynamic Content (Carousel) */}
                     <div className="flex-1 mr-4 min-w-0"> {/* min-w-0 prevents flex overflow */}
                         <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-1.5">
                                 {greeting}, {userRequestName?.split(" ")[0]}
+                                {data.savingsROI && data.savingsROI.totalSaved > 0 && (
+                                    <span className="px-2 py-0.5 rounded-full text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.1)]">
+                                        ROI: +R$ {data.savingsROI.totalSaved.toFixed(0)} economizados
+                                    </span>
+                                )}
                                 {data.insights.length > 1 && (
-                                    <span className="bg-gray-100 dark:bg-gray-700 text-[10px] px-1.5 py-0.5 rounded-full ml-1">
+                                    <span className="bg-gray-100 dark:bg-gray-700 text-[10px] px-1.5 py-0.5 rounded-full">
                                         {currentIndex + 1}/{data.insights.length}
                                     </span>
                                 )}
@@ -285,8 +339,13 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
                                 transition={{ duration: 0.3 }}
                                 className="flex flex-col"
                             >
-                                <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100 leading-tight">
+                                <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100 leading-tight flex items-center gap-1.5 flex-wrap">
                                     {currentInsight.text}
+                                    {currentInsight.status === "ACTIVE" && (
+                                        <span className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 text-[9px] px-1.5 py-0.5 rounded font-bold border border-amber-200 dark:border-amber-900/40">
+                                            🎯 Desafio Ativo
+                                        </span>
+                                    )}
                                 </h3>
 
                                 <div className="flex items-center gap-2 mt-1">
@@ -457,6 +516,104 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
                                 <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
                                     {currentInsight.details || "Baseado nos seus padrões de gastos recentes."}
                                 </p>
+                            </div>
+                        )}
+
+                        {/* DESAFIO DE ECONOMIA ATIVA (Gamification) */}
+                        {currentInsight.status && (
+                            <div className="rounded-xl border border-dashed p-4 shadow-sm bg-gradient-to-r transition-all duration-300 border-gray-200 dark:border-gray-700">
+                                {currentInsight.status === "PENDING" && (
+                                    <div className="flex flex-col gap-3">
+                                        <div className="flex items-center gap-2 text-amber-500 font-bold text-xs sm:text-sm">
+                                            <span className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/20">🎯</span>
+                                            Desafio de Economia Ativa
+                                        </div>
+                                        <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                                            Se você aceitar este desafio de economizar na categoria **{currentInsight.text}**, o Fin acompanhará seus gastos nos próximos 7 dias. Seu limite recomendado é **R$ {currentInsight.targetLimit?.toFixed(2)}**. Cumprindo-o, você adicionará **R$ {currentInsight.impactEstimate?.toFixed(2)}** de economia ao seu contador de ROI!
+                                        </p>
+                                        <div className="flex gap-2 justify-end mt-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => handleChallengeAction(currentInsight.id, "dismiss")}
+                                                disabled={challengeLoading}
+                                                className="text-xs"
+                                            >
+                                                Ignorar
+                                            </Button>
+                                            <Button
+                                                variant="default"
+                                                size="sm"
+                                                onClick={() => handleChallengeAction(currentInsight.id, "accept")}
+                                                disabled={challengeLoading}
+                                                className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs"
+                                            >
+                                                Aceitar Desafio
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {currentInsight.status === "ACTIVE" && (
+                                    <div className="flex flex-col gap-3">
+                                        <div className="flex justify-between items-center">
+                                            <div className="flex items-center gap-2 text-amber-500 font-bold text-xs sm:text-sm">
+                                                <span className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/20">⚡</span>
+                                                Desafio Ativo!
+                                            </div>
+                                            <span className="text-[10px] text-gray-400 font-medium">
+                                                Até {currentInsight.challengeEndDate ? new Date(currentInsight.challengeEndDate).toLocaleDateString() : ""}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                                            Seu limite máximo é **R$ {currentInsight.targetLimit?.toFixed(2)}**. Atualmente você gastou **R$ {currentInsight.currentSpent?.toFixed(2)}** nesta categoria este mês.
+                                        </p>
+                                        {/* Progress Bar */}
+                                        <div className="mt-2">
+                                            <div className="flex justify-between text-[10px] text-gray-400 font-semibold mb-1">
+                                                <span>Gasto: R$ {currentInsight.currentSpent?.toFixed(2)}</span>
+                                                <span>Limite: R$ {currentInsight.targetLimit?.toFixed(2)}</span>
+                                            </div>
+                                            <div className="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full overflow-hidden">
+                                                <div
+                                                    className={`h-full transition-all duration-500 ${
+                                                        (currentInsight.currentSpent || 0) > (currentInsight.targetLimit || 1)
+                                                            ? "bg-red-500"
+                                                            : "bg-emerald-500"
+                                                    }`}
+                                                    style={{
+                                                        width: `${Math.min(
+                                                            100,
+                                                            ((currentInsight.currentSpent || 0) / (currentInsight.targetLimit || 1)) * 100
+                                                        )}%`,
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {currentInsight.status === "COMPLETED" && (
+                                    <div className="flex flex-col gap-2 bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/20">
+                                        <div className="flex items-center gap-2 text-emerald-500 font-bold text-xs sm:text-sm">
+                                            <span>🏆</span> Desafio Concluído!
+                                        </div>
+                                        <p className="text-xs text-emerald-700 dark:text-emerald-300 leading-tight">
+                                            Parabéns! Você se manteve abaixo do limite e economizou **R$ {currentInsight.impactEstimate?.toFixed(2)}** reais! Esse valor foi adicionado ao seu contador de ROI!
+                                        </p>
+                                    </div>
+                                )}
+
+                                {currentInsight.status === "FAILED" && (
+                                    <div className="flex flex-col gap-2 bg-red-500/10 p-3 rounded-lg border border-red-500/20">
+                                        <div className="flex items-center gap-2 text-red-500 font-bold text-xs sm:text-sm">
+                                            <span>❌</span> Desafio Não Concluído
+                                        </div>
+                                        <p className="text-xs text-red-700 dark:text-red-300 leading-tight">
+                                            Você ultrapassou o limite sugerido de R$ {currentInsight.targetLimit?.toFixed(2)}. Fique tranquilo, novas oportunidades surgirão!
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         )}
 
