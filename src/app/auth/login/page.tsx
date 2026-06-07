@@ -52,8 +52,7 @@ export default function LoginPage() {
   }
 
   useEffect(() => {
-    const cookies = document.cookie
-    const token = cookies.includes("auth_token=")
+    const token = localStorage.getItem("auth_token")
     if (token) {
       router.push("/")
     }
@@ -144,7 +143,7 @@ export default function LoginPage() {
         confirmButtonText: "Entrar",
         timer: 1500,
       }).then(() => {
-        router.push("/")
+        window.location.href = "/"
       })
 
     } catch (error: any) {

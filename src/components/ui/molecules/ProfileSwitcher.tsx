@@ -37,6 +37,11 @@ export function ProfileSwitcher({ onProfileSwitch, userName, userEmail }: Profil
     }, [])
 
     const fetchProfiles = async () => {
+        const token = typeof window !== "undefined" && localStorage.getItem("auth_token");
+        if (!token) {
+            setLoading(false);
+            return;
+        }
         try {
             const response = await axios.get("/api/profiles")
             setProfiles(response.data.profiles)

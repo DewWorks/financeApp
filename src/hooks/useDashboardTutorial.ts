@@ -70,6 +70,20 @@ export function useDashboardTutorial({ setActiveTab, setViewMode, userRequestNam
         localStorage.setItem("tutorial-guide-v2", "true")
         setRunTutorial(false)
 
+        const token = typeof window !== "undefined" && localStorage.getItem("auth_token");
+        if (!token) {
+            Swal.fire({
+                title: "🎉 Tour Concluído!",
+                text: "Crie sua conta ou faça login agora para começar a gerenciar suas finanças de verdade!",
+                icon: "success",
+                confirmButtonText: "Criar Conta / Entrar",
+                allowOutsideClick: false,
+            }).then(() => {
+                window.location.href = "/auth/login";
+            });
+            return;
+        }
+
         const userId = getUserIdLocal()
         // API Call (Fire and forget)
         try {

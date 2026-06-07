@@ -509,7 +509,14 @@ function DashboardContent() {
         <DashboardHeader
           user={user}
           handleLogout={() => {
-            fetch('/api/auth/logout', { method: 'POST' }).then(() => window.location.href = '/auth/login');
+            fetch('/api/auth/logout', { method: 'POST' }).then(() => {
+              localStorage.removeItem("auth_token");
+              localStorage.removeItem("user_data");
+              localStorage.removeItem("user-id");
+              localStorage.removeItem("current-profile-id");
+              localStorage.removeItem("current-profile-name");
+              window.location.href = '/auth/login';
+            });
           }}
           handleProfileSwitch={handleProfileSwitch}
           handleProfile={() => router.push('/profile')}
