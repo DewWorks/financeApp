@@ -115,6 +115,8 @@ function DashboardContent() {
   const [autoStartVoice, setAutoStartVoice] = useState(false)
   const [isWakeWordActive, setIsWakeWordActive] = useState(false)
   const wakeRecognitionRef = useRef<any>(null)
+  const [wakeLock, setWakeLock] = useState<any>(null)
+  const [analyticsSubTab, setAnalyticsSubTab] = useState<"charts" | "goals">("charts")
 
   // Web Audio dual-tone wake chime
   const playWakeChime = () => {
@@ -146,6 +148,40 @@ function DashboardContent() {
       setIsWakeWordActive(active);
     }
   }, []);
+
+  // Request Wake Lock to keep browser/screen alive during continuous voice mode
+  useEffect(() => {
+    if (typeof window === "undefined" || !("wakeLock" in navigator)) return;
+
+    let activeLock: any = null;
+
+    async function requestLock() {
+      try {
+        activeLock = await (navigator as any).wakeLock.request("screen");
+        setWakeLock(activeLock);
+        console.log("Wake Lock acquired successfully!");
+      } catch (err) {
+        console.error("Wake Lock failed to acquire:", err);
+      }
+    }
+
+    if (isWakeWordActive && !isFinChatOpen) {
+      requestLock();
+    } else {
+      if (wakeLock) {
+        wakeLock.release().then(() => {
+          setWakeLock(null);
+          console.log("Wake Lock released.");
+        });
+      }
+    }
+
+    return () => {
+      if (activeLock) {
+        activeLock.release();
+      }
+    };
+  }, [isWakeWordActive, isFinChatOpen]);
 
   // Background Wake Word listener activation
   useEffect(() => {
@@ -588,13 +624,8 @@ function DashboardContent() {
             </div>
           </div>
 
-          {/* SECTION: GOALS */}
-          {/* Mobile Tab Logic: ONLY show if activeTab is 'goals'. Desktop: Always show block?
-                Original logic: <div className={activeTab === 'goals' ? 'block ...' : 'hidden md:block'}>
-                It means on Desktop, All sections are visible vertically stacked?
-                Yes, original dashboard was single page scroll on desktop.
-            */}
-          <div className={activeTab === 'goals' ? 'block min-h-[80vh] pb-32 md:min-h-0 md:pb-0' : 'hidden md:block'}>
+          {/* SECTION: GOALS (Desktop only, mobile consolidated under Analytics) */}
+          <div className="hidden md:block">
             <DashboardGoals transactions={dataToUse} />
           </div>
 
@@ -655,78 +686,181 @@ function DashboardContent() {
 
           {/* SECTION: ANALYTICS (Legacy Charts kept here for now) */}
           <div className={activeTab === 'analytics' ? 'block min-h-[80vh] pb-32 md:min-h-0 md:pb-0' : 'hidden md:block'}>
-            <motion.div id="transactions-chart" variants={itemVariants}>
-              <Card className="bg-white dark:bg-gray-800 shadow-lg mb-8">
-                <div className="flex flex-col sm:flex-row justify-between items-center sm:p-2 border-b border-gray-100 dark:border-gray-700">
-                  <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100 p-4">
-                    Análise Financeira
-                  </CardTitle>
-                  <ChartTypeSelector selectedType={selectedChartType} onSelectType={setSelectedChartType} />
-                </div>
-                <CardContent className="p-4 sm:p-6 min-h-[300px] h-auto">
-                  {/* Chart Switch Logic */}
-                  {dataToUse.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-gray-400">
-                      <TrendingUp className="w-16 h-16 mb-4 opacity-20" />
-                      <p>Sem dados para exibir gráficos</p>
-                    </div>
-                  ) : (
-                    <>
-                      {selectedChartType === "pie" && <DistributionChart transactions={dataToUse} colors={COLORS} />}
-                      {selectedChartType === "bar" && <CashFlowChart transactions={dataToUse} initialChartType="comparativoAnual" />}
-                      {selectedChartType === "line" && <CashFlowChart transactions={dataToUse} initialChartType="fluxoDiario" />}
-                      {selectedChartType === "list" && <RecentTransactionsChart transactions={dataToUse} colors={COLORS} />}
-                      {selectedChartType === "area" && (
-                        <IncomeVsExpensesChart
-                          onFetchAllTransactions={handleToggleTransactions}
-                          transactions={dataToUse}
-                          initialChartType="acumulado"
-                        />
-                      )}
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
+            
+            {/* Mobile Tab Switcher */}
+            <div className="md:hidden flex bg-gray-100 dark:bg-gray-700/50 p-1 rounded-xl mb-6 max-w-[240px] mx-auto border border-gray-200/50 dark:border-gray-700">
+              <button
+                onClick={() => setAnalyticsSubTab("charts")}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${analyticsSubTab === "charts" ? "bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm" : "text-gray-500 hover:text-gray-900 dark:hover:text-gray-300"}`}
+              >
+                Gráficos
+              </button>
+              <button
+                onClick={() => setAnalyticsSubTab("goals")}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${analyticsSubTab === "goals" ? "bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm" : "text-gray-500 hover:text-gray-900 dark:hover:text-gray-300"}`}
+              >
+                Metas
+              </button>
+            </div>
 
-            {/* Financial Highlights Section */}
-            <div className="grid grid-cols-2 gap-3 mb-8">
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-                <p className="text-xs text-gray-500 uppercase font-bold mb-1">Maior Despesa</p>
-                <p className="text-lg font-bold text-red-600">
-                  {dataToUse.length > 0
-                    ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                      Math.max(...dataToUse.filter(t => t.type === 'expense').map(t => t.amount), 0)
-                    )
-                    : 'R$ 0,00'}
-                </p>
-              </div>
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-                <p className="text-xs text-gray-500 uppercase font-bold mb-1">Gasto Médio</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                  {dataToUse.length > 0
-                    ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                      (dataToUse.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0) / 30) // Simple 30-day avg for now
-                    )
-                    : 'R$ 0,00'}<span className="text-xs font-normal text-gray-400">/dia</span>
-                </p>
-              </div>
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-                <p className="text-xs text-gray-500 uppercase font-bold mb-1">Recorrentes</p>
-                <p className="text-lg font-bold text-blue-600">
-                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                    dataToUse.filter(t => t.isRecurring && t.type === 'expense').reduce((acc, t) => acc + t.amount, 0)
-                  )}
-                </p>
-              </div>
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-                <p className="text-xs text-gray-500 uppercase font-bold mb-1">Transações</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                  {dataToUse.length}
-                </p>
+            {/* Desktop View: Render both stacked */}
+            <div className="hidden md:block">
+              <motion.div id="transactions-chart" variants={itemVariants}>
+                <Card className="bg-white dark:bg-gray-800 shadow-lg mb-8">
+                  <div className="flex flex-col sm:flex-row justify-between items-center sm:p-2 border-b border-gray-100 dark:border-gray-700">
+                    <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100 p-4">
+                      Análise Financeira
+                    </CardTitle>
+                    <ChartTypeSelector selectedType={selectedChartType} onSelectType={setSelectedChartType} />
+                  </div>
+                  <CardContent className="p-4 sm:p-6 min-h-[300px] h-auto">
+                    {/* Chart Switch Logic */}
+                    {dataToUse.length === 0 ? (
+                      <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                        <TrendingUp className="w-16 h-16 mb-4 opacity-20" />
+                        <p>Sem dados para exibir gráficos</p>
+                      </div>
+                    ) : (
+                      <>
+                        {selectedChartType === "pie" && <DistributionChart transactions={dataToUse} colors={COLORS} />}
+                        {selectedChartType === "bar" && <CashFlowChart transactions={dataToUse} initialChartType="comparativoAnual" />}
+                        {selectedChartType === "line" && <CashFlowChart transactions={dataToUse} initialChartType="fluxoDiario" />}
+                        {selectedChartType === "list" && <RecentTransactionsChart transactions={dataToUse} colors={COLORS} />}
+                        {selectedChartType === "area" && (
+                          <IncomeVsExpensesChart
+                            onFetchAllTransactions={handleToggleTransactions}
+                            transactions={dataToUse}
+                            initialChartType="acumulado"
+                          />
+                        )}
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+              {/* Financial Highlights Section */}
+              <div className="grid grid-cols-2 gap-3 mb-8">
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                  <p className="text-xs text-gray-500 uppercase font-bold mb-1">Maior Despesa</p>
+                  <p className="text-lg font-bold text-red-600">
+                    {dataToUse.length > 0
+                      ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                        Math.max(...dataToUse.filter(t => t.type === 'expense').map(t => t.amount), 0)
+                      )
+                      : 'R$ 0,00'}
+                  </p>
+                </div>
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                  <p className="text-xs text-gray-500 uppercase font-bold mb-1">Gasto Médio</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                    {dataToUse.length > 0
+                      ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                        (dataToUse.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0) / 30) // Simple 30-day avg for now
+                      )
+                      : 'R$ 0,00'}<span className="text-xs font-normal text-gray-400">/dia</span>
+                  </p>
+                </div>
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                  <p className="text-xs text-gray-500 uppercase font-bold mb-1">Recorrentes</p>
+                  <p className="text-lg font-bold text-blue-600">
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                      dataToUse.filter(t => t.isRecurring && t.type === 'expense').reduce((acc, t) => acc + t.amount, 0)
+                    )}
+                  </p>
+                </div>
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                  <p className="text-xs text-gray-500 uppercase font-bold mb-1">Transações</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                    {dataToUse.length}
+                  </p>
+                </div>
               </div>
             </div>
-          </div >
+
+            {/* Mobile View: Render either charts + highlights OR goals */}
+            <div className="md:hidden">
+              {analyticsSubTab === "charts" ? (
+                <>
+                  <motion.div id="transactions-chart-mobile" variants={itemVariants}>
+                    <Card className="bg-white dark:bg-gray-800 shadow-lg mb-8">
+                      <div className="flex flex-col justify-between items-center p-2 border-b border-gray-100 dark:border-gray-700">
+                        <CardTitle className="text-base font-semibold text-gray-900 dark:text-gray-100 p-2 text-center">
+                          Análise Financeira
+                        </CardTitle>
+                        <ChartTypeSelector selectedType={selectedChartType} onSelectType={setSelectedChartType} />
+                      </div>
+                      <CardContent className="p-4 min-h-[280px] h-auto">
+                        {/* Chart Switch Logic */}
+                        {dataToUse.length === 0 ? (
+                          <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                            <TrendingUp className="w-16 h-16 mb-4 opacity-20" />
+                            <p>Sem dados para exibir gráficos</p>
+                          </div>
+                        ) : (
+                          <>
+                            {selectedChartType === "pie" && <DistributionChart transactions={dataToUse} colors={COLORS} />}
+                            {selectedChartType === "bar" && <CashFlowChart transactions={dataToUse} initialChartType="comparativoAnual" />}
+                            {selectedChartType === "line" && <CashFlowChart transactions={dataToUse} initialChartType="fluxoDiario" />}
+                            {selectedChartType === "list" && <RecentTransactionsChart transactions={dataToUse} colors={COLORS} />}
+                            {selectedChartType === "area" && (
+                              <IncomeVsExpensesChart
+                                onFetchAllTransactions={handleToggleTransactions}
+                                transactions={dataToUse}
+                                initialChartType="acumulado"
+                              />
+                            )}
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+
+                  {/* Financial Highlights Section */}
+                  <div className="grid grid-cols-2 gap-3 mb-8">
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                      <p className="text-xs text-gray-500 uppercase font-bold mb-1">Maior Despesa</p>
+                      <p className="text-lg font-bold text-red-600">
+                        {dataToUse.length > 0
+                          ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                            Math.max(...dataToUse.filter(t => t.type === 'expense').map(t => t.amount), 0)
+                          )
+                          : 'R$ 0,00'}
+                      </p>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                      <p className="text-xs text-gray-500 uppercase font-bold mb-1">Gasto Médio</p>
+                      <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                        {dataToUse.length > 0
+                          ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                            (dataToUse.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0) / 30) // Simple 30-day avg for now
+                          )
+                          : 'R$ 0,00'}<span className="text-xs font-normal text-gray-400">/dia</span>
+                      </p>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                      <p className="text-xs text-gray-500 uppercase font-bold mb-1">Recorrentes</p>
+                      <p className="text-lg font-bold text-blue-600">
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                          dataToUse.filter(t => t.isRecurring && t.type === 'expense').reduce((acc, t) => acc + t.amount, 0)
+                        )}
+                      </p>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                      <p className="text-xs text-gray-500 uppercase font-bold mb-1">Transações</p>
+                      <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                        {dataToUse.length}
+                      </p>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg mb-8">
+                  <DashboardGoals transactions={dataToUse} />
+                </div>
+              )}
+            </div>
+          </div>
 
           <UpsellBanner />
 
