@@ -21,5 +21,19 @@
             "purpose": "any maskable"
         }
     ],
-    "orientation": "portrait"
+    "orientation": "portrait",
+    "shortcuts": [
+        {
+            "name": "Falar com o Fin 🎙️",
+            "short_name": "Fin AI",
+            "description": "Abra o assistente de voz do Fin imediatamente",
+            "url": "/?startVoice=true",
+            "icons": [
+                {
+                    "src": "/icon-192x192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        }
+    ]
 }
