@@ -159,6 +159,41 @@ export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: Fi
         setIsProcessing(true)
         setErrorMsg(null)
 
+        const isDemoMode = typeof window !== "undefined" && !localStorage.getItem("auth_token");
+        if (isDemoMode) {
+            // Wait for 1.2 seconds to simulate AI thinking
+            setTimeout(async () => {
+                let replyText = "Desculpe, não entendi o formato dessa transação. Você pode tentar algo como: 'Gastei R$ 40 com mercado' ou 'Recebi R$ 3000 de salário'.";
+                const lowerText = textToSend.toLowerCase();
+                if (
+                    lowerText.includes("gastei") || 
+                    lowerText.includes("recebi") || 
+                    lowerText.includes("paguei") || 
+                    lowerText.includes("comi") || 
+                    lowerText.includes("comprar") || 
+                    lowerText.includes("padaria") || 
+                    lowerText.includes("almoço") || 
+                    lowerText.includes("netflix") || 
+                    lowerText.includes("pix") ||
+                    lowerText.includes("salário") ||
+                    lowerText.includes("aluguel")
+                ) {
+                    replyText = `Entendido! Processei o seu comando de voz/texto e registrei a transação com sucesso no seu painel temporário. 🚀\n\nDescrição: "${textToSend}"\n\n*(Lembre-se: em Modo de Demonstração as transações não são salvas permanentemente. Crie uma conta ou faça login para começar de verdade!)*`;
+                }
+
+                const finMsg: Message = {
+                    id: `fin-${Date.now()}`,
+                    text: replyText,
+                    sender: "fin",
+                    timestamp: new Date()
+                }
+                setMessages(prev => [...prev, finMsg])
+                speakReply(replyText)
+                setIsProcessing(false)
+            }, 1200);
+            return;
+        }
+
         try {
             // 2. Query Gemini chat agent
             const response = await fetch("/api/agent/chat", {
@@ -210,7 +245,7 @@ export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: Fi
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 dark:bg-black/80 backdrop-blur-sm p-0 sm:p-4 animate-fade-in">
             {/* Main Chat Container: Full screen on mobile, WhatsApp size on desktop */}
-            <div className="relative w-full h-full sm:max-w-md sm:h-[600px] sm:rounded-2xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-2xl flex flex-col overflow-hidden transition-all">
+            <div id="fin-chat-container" className="relative w-full h-full sm:max-w-md sm:h-[600px] sm:rounded-2xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-2xl flex flex-col overflow-hidden transition-all">
                 
                 {/* Header (WhatsApp look-alike) */}
                 <div className="bg-indigo-600 dark:bg-gray-800 text-white px-4 py-3 flex items-center justify-between border-b border-indigo-500/20 dark:border-gray-700/50 shadow-md">
@@ -340,6 +375,7 @@ export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: Fi
                     {/* Keyboard text input field */}
                     <div className="flex-1 relative">
                         <input
+                            id="fin-chat-input"
                             type="text"
                             placeholder="Mensagem"
                             value={typedMessage}
@@ -355,6 +391,7 @@ export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: Fi
                     {/* Microphone button */}
                     {supportVoice && (
                         <Button
+                            id="fin-chat-mic-btn"
                             type="button"
                             onClick={toggleListening}
                             variant="ghost"
@@ -372,6 +409,7 @@ export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: Fi
 
                     {/* Send button */}
                     <Button
+                        id="fin-chat-send-btn"
                         type="button"
                         size="icon"
                         disabled={!typedMessage.trim() || isProcessing || isListening}

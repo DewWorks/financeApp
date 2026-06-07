@@ -56,7 +56,7 @@ export function AuthPopup() {
                                 <Title size="lg" />
                                 <CardTitle className="text-2xl font-bold text-center text-gray-900 dark:text-white">Bem-vindo</CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-6 p-0 w-full">
+                             <CardContent className="space-y-4 p-0 w-full">
                                 <p className="text-center text-sm text-gray-600 dark:text-zinc-400">
                                     Para acessar todas as funcionalidades, faça login ou crie uma conta.
                                 </p>
@@ -67,6 +67,23 @@ export function AuthPopup() {
                                     <Button onClick={handleRegister} className="flex-1 bg-zinc-100 dark:bg-zinc-800 text-gray-950 dark:text-white hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 font-medium py-2 rounded-xl transition-all duration-200 shadow-sm">
                                         Cadastro
                                     </Button>
+                                </div>
+                                <div className="flex flex-col items-center gap-2 pt-2 border-t border-gray-100 dark:border-zinc-800">
+                                    <button 
+                                        onClick={() => {
+                                            localStorage.removeItem("tutorial-guide-v2")
+                                            window.location.reload()
+                                        }} 
+                                        className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+                                    >
+                                        ✨ Ver Tour / Tutorial de IA
+                                    </button>
+                                    <button 
+                                        onClick={() => setIsVisible(false)} 
+                                        className="text-[11px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                                    >
+                                        Continuar como Visitante (Modo Demo)
+                                    </button>
                                 </div>
                             </CardContent>
                         </Card>

@@ -24,6 +24,7 @@ export function MobileBottomNav({
     return (
         <div id="mobile-bottom-nav" className="md:hidden fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 px-3 py-2.5 z-50 flex items-center justify-between w-[96vw] max-w-md">
             <button
+                id="mobile-tab-home"
                 onClick={() => setActiveTab('home')}
                 className={`flex flex-col items-center gap-1 transition-all duration-300 ${activeTab === 'home' ? 'text-blue-600 dark:text-blue-400 scale-105' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600'}`}
             >
@@ -32,6 +33,7 @@ export function MobileBottomNav({
             </button>
 
             <button
+                id="mobile-tab-transactions"
                 onClick={() => setActiveTab('transactions')}
                 className={`flex flex-col items-center gap-1 transition-all duration-300 ${activeTab === 'transactions' ? 'text-blue-600 dark:text-blue-400 scale-105' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600'}`}
             >
@@ -99,6 +101,7 @@ export function MobileBottomNav({
             </Popover>
 
             <button
+                id="mobile-tab-fin"
                 onClick={() => setActiveTab('fin')}
                 className={`relative flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-all duration-300 ${
                     activeTab === 'fin'
@@ -114,6 +117,7 @@ export function MobileBottomNav({
             </button>
 
             <button
+                id="mobile-tab-analytics"
                 onClick={() => setActiveTab('analytics')}
                 className={`flex flex-col items-center gap-1 transition-all duration-300 ${activeTab === 'analytics' ? 'text-blue-600 dark:text-blue-400 scale-105' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600'}`}
             >

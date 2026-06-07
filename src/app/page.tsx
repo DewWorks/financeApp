@@ -284,7 +284,8 @@ function DashboardContent() {
   const { dataToUse, uniqueTags } = useDashboardData(chartData, transactions)
 
   // Tutorial Hook
-  useDashboardTutorial({ setActiveTab, setViewMode, userRequestName: user?.name })
+  const isDashboardLoading = loading || isUserLoading || isProfileLoading;
+  useDashboardTutorial({ setActiveTab, setViewMode, userRequestName: user?.name, isLoading: isDashboardLoading })
 
   // Derived Values
   const [displayBalance, setDisplayBalance] = useState(0);
@@ -368,8 +369,14 @@ function DashboardContent() {
   useEffect(() => {
     if (activeTab === 'fin') {
       setIsFinChatOpen(true);
-    } else if (activeTab === 'import') {
+    } else {
+      setIsFinChatOpen(false);
+    }
+
+    if (activeTab === 'import') {
       setIsImportModalOpen(true);
+    } else {
+      setIsImportModalOpen(false);
     }
   }, [activeTab]);
 
