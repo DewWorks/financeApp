@@ -36,9 +36,9 @@ import { RecentTransactionsChart } from "@/components/ui/charts/RecentTransactio
 import { IncomeVsExpensesChart } from "@/components/ui/charts/IncomeVsExpensesChart"
 import { ChartTypeSelector } from "@/components/ui/charts/ChartTypeSelection"
 import { Card, CardContent, CardTitle } from "@/components/ui/atoms/card"
-import { Bell, PieChart, TrendingUp, TrendingDown } from "lucide-react"
+import { Bell, PieChart, TrendingUp, TrendingDown, Mic } from "lucide-react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
 import { IUser, PlanType } from "@/interfaces/IUser"
@@ -113,6 +113,105 @@ function DashboardContent() {
   const [isFinChatOpen, setIsFinChatOpen] = useState(false)
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
   const [autoStartVoice, setAutoStartVoice] = useState(false)
+  const [isWakeWordActive, setIsWakeWordActive] = useState(false)
+  const wakeRecognitionRef = useRef<any>(null)
+
+  // Web Audio dual-tone wake chime
+  const playWakeChime = () => {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+      osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.12); // E5
+      
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+      
+      osc.start();
+      osc.stop(ctx.currentTime + 0.25);
+    } catch (e) {
+      console.error("Wake chime audio error", e);
+    }
+  }
+
+  // Load wake word preference
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const active = localStorage.getItem("wake-word-active") === "true";
+      setIsWakeWordActive(active);
+    }
+  }, []);
+
+  // Background Wake Word listener activation
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      console.log("Speech recognition not supported in this browser.");
+      return;
+    }
+
+    if (isWakeWordActive && !isFinChatOpen) {
+      const rec = new SpeechRecognition();
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.lang = "pt-BR";
+
+      rec.onresult = (event: any) => {
+        const lastResultIndex = event.results.length - 1;
+        const text = event.results[lastResultIndex][0].transcript.toLowerCase();
+        
+        console.log("Background listening text:", text);
+        
+        // Match phrases: "fin", "fim", "feen", "ei fin", "me ajude"
+        if (text.includes("fin") || text.includes("fim") || text.includes("feen") || text.includes("me ajude")) {
+          // Play beep
+          playWakeChime();
+          
+          // Open Chat Dialog with Autostart
+          setIsFinChatOpen(true);
+          setActiveTab("fin");
+          setAutoStartVoice(true);
+          
+          // Stop background listener temporarily so it doesn't cross-listen
+          rec.stop();
+        }
+      };
+
+      rec.onerror = (e: any) => {
+        console.error("Wake recognition error:", e);
+      };
+
+      rec.onend = () => {
+        // Automatically restart if it was stopped normally and chat is still closed
+        if (isWakeWordActive && !isFinChatOpen) {
+          try {
+            rec.start();
+          } catch (err) {
+            console.error("Failed to restart wake listener:", err);
+          }
+        }
+      };
+
+      try {
+        rec.start();
+        wakeRecognitionRef.current = rec;
+      } catch (err) {
+        console.error("Failed to start wake listener:", err);
+      }
+
+      return () => {
+        rec.stop();
+        wakeRecognitionRef.current = null;
+      };
+    }
+  }, [isWakeWordActive, isFinChatOpen]);
 
   // Check for PWA shortcut/voice parameters on load
   useEffect(() => {
@@ -443,6 +542,43 @@ function DashboardContent() {
             />
 
             {/* Fin — Co-Piloto de IA */}
+            {/* Hands-Free Wake Word Card */}
+            <div className="mb-6 bg-gradient-to-br from-indigo-900/10 to-purple-900/10 dark:from-indigo-950/20 dark:to-purple-950/20 border border-indigo-500/15 dark:border-indigo-500/10 rounded-2xl p-4 shadow-sm flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className={`p-2.5 rounded-xl transition-all ${isWakeWordActive ? 'bg-indigo-600 text-white animate-pulse' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}`}>
+                  <Mic className="h-5 w-5" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-xs sm:text-sm text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                    Comando de Voz: "Ei Fin"
+                    {isWakeWordActive && (
+                      <span className="flex h-2 w-2 relative">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                      </span>
+                    )}
+                  </h4>
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400 max-w-xs sm:max-w-md mt-0.5 leading-relaxed">
+                    Diga **"Fin, me ajude"** ou **"Ei Fin"** para abrir o assistente de voz com as mãos livres.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  const nextState = !isWakeWordActive;
+                  setIsWakeWordActive(nextState);
+                  if (typeof window !== "undefined") {
+                    localStorage.setItem("wake-word-active", nextState.toString());
+                  }
+                }}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isWakeWordActive ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'}`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isWakeWordActive ? 'translate-x-5' : 'translate-x-0'}`}
+                />
+              </button>
+            </div>
+
             <div className="mb-8">
               <VoiceAssistantWidget onRefresh={refreshData} />
             </div>
