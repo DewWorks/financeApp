@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/atoms/button"
 import { Input } from "@/components/ui/atoms/input"
 import { Label } from "@/components/ui/atoms/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/atoms/card"
-import { User, Mail, Phone, ArrowLeft, Edit, Save, X, Users, Shield, Eye, EyeOff } from "lucide-react"
+import { User, Mail, Phone, ArrowLeft, Edit, Save, X, Users, Shield, Eye, EyeOff, Bell, Send } from "lucide-react"
 import Swal from "sweetalert2"
 import { IUser } from "@/interfaces/IUser"
 import { ThemeToggle } from "@/components/ui/atoms/ThemeToggle"
@@ -90,6 +90,76 @@ export default function ProfilePage() {
             setLoading(false)
         }
     }
+
+    const urlBase64ToUint8Array = (base64String: string) => {
+        const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+        const base64 = (base64String + padding).replace(/\-/g, "+").replace(/_/g, "/");
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+    };
+
+    const handleSubscribeNotifications = async () => {
+        try {
+            if (!("Notification" in window) || !("serviceWorker" in navigator)) {
+                Swal.fire("Aviso", "Notificações push não são suportadas neste navegador.", "warning");
+                return;
+            }
+
+            const permission = await Notification.requestPermission();
+            if (permission !== "granted") {
+                Swal.fire("Atenção", "Você precisa aceitar a permissão de notificação no seu navegador.", "warning");
+                return;
+            }
+
+            const registration = await navigator.serviceWorker.ready;
+            const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+            if (!vapidKey) {
+                console.error("NEXT_PUBLIC_VAPID_PUBLIC_KEY is not defined.");
+                Swal.fire("Erro", "Chave pública VAPID não configurada no ambiente.", "error");
+                return;
+            }
+
+            const convertedVapidKey = urlBase64ToUint8Array(vapidKey);
+            const subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: convertedVapidKey
+            });
+
+            const response = await axios.post("/api/notifications/subscribe", subscription);
+
+            if (response.status === 200) {
+                Swal.fire("Sucesso!", "Notificações ativadas com sucesso neste aparelho! 🔔", "success");
+            } else {
+                Swal.fire("Erro", "Erro ao registrar as notificações no servidor.", "error");
+            }
+        } catch (err) {
+            console.error("Error subscribing to push notifications:", err);
+            Swal.fire("Erro", "Falha ao ativar notificações push: " + (err as Error).message, "error");
+        }
+    };
+
+    const handleSendTestNotification = async () => {
+        try {
+            const response = await axios.post("/api/notifications/test-nudge", {
+                title: "Teste do Fin AI 🤖",
+                message: "Parabéns! Suas notificações push do FinancePro estão funcionando perfeitamente no seu celular! 🎉"
+            });
+
+            if (response.data.success) {
+                Swal.fire("Enviado!", "Notificação de teste enviada! Você deve recebê-la em alguns segundos no seu celular.", "success");
+            } else {
+                Swal.fire("Erro", response.data.error || "Erro ao disparar notificação.", "error");
+            }
+        } catch (err: any) {
+            console.error("Error sending test notification:", err);
+            const errMsg = err.response?.data?.error || err.message || "Erro de conexão.";
+            Swal.fire("Erro", errMsg, "error");
+        }
+    };
 
     const handleSaveProfile = async () => {
         if (!editName.trim() || !editEmail.trim()) {
@@ -312,6 +382,43 @@ export default function ProfilePage() {
                         />
                     )}
                 </div>
+
+                {/* Notificações Push */}
+                <Card className="mb-6 border-indigo-500/20 shadow-sm">
+                    <CardHeader>
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+                                <Bell className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <CardTitle className="text-lg">Notificações Push</CardTitle>
+                                <p className="text-xs text-muted-foreground">Ative e teste notificações push no seu celular ou computador</p>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                            Receba alertas de gastos, lembretes de faturas e resumos semanais do Fin AI diretamente no seu celular.
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                            <Button
+                                onClick={handleSubscribeNotifications}
+                                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center gap-2 rounded-xl"
+                            >
+                                <Bell className="w-4 h-4" />
+                                Ativar Notificações
+                            </Button>
+                            <Button
+                                onClick={handleSendTestNotification}
+                                variant="outline"
+                                className="flex-1 border-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 flex items-center justify-center gap-2 rounded-xl"
+                            >
+                                <Send className="w-4 h-4" />
+                                Testar Notificação no Celular
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
 
                 {/* Profile Information */}
                 <Card className="mb-6">

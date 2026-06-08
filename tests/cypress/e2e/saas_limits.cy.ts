@@ -4,7 +4,8 @@ describe('SaaS & Plan Limits', () => {
         _id: 'user-free-123',
         name: 'Free User',
         email: 'free@test.com',
-        subscription: { plan: 'FREE' }
+        subscription: { plan: 'FREE' },
+        terms: { accepted: true }
     };
 
     const mockStats = {
@@ -25,19 +26,20 @@ describe('SaaS & Plan Limits', () => {
 
     beforeEach(() => {
         // Mock User Profile Fetch
-        cy.intercept('GET', '/api/admin/users/*', {
+        cy.intercept('GET', '/api/users*', {
             statusCode: 200,
             body: mockFreeUser
         }).as('getUser');
 
         // Mock Data
-        cy.intercept('GET', '/api/transactions*', { body: [] }).as('getTransactions');
+        cy.intercept('GET', '/api/transactions*', { body: { transactions: [], totalPages: 1 } }).as('getTransactions');
         cy.intercept('GET', '/api/insights*', { body: mockStats }).as('getInsights');
 
         // Mock Secondary Endpoints
-        cy.intercept('GET', '/api/profiles', { body: [] });
-        cy.intercept('GET', '/api/goals', { body: [] });
-        cy.intercept('GET', '/api/bank-connections', { body: [] });
+        cy.intercept('GET', '/api/profiles*', { body: [] });
+        cy.intercept('GET', '/api/goals*', { body: [] });
+        cy.intercept('GET', '/api/bank-connections*', { body: [] });
+        cy.intercept('GET', '/api/transactions/summary*', { body: { income: 0, expense: 0, balance: 0 } }).as('getSummary');
     });
 
     it('Visits Pricing Page and highlights FREE plan as Current', () => {
@@ -45,7 +47,7 @@ describe('SaaS & Plan Limits', () => {
             onBeforeLoad: (win) => {
                 win.localStorage.setItem('user-id', 'user-free-123');
                 win.localStorage.setItem('auth_token', 'mock-token-123');
-                win.localStorage.setItem('tutorial-guide', 'true');
+                win.localStorage.setItem('tutorial-guide-v2', 'true');
             }
         });
 
@@ -66,34 +68,22 @@ describe('SaaS & Plan Limits', () => {
             .should('not.contain.text', 'Plano Atual');
     });
 
-    it('Shows Upgrade Modal when clicking Bank Connection (Open Finance)', () => {
+    it('Ensures Bank Connection (Open Finance) Widget is NOT rendered on the dashboard', () => {
         cy.visit('/', {
             onBeforeLoad: (win) => {
                 win.localStorage.setItem('user-id', 'user-free-123');
                 win.localStorage.setItem('auth_token', 'mock-token-123');
-                win.localStorage.setItem('tutorial-guide', 'true');
+                win.localStorage.setItem('tutorial-guide-v2', 'true');
             }
         });
 
         cy.wait('@getUser');
 
         // Ensure page loaded
-        cy.contains('Dashboard').should('be.visible');
+        cy.contains('Saldo Atual', { timeout: 10000 }).should('be.visible');
 
-        // Locate Open Finance Widget and click "Conectar"
-        cy.contains('Minhas Contas').should('be.visible');
-
-        // Use more specific selector to avoid clicking hidden elements
-        cy.contains('button', 'Gerenciar').click({ force: true });
-
-        // OR click the main CTA if empty state
-        // cy.contains('button', 'Conectar Conta').click();
-
-        // Expect Upgrade Modal
-        // "Desbloqueie esse recurso" is the header of UpgradeModal
-        cy.contains('Desbloqueie esse recurso').should('be.visible');
-        cy.contains('plano MAX').should('be.visible');
-        cy.contains('Fazer Upgrade').should('be.visible');
+        // Open Finance Widget should NOT be visible
+        cy.contains('Minhas Contas').should('not.exist');
     });
 
     it('Shows Upgrade Modal when accessing Deep Insights', () => {
@@ -101,14 +91,17 @@ describe('SaaS & Plan Limits', () => {
             onBeforeLoad: (win) => {
                 win.localStorage.setItem('user-id', 'user-free-123');
                 win.localStorage.setItem('auth_token', 'mock-token-123');
-                win.localStorage.setItem('tutorial-guide', 'true');
+                win.localStorage.setItem('tutorial-guide-v2', 'true');
             }
         });
 
         cy.wait('@getUser');
 
+        // Ensure page loaded
+        cy.contains('Saldo Atual', { timeout: 10000 }).should('be.visible');
+
         // Click the Insight Card to trigger detail modal
-        cy.contains('Mantenha o foco').should('be.visible').click();
+        cy.contains('Dica Financeira Exclusiva', { timeout: 10000 }).should('be.visible').click();
 
         // Since user is FREE, checking deep insights feature might trigger modal
         // Check if Upgrade Modal appears OR if the Detail Modal opens (depending on gate level)
@@ -120,7 +113,7 @@ describe('SaaS & Plan Limits', () => {
         // if (!checkFeature('DEEP_INSIGHTS')) openUpgradeModal(...)
 
         // So clicking SHOULD open Upgrade Modal.
-        cy.contains('Desbloqueie esse recurso').should('be.visible');
+        cy.contains('Desbloqueie o Poder Máximo').should('be.visible');
         cy.contains('plano MAX').should('be.visible');
     });
 
@@ -129,7 +122,7 @@ describe('SaaS & Plan Limits', () => {
             onBeforeLoad: (win) => {
                 win.localStorage.setItem('user-id', 'user-free-123');
                 win.localStorage.setItem('auth_token', 'mock-token-123');
-                win.localStorage.setItem('tutorial-guide', 'true');
+                win.localStorage.setItem('tutorial-guide-v2', 'true');
             }
         });
 
@@ -140,6 +133,9 @@ describe('SaaS & Plan Limits', () => {
             statusCode: 403,
             body: { error: 'Limite de transações atingido' }
         }).as('createTransaction');
+
+        // Ensure page loaded
+        cy.contains('Saldo Atual', { timeout: 10000 }).should('be.visible');
 
         // Open Modal
         cy.contains('button', 'Receita').click();

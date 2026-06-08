@@ -633,9 +633,11 @@ function DashboardContent() {
               <VoiceAssistantWidget onRefresh={refreshData} />
             </div>
 
+            {/* OpenFinanceWidget disabled for production 
             <div className="mb-8">
               <OpenFinanceWidget />
             </div>
+            */}
           </div>
 
           {/* SECTION: GOALS (Desktop only, mobile consolidated under Analytics) */}
@@ -896,6 +898,7 @@ function DashboardContent() {
           />
         </div>
 
+        {/* WhatsAppButton disabled for production
         {
           isFree && (
             <div className="fixed bottom-28 right-4 z-40 sm:bottom-8 sm:right-8">
@@ -903,6 +906,7 @@ function DashboardContent() {
             </div>
           )
         }
+        */}
 
         <MobileBottomNav
           activeTab={activeTab}

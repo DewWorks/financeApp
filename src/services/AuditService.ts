@@ -1,5 +1,6 @@
 import { AuditLog } from "@/app/models/AuditLog";
 import { getMongoClient } from "@/db/connectionDb";
+import connectToDatabase from "@/lib/mongoose";
 
 export class AuditService {
     /**
@@ -18,6 +19,9 @@ export class AuditService {
                 ip = req.headers.get("x-forwarded-for") || 'unknown';
                 userAgent = req.headers.get("user-agent") || 'unknown';
             }
+
+            // Ensure Mongoose is connected before utilizing Mongoose Models
+            await connectToDatabase();
 
             // Using Mongoose Model if connected, or direct DB insert if preferred.
             // Since we usually use Mongoose models in this project for consistency:

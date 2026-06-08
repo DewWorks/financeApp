@@ -1,6 +1,10 @@
 describe('Fluxo de Cadastro (Register)', () => {
     beforeEach(() => {
+        cy.clearAllLocalStorage();
+        cy.clearCookies();
+        cy.intercept('GET', '/api/users*').as('initUser');
         cy.visit('/auth/register');
+        cy.wait('@initUser');
     });
 
     it('Deve cadastrar um novo usuário com sucesso', () => {
@@ -12,6 +16,7 @@ describe('Fluxo de Cadastro (Register)', () => {
         cy.get('input[id="email"]').type(email);
         cy.get('input[id="cel"]').type(phone);
         cy.get('input[id="password"]').type('SenhaForte123');
+        cy.get('input[id="terms"]').check();
 
         cy.contains('button', 'Cadastrar').click();
 

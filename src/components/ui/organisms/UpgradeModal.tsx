@@ -53,13 +53,15 @@ export function UpgradeModal({ isOpen, onClose, message, requiredPlan = 'PRO' }:
                                 <Check className="w-4 h-4 text-green-500" /> Transações Ilimitadas
                             </li>
                             <li className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                                <Check className="w-4 h-4 text-green-500" /> Bot de WhatsApp Inteligente
+                                <Check className="w-4 h-4 text-green-500" /> Assistente Fin AI por Voz e Texto
                             </li>
+                            {/* Open Finance disabled for production
                             {isMax && (
                                 <li className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                                     <Check className="w-4 h-4 text-cyan-500" /> Sincronização Bancária Automática (Open Finance)
                                 </li>
                             )}
+                            */}
                             {isMax && (
                                 <li className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                                     <Check className="w-4 h-4 text-cyan-500" /> Análise Profunda com IA

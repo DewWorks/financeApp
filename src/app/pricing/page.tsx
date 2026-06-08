@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Check, X, Star, Zap, MessageCircle, Building2, BrainCircuit, ArrowRight, ShieldCheck, ChevronDown, Wallet } from "lucide-react";
+import { Check, X, Star, Zap, MessageCircle, Building2, BrainCircuit, ArrowRight, ShieldCheck, ChevronDown, Wallet, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/atoms/button";
 import { useUser } from "@/context/UserContext";
 import { useRouter } from "next/navigation";
@@ -78,7 +78,7 @@ export default function PricingPage() {
             <section className="py-24 px-6 relative">
                 <div className="max-w-7xl mx-auto space-y-32">
 
-                    {/* Feature 1: WhatsApp Bot */}
+                    {/* Feature 1: Fin AI in-app voice/text assistant */}
                     <motion.div
                         initial={{ opacity: 0, y: 40 }}
                         whileInView={{ opacity: 1, y: 0 }}
@@ -87,19 +87,19 @@ export default function PricingPage() {
                         className="flex flex-col md:flex-row items-center gap-16"
                     >
                         <div className="flex-1 space-y-6">
-                            <div className="w-12 h-12 bg-green-500/10 rounded-2xl flex items-center justify-center text-green-500 mb-4">
-                                <MessageCircle size={28} />
+                            <div className="w-12 h-12 bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-400 mb-4">
+                                <BrainCircuit size={28} />
                             </div>
-                            <h2 className="text-3xl md:text-4xl font-bold text-white">Lançamentos via WhatsApp</h2>
+                            <h2 className="text-3xl md:text-4xl font-bold text-white">Lançamentos via Fin AI</h2>
                             <p className="text-gray-400 text-lg leading-relaxed">
-                                Esqueça as planilhas chatas. Envie uma mensagem para nosso número e ele registra, categoriza e organiza suas despesas automaticamente em segundos.
+                                Esqueça as planilhas chatas. Use o assistente de voz ou digite uma frase no aplicativo, e a nossa IA inteligente registrará, categorizará e organizará seus gastos automaticamente em segundos.
                             </p>
                             <ul className="space-y-3 pt-2">
                                 <li className="flex items-center gap-3 text-gray-300">
-                                    <Check className="w-5 h-5 text-green-500" /> Compreensão de mensagens naturais
+                                    <Check className="w-5 h-5 text-indigo-500" /> Compreensão de áudio e texto natural
                                 </li>
                                 <li className="flex items-center gap-3 text-gray-300">
-                                    <Check className="w-5 h-5 text-green-500" /> Categorização automática com IA
+                                    <Check className="w-5 h-5 text-indigo-500" /> Categorização automática com IA no app
                                 </li>
                             </ul>
                         </div>
@@ -107,29 +107,29 @@ export default function PricingPage() {
                             {/* Fake Chat UI */}
                             <div className="space-y-4">
                                 <div className="flex justify-end">
-                                    <div className="bg-[#005c4b] text-white p-3 rounded-2xl rounded-tr-sm max-w-[85%] text-sm shadow-md">
+                                    <div className="bg-indigo-600 text-white p-3 rounded-2xl rounded-tr-sm max-w-[85%] text-sm shadow-md">
                                         Gastei 150 reais no mercado agora
                                     </div>
                                 </div>
                                 <div className="flex justify-start">
-                                    <div className="bg-[#202c33] text-white p-3 rounded-2xl rounded-tl-sm max-w-[85%] text-sm shadow-md border border-zinc-700">
-                                        <div className="flex items-center gap-2 mb-2 font-semibold text-green-400">
-                                            <Check size={14} /> Anotado!
+                                    <div className="bg-zinc-800 text-white p-3 rounded-2xl rounded-tl-sm max-w-[85%] text-sm shadow-md border border-zinc-700">
+                                        <div className="flex items-center gap-2 mb-2 font-semibold text-indigo-400">
+                                            <Sparkles size={14} /> Fin AI 🤖
                                         </div>
                                         <div>Despesa de <b>R$ 150,00</b> registrada em <b>Mercado</b>. 🛒</div>
                                     </div>
                                 </div>
                                 <div className="flex justify-end pt-2">
-                                    <div className="bg-[#005c4b] text-white py-2 px-4 rounded-full flex items-center gap-3 w-fit ml-auto opacity-90">
+                                    <div className="bg-indigo-600 text-white py-2 px-4 rounded-full flex items-center gap-3 w-fit ml-auto opacity-90">
                                         <div className="w-24 h-1 bg-white/30 rounded-full animate-pulse"></div>
-                                        <span className="text-xs">0:04</span>
+                                        <span className="text-xs">Gravando...</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </motion.div>
 
-                    {/* Feature 2: Bank Sync */}
+                    {/* Feature 2: Bank Sync (Disabled for production)
                     <motion.div
                         initial={{ opacity: 0, y: 40 }}
                         whileInView={{ opacity: 1, y: 0 }}
@@ -155,45 +155,29 @@ export default function PricingPage() {
                             </ul>
                         </div>
                         <div className="flex-1 w-full max-w-md h-72 relative flex items-center justify-center">
-                            {/* Central App Node */}
                             <div className="absolute inset-0 bg-blue-600/10 blur-[80px] rounded-full" />
-
                             <div className="w-28 h-28 bg-gradient-to-br from-blue-600 to-blue-800 rounded-3xl shadow-2xl z-20 flex flex-col items-center justify-center text-white relative border-4 border-black/50">
                                 <Wallet size={40} className="mb-1" />
                                 <span className="text-[10px] font-bold tracking-widest uppercase opacity-80">FinancePro</span>
-                                {/* Pulse Effect */}
                                 <div className="absolute inset-0 rounded-3xl border-2 border-blue-400/50 animate-ping opacity-20"></div>
                             </div>
-
-                            {/* Orbiting Bank Nodes */}
                             {[1, 2, 3, 4, 5].map((i) => {
                                 const angle = (i * 72) * (Math.PI / 180);
                                 const radius = 140;
                                 const x = Math.cos(angle) * radius;
                                 const y = Math.sin(angle) * radius;
-
                                 return (
                                     <motion.div
                                         key={i}
                                         initial={{ x: 0, y: 0, opacity: 0 }}
-                                        animate={{
-                                            x: x,
-                                            y: y,
-                                            opacity: 1,
-                                        }}
-                                        transition={{
-                                            duration: 0.8,
-                                            delay: i * 0.1,
-                                            type: "spring"
-                                        }}
+                                        animate={{ x: x, y: y, opacity: 1 }}
+                                        transition={{ duration: 0.8, delay: i * 0.1, type: "spring" }}
                                         className="absolute w-12 h-12 bg-zinc-900 border border-zinc-700 rounded-full flex items-center justify-center shadow-lg z-10"
                                     >
                                         <Building2 size={18} className="text-gray-400" />
                                     </motion.div>
                                 )
                             })}
-
-                            {/* Dynamic Connection Lines (SVG) */}
                             <svg className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-40 overflow-visible">
                                 <defs>
                                     <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -204,7 +188,7 @@ export default function PricingPage() {
                                 </defs>
                                 {[1, 2, 3, 4, 5].map((i) => {
                                     const angle = (i * 72) * (Math.PI / 180);
-                                    const x = 50 + (Math.cos(angle) * 35); // Approx percent coordinates
+                                    const x = 50 + (Math.cos(angle) * 35);
                                     const y = 50 + (Math.sin(angle) * 35);
                                     return (
                                         <motion.line
@@ -221,6 +205,7 @@ export default function PricingPage() {
                             </svg>
                         </div>
                     </motion.div>
+                    */}
 
                     {/* Feature 3: AI Insights */}
                     <motion.div
@@ -305,12 +290,14 @@ export default function PricingPage() {
                             <li className="flex items-center gap-3 text-gray-300 text-sm">
                                 <Check className="w-4 h-4 text-zinc-500" /> Categorização manual
                             </li>
+                            {/* 
                             <li className="flex items-center gap-3 text-zinc-600 text-sm line-through decoration-zinc-700">
                                 Integração WhatsApp
                             </li>
                             <li className="flex items-center gap-3 text-zinc-600 text-sm line-through decoration-zinc-700">
                                 Sincronização Bancária
                             </li>
+                            */}
                         </ul>
 
                         <Button
@@ -339,8 +326,8 @@ export default function PricingPage() {
                                 Tudo do Starter
                             </li>
                             <li className="flex items-center gap-3 text-white text-sm">
-                                <div className="w-5 h-5 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400"><MessageCircle className="w-3 h-3" /></div>
-                                Bot de WhatsApp Ilimitado
+                                <div className="w-5 h-5 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400"><BrainCircuit className="w-3 h-3" /></div>
+                                Assistente Fin AI por Voz/Texto
                             </li>
                             <li className="flex items-center gap-3 text-white text-sm">
                                 <div className="w-5 h-5 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400"><BrainCircuit className="w-3 h-3" /></div>
@@ -350,9 +337,11 @@ export default function PricingPage() {
                                 <div className="w-5 h-5 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400"><Check className="w-3 h-3" /></div>
                                 Lançamentos Ilimitados
                             </li>
+                            {/* 
                             <li className="flex items-center gap-3 text-zinc-600 text-sm line-through decoration-zinc-700">
                                 Sincronização Bancária
                             </li>
+                            */}
                         </ul>
 
                         <Button
@@ -381,7 +370,7 @@ export default function PricingPage() {
                                 <span className="text-6xl font-bold text-white tracking-tight">R$ 39,90</span>
                                 <span className="text-gray-400">/mês</span>
                             </div>
-                            <p className="text-cyan-200/60 text-sm mt-4 line-clamp-2">Experiência completa com Open Finance e IA Avançada.</p>
+                            <p className="text-cyan-200/60 text-sm mt-4 line-clamp-2">Experiência completa com IA Avançada e recursos premium.</p>
                         </div>
 
                         <ul className="flex-1 space-y-5 mb-10">
@@ -389,10 +378,12 @@ export default function PricingPage() {
                                 <div className="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.2)]"><Check className="w-3.5 h-3.5" /></div>
                                 Tudo do PRO
                             </li>
+                            {/* 
                             <li className="flex items-center gap-3 text-white text-sm font-medium">
                                 <div className="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.2)]"><Building2 className="w-3.5 h-3.5" /></div>
                                 Sincronização Bancária
                             </li>
+                            */}
                             <li className="flex items-center gap-3 text-white text-sm font-medium">
                                 <div className="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.2)]"><BrainCircuit className="w-3.5 h-3.5" /></div>
                                 Consultor IA Avançado
@@ -425,9 +416,10 @@ export default function PricingPage() {
                             <ChevronDown className="transition-transform group-open:rotate-180" size={18} />
                         </summary>
                         <p className="text-gray-400 mt-3 text-sm leading-relaxed">
-                            Você pode cancelar a qualquer momento diretamente pelo seu painel. A assinatura continuará ativa até o fim do período já pago (mês vigente) e não será renovada.
+                            Você pode cancelar a qualquer momento diretamente pelo seu painel. A assinatura continuará ativa até o fim do período já período já pago (mês vigente) e não será renovada.
                         </p>
                     </details>
+                    {/* Open Finance FAQ disabled for production
                     <details className="group bg-zinc-900/50 rounded-xl p-4 cursor-pointer [&_summary::-webkit-details-marker]:hidden">
                         <summary className="flex items-center justify-between font-medium text-gray-200 group-hover:text-white transition-colors">
                             O Open Finance é seguro?
@@ -437,6 +429,7 @@ export default function PricingPage() {
                             Sim. Utilizamos parceiros regulados pelo Banco Central (como a Pluggy) para conectar suas contas. Nós temos acesso apenas de leitura (read-only) e nunca podemos movimentar seu dinheiro.
                         </p>
                     </details>
+                    */}
                     <details className="group bg-zinc-900/50 rounded-xl p-4 cursor-pointer [&_summary::-webkit-details-marker]:hidden">
                         <summary className="flex items-center justify-between font-medium text-gray-200 group-hover:text-white transition-colors">
                             Posso trocar de plano depois?
