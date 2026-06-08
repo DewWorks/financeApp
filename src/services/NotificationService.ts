@@ -11,7 +11,7 @@ export class NotificationService {
         this.insightService = new InsightService();
     }
 
-    async sendPush(userId: string, title: string, body: string, url: string = "/") {
+    async sendPush(userId: string, title: string, body: string, url: string = "/", actions?: any[]) {
         try {
             const client = await getMongoClient();
             const db = client.db('financeApp');
@@ -26,7 +26,8 @@ export class NotificationService {
             const payload = JSON.stringify({
                 title,
                 body: cleanBody,
-                url
+                url,
+                actions
             });
 
             const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
@@ -190,7 +191,14 @@ export class NotificationService {
                 });
 
                 // ALSO SEND PUSH NOTIFICATION
-                await this.sendPush(userId, `Alerta: ${alert.text}`, alert.details || "");
+                let actions: any[] = [];
+                if (alert.id.startsWith('budget-exceeded-') || alert.id.startsWith('budget-warning-')) {
+                    const goalId = alert.id.replace('budget-exceeded-', '').replace('budget-warning-', '');
+                    actions = [
+                        { action: `increase_limit_${goalId}`, title: 'Aumentar R$ 100', icon: '/logo.png' }
+                    ];
+                }
+                await this.sendPush(userId, `Alerta: ${alert.text}`, alert.details || "", "/", actions);
 
                 // 7. Log Notification
                 await notificationsCol.updateOne(
@@ -433,7 +441,9 @@ export class NotificationService {
             await this.sendPush(
                 userId, 
                 "🥺 Suas finanças sentem sua falta...", 
-                "Faz um tempinho que não vemos novas movimentações. Registre seus gastos para manter o controle!"
+                "Faz um tempinho que não vemos novas movimentações. Registre seus gastos para manter o controle!",
+                "/",
+                [{ action: 'speak_fin', title: '🎙️ Falar com Fin', icon: '/logo.png' }]
             );
 
         } catch (error) {
@@ -530,7 +540,9 @@ export class NotificationService {
             await this.sendPush(
                 userId, 
                 "🤔 Esqueceu de algo?", 
-                "Notamos que você não registrou gastos nos últimos 3 dias. Que tal registrar os de hoje?"
+                "Notamos que você não registrou gastos nos últimos 3 dias. Que tal registrar os de hoje?",
+                "/",
+                [{ action: 'speak_fin', title: '🎙️ Falar com Fin', icon: '/logo.png' }]
             );
         } catch (error) {
             console.error("[NotificationService] Nudge Email Error:", error);

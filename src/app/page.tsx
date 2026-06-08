@@ -260,12 +260,35 @@ function DashboardContent() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search);
+      
       if (urlParams.get("startVoice") === "true") {
         // Clear param from URL
         window.history.replaceState({}, document.title, window.location.pathname);
         setActiveTab("fin");
         setIsFinChatOpen(true);
         setAutoStartVoice(true);
+      }
+
+      const increaseGoalId = urlParams.get("increaseLimit");
+      if (increaseGoalId) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        // Fire and forget – increase goal budget limit by R$ 100
+        (async () => {
+          try {
+            const res = await fetch(`/api/goals/${increaseGoalId}/increase-limit`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ amount: 100 }),
+            });
+            if (res.ok) {
+              setToast({ message: "Limite aumentado em R$ 100 com sucesso! 🎉", type: "success" });
+            } else {
+              setToast({ message: "Não foi possível aumentar o limite. Tente pelo app.", type: "error" });
+            }
+          } catch {
+            setToast({ message: "Erro ao processar. Tente novamente.", type: "error" });
+          }
+        })();
       }
     }
   }, []);

@@ -9,7 +9,8 @@ self.addEventListener('push', function(event) {
         badge: '/icon-192x192.png',
         data: {
           url: data.url || '/'
-        }
+        },
+        actions: data.actions || []
       };
       event.waitUntil(
         self.registration.showNotification(title, options)
@@ -29,15 +30,23 @@ self.addEventListener('push', function(event) {
 
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
-  const urlToOpen = event.notification.data?.url || '/';
+  
+  let urlToOpen = event.notification.data?.url || '/';
+  
+  if (event.action) {
+    if (event.action === 'speak_fin') {
+      urlToOpen = '/?startVoice=true';
+    } else if (event.action.startsWith('increase_limit_')) {
+      const goalId = event.action.replace('increase_limit_', '');
+      urlToOpen = `/?increaseLimit=${goalId}`;
+    }
+  }
   
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
       for (let client of clientList) {
         if (client.url.includes(location.origin) && 'focus' in client) {
-          if (client.url !== urlToOpen) {
-            client.navigate(urlToOpen);
-          }
+          client.navigate(urlToOpen);
           return client.focus();
         }
       }
