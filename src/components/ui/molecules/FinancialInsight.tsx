@@ -529,7 +529,7 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
                                             Desafio de Economia Ativa
                                         </div>
                                         <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
-                                            Se você aceitar este desafio de economizar na categoria **{currentInsight.text}**, o Fin acompanhará seus gastos nos próximos 7 dias. Seu limite recomendado é **R$ {currentInsight.targetLimit?.toFixed(2)}**. Cumprindo-o, você adicionará **R$ {currentInsight.impactEstimate?.toFixed(2)}** de economia ao seu contador de ROI!
+                                            Se você aceitar este desafio de economizar na categoria <strong className="font-bold">{currentInsight.text}</strong>, o Fin acompanhará seus gastos nos próximos 7 dias. Seu limite recomendado é <strong className="font-bold">R$ {currentInsight.targetLimit?.toFixed(2)}</strong>. Cumprindo-o, você adicionará <strong className="font-bold">R$ {currentInsight.impactEstimate?.toFixed(2)}</strong> de economia ao seu contador de ROI!
                                         </p>
                                         <div className="flex gap-2 justify-end mt-2">
                                             <Button
@@ -566,7 +566,7 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
                                             </span>
                                         </div>
                                         <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
-                                            Seu limite máximo é **R$ {currentInsight.targetLimit?.toFixed(2)}**. Atualmente você gastou **R$ {currentInsight.currentSpent?.toFixed(2)}** nesta categoria este mês.
+                                            Seu limite máximo é <strong className="font-bold">R$ {currentInsight.targetLimit?.toFixed(2)}</strong>. Atualmente você gastou <strong className="font-bold">R$ {currentInsight.currentSpent?.toFixed(2)}</strong> nesta categoria este mês.
                                         </p>
                                         {/* Progress Bar */}
                                         <div className="mt-2">
@@ -599,7 +599,7 @@ export function FinancialInsight({ userRequestName, profileId, loading = false, 
                                             <span>🏆</span> Desafio Concluído!
                                         </div>
                                         <p className="text-xs text-emerald-700 dark:text-emerald-300 leading-tight">
-                                            Parabéns! Você se manteve abaixo do limite e economizou **R$ {currentInsight.impactEstimate?.toFixed(2)}** reais! Esse valor foi adicionado ao seu contador de ROI!
+                                            Parabéns! Você se manteve abaixo do limite e economizou <strong className="font-bold">R$ {currentInsight.impactEstimate?.toFixed(2)}</strong> reais! Esse valor foi adicionado ao seu contador de ROI!
                                         </p>
                                     </div>
                                 )}

@@ -639,7 +639,7 @@ function DashboardContent() {
                     )}
                   </h4>
                   <p className="text-[10px] text-gray-500 dark:text-gray-400 max-w-xs sm:max-w-md mt-0.5 leading-relaxed">
-                    Diga **"Fin, me ajude"** ou **"Ei Fin"** para abrir o assistente de voz com as mãos livres.
+                    Diga <strong className="font-bold">"Fin, me ajude"</strong> ou <strong className="font-bold">"Ei Fin"</strong> para abrir o assistente de voz com as mãos livres.
                   </p>
                 </div>
               </div>
