@@ -222,7 +222,7 @@ export function SmartImportDialog({ isOpen, onClose, onRefresh }: SmartImportDia
                                 <span className="text-xs font-bold">Importado com Sucesso!</span>
                             </div>
                             <p className="text-[11px] text-gray-600 dark:text-gray-300 leading-tight">
-                                Carregamos **{importedCount}** transações no seu perfil.
+                                Carregamos <strong className="font-bold">{importedCount}</strong> transações no seu perfil.
                             </p>
                             {importedList.length > 0 && (
                                 <details className="text-[10px] text-gray-400 dark:text-gray-500 cursor-pointer">

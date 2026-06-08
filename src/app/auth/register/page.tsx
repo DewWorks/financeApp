@@ -50,13 +50,7 @@ export default function RegisterPage() {
       return
     }
 
-    // Se não tem celular, mostrar modal de benefícios
-    if (!cel.trim()) {
-      setShowWhatsAppModal(true)
-      return
-    }
-
-    // Prosseguir com cadastro
+    // Prosseguir com cadastro direto sem interrupção de WhatsApp
     await performRegistration()
   }
 
@@ -107,103 +101,85 @@ export default function RegisterPage() {
     }
   }
 
-  const handleContinueWithoutWhatsApp = () => {
-    setShowWhatsAppModal(false)
-    performRegistration()
-  }
-
-  const handleAddWhatsApp = () => {
-    setShowWhatsAppModal(false)
-    // Focar no campo de telefone
-    document.getElementById("cel")?.focus()
-  }
-
   const routerLogin = () => {
     router.push("/auth/login")
   }
 
   return (
     <>
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-background relative">
+      <div className="min-h-screen bg-gray-50 dark:bg-background flex items-center justify-center p-4">
+        {/* Theme Toggle Absolute */}
         <div className="absolute top-4 right-4">
           <ThemeToggle />
         </div>
-        <Card className="w-full max-w-md">
-          <CardHeader className="flex items-center justify-center">
-            <Title />
-            <CardTitle className="text-2xl font-bold text-center">Cadastro</CardTitle>
-            <p className="text-center text-muted-foreground text-sm mt-1">Crie sua conta no FinancePro</p>
-          </CardHeader>
 
+        <Card className="w-full max-w-md bg-white dark:bg-card">
+          <CardHeader className="space-y-1">
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <Title size="md" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-center">Criar Conta</CardTitle>
+          </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Nome */}
               <div className="space-y-2">
-                <Label className="text-lg" htmlFor="name">
-                  Nome
-                </Label>
+                <Label htmlFor="name">Nome completo</Label>
                 <Input
                   id="name"
                   type="text"
+                  placeholder="Seu nome"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="border-2 border-border focus:border-blue-500"
-                  placeholder="Seu nome completo"
+                  className="border-2 border-border focus:border-blue-600"
                   required
                 />
               </div>
 
               {/* Email */}
               <div className="space-y-2">
-                <Label className="text-lg" htmlFor="email">
-                  Email
-                </Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   type="email"
+                  placeholder="seu@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="border-2 border-border focus:border-blue-500"
-                  placeholder="email@exemplo.com"
+                  className="border-2 border-border focus:border-blue-600"
                   required
                 />
               </div>
 
               {/* Senha */}
               <div className="space-y-2">
-                <Label className="text-lg" htmlFor="password">
-                  Senha
-                </Label>
+                <Label htmlFor="password">Senha</Label>
                 <Input
                   id="password"
                   type="password"
+                  placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="border-2 border-border focus:border-blue-500"
-                  placeholder="Mínimo 6 caracteres"
-                  minLength={6}
+                  className="border-2 border-border focus:border-blue-600"
                   required
                 />
               </div>
 
-              {/* WhatsApp (Opcional) */}
+              {/* Celular (Opcional) */}
               <div className="space-y-2">
                 <Label className="text-lg flex items-center gap-2" htmlFor="cel">
-                  <MessageCircle className="w-4 h-4 text-green-500" />
-                  WhatsApp
-                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Opcional</span>
-                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">IA</span>
+                  Celular
+                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Opcional</span>
                 </Label>
                 <Input
                   id="cel"
                   type="tel"
                   value={cel}
                   onChange={handlePhoneChange}
-                  className="border-2 border-border focus:border-green-500"
+                  className="border-2 border-border focus:border-blue-600"
                   placeholder="(11) 99999-9999"
                   maxLength={15}
                 />
-                <p className="text-xs text-muted-foreground">💡 Controle seus gastos por mensagem com nossa IA</p>
+                <p className="text-xs text-muted-foreground">💡 Receba lembretes e fale com a IA direto no App</p>
               </div>
 
               {/* Termos de Uso */}
@@ -267,102 +243,6 @@ export default function RegisterPage() {
         </Card>
       </div>
 
-      {/* Modal de Benefícios do WhatsApp */}
-      {showWhatsAppModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-lg bg-white dark:bg-card">
-            <CardHeader className="relative">
-              <button
-                onClick={() => setShowWhatsAppModal(false)}
-                className="absolute right-4 top-4 text-muted-foreground hover:text-foreground"
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              <div className="flex items-center justify-center gap-3 mb-2">
-                <MessageCircle className="w-8 h-8 text-green-500" />
-                <Title size="md" />
-              </div>
-              <CardTitle className="text-xl font-bold text-center">WhatsApp + FinancePro IA</CardTitle>
-              <p className="text-center text-muted-foreground text-sm">Tem certeza que não quer conectar seu WhatsApp?</p>
-            </CardHeader>
-
-            <CardContent className="space-y-4">
-              {/* Benefícios */}
-              <div className="space-y-3">
-                <div className="flex items-start gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                  <Bot className="w-6 h-6 text-green-600 mt-0.5" />
-                  <div>
-                    <h4 className="font-semibold text-green-800 dark:text-green-400">IA Automática</h4>
-                    <p className="text-sm text-green-700 dark:text-green-300">
-                      Gastei 30 reais no Uber → Registra automaticamente como transporte
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                  <Zap className="w-6 h-6 text-blue-600 mt-0.5" />
-                  <div>
-                    <h4 className="font-semibold text-blue-800 dark:text-blue-400">Super Rápido</h4>
-                    <p className="text-sm text-blue-700 dark:text-blue-300">Registre gastos em segundos, sem abrir o app</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                  <BarChart3 className="w-6 h-6 text-purple-600 mt-0.5" />
-                  <div>
-                    <h4 className="font-semibold text-purple-800 dark:text-purple-400">Relatórios Instantâneos</h4>
-                    <p className="text-sm text-purple-700 dark:text-purple-300">Quanto gastei essa semana? → Resposta na hora</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-                  <Clock className="w-6 h-6 text-orange-600 mt-0.5" />
-                  <div>
-                    <h4 className="font-semibold text-orange-800 dark:text-orange-400">Sempre Disponível</h4>
-                    <p className="text-sm text-orange-700 dark:text-orange-300">24/7 no seu WhatsApp, onde você já está</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Demonstração */}
-              <div className="bg-muted rounded-lg p-3">
-                <h4 className="font-semibold text-foreground mb-2">💬 Exemplo de uso:</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="bg-green-500 text-white p-2 rounded-lg rounded-br-none max-w-xs ml-auto">
-                    Almoçei, foram 25 reais
-                  </div>
-                  <div className="bg-white dark:bg-card p-2 rounded-lg rounded-bl-none max-w-xs shadow-sm">
-                    ✅ Registrei R$ 25,00 em Alimentação. Seu gasto hoje: R$ 25,00
-                  </div>
-                </div>
-              </div>
-
-              {/* Botões */}
-              <div className="grid grid-cols-1 gap-3 pt-4">
-                <Button
-                  onClick={handleAddWhatsApp}
-                  className="bg-green-600 hover:bg-green-700 text-white flex items-center justify-center gap-2"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  Adicionar WhatsApp
-                </Button>
-                <Button
-                  onClick={handleContinueWithoutWhatsApp}
-                  variant="outline"
-                  className="border-gray-300 dark:border-gray-700 text-foreground hover:bg-accent bg-transparent"
-                >
-                  Continuar sem WhatsApp
-                </Button>
-              </div>
-
-              <p className="text-xs text-center text-muted-foreground mt-2">
-                💡 Você pode conectar o WhatsApp depois nas configurações
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </>
   )
 }

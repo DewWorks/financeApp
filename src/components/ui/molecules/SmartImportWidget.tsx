@@ -211,7 +211,7 @@ export function SmartImportWidget({ onRefresh }: SmartImportWidgetProps) {
                                 <span className="text-xs font-bold">Importação Concluída!</span>
                             </div>
                             <p className="text-[11px] text-gray-600 dark:text-gray-300 leading-tight">
-                                Adicionamos **{importedCount}** transações do seu extrato no seu perfil.
+                                Adicionamos <strong className="font-bold">{importedCount}</strong> transações do seu extrato no seu perfil.
                             </p>
                             {importedList.length > 0 && (
                                 <details className="text-[10px] text-gray-400 dark:text-gray-500 cursor-pointer">

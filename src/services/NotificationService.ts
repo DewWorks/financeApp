@@ -2,12 +2,58 @@ import { InsightService, InsightItem } from "./InsightService";
 import { sendEmail } from "@/app/functions/emails/sendEmail";
 import { getMongoClient } from "@/db/connectionDb";
 import { ObjectId } from "mongodb";
+import webPush from "web-push";
 
 export class NotificationService {
     private insightService: InsightService;
 
     constructor() {
         this.insightService = new InsightService();
+    }
+
+    async sendPush(userId: string, title: string, body: string, url: string = "/") {
+        try {
+            const client = await getMongoClient();
+            const db = client.db('financeApp');
+            const subscriptions = await db.collection("push_subscriptions").find({
+                userId: new ObjectId(userId)
+            }).toArray();
+
+            if (subscriptions.length === 0) return;
+
+            const cleanBody = body.replace(/\*\*/g, "");
+
+            const payload = JSON.stringify({
+                title,
+                body: cleanBody,
+                url
+            });
+
+            const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
+            const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY || "";
+            const vapidEmail = process.env.VAPID_EMAIL || "mailto:suporte@financepro.com";
+
+            if (vapidPublicKey && vapidPrivateKey) {
+                webPush.setVapidDetails(
+                    vapidEmail,
+                    vapidPublicKey,
+                    vapidPrivateKey
+                );
+            }
+
+            for (const subDoc of subscriptions) {
+                try {
+                    await webPush.sendNotification(subDoc.subscription, payload);
+                } catch (err: any) {
+                    console.error("[NotificationService] Push failed for endpoint:", subDoc.subscription.endpoint, err);
+                    if (err.statusCode === 410 || err.statusCode === 404) {
+                        await db.collection("push_subscriptions").deleteOne({ _id: subDoc._id });
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("[NotificationService] sendPush error:", error);
+        }
     }
 
     /**
@@ -142,6 +188,9 @@ export class NotificationService {
                     subject: `FinancePro: ${alert.text}`,
                     htmlContent: emailHtml
                 });
+
+                // ALSO SEND PUSH NOTIFICATION
+                await this.sendPush(userId, `Alerta: ${alert.text}`, alert.details || "");
 
                 // 7. Log Notification
                 await notificationsCol.updateOne(
@@ -340,6 +389,13 @@ export class NotificationService {
             `;
             await sendEmail({ to: user.email, subject, htmlContent: html });
 
+            // ALSO SEND PUSH
+            await this.sendPush(
+                userId, 
+                "📊 Resumo Semanal FinancePro", 
+                `Gastos da semana: ${weekTotal}. Veja seu resumo detalhado e ajuste suas metas!`
+            );
+
         } catch (error) {
             console.error("[NotificationService] Weekly Digest Error:", error);
         }
@@ -372,6 +428,13 @@ export class NotificationService {
                 </div>
             `;
             await sendEmail({ to: user.email, subject, htmlContent: html });
+
+            // ALSO SEND PUSH
+            await this.sendPush(
+                userId, 
+                "🥺 Suas finanças sentem sua falta...", 
+                "Faz um tempinho que não vemos novas movimentações. Registre seus gastos para manter o controle!"
+            );
 
         } catch (error) {
             console.error("[NotificationService] Inactivity Reminder Error:", error);
@@ -409,6 +472,14 @@ export class NotificationService {
                 </div>
             `;
             await sendEmail({ to: user.email, subject, htmlContent: html });
+
+            // ALSO SEND PUSH
+            await this.sendPush(
+                userId, 
+                "🏆 Meta Atingida!", 
+                `Parabéns! Você atingiu sua meta de economia "${goalName}" com ${amount} economizados!`, 
+                "/?tab=goals"
+            );
 
             // Log notification to prevent spamming
             const notificationsCol = db.collection('notifications');
@@ -454,6 +525,13 @@ export class NotificationService {
                 </div>
             `;
             await sendEmail({ to: user.email, subject, htmlContent: html });
+
+            // ALSO SEND PUSH
+            await this.sendPush(
+                userId, 
+                "🤔 Esqueceu de algo?", 
+                "Notamos que você não registrou gastos nos últimos 3 dias. Que tal registrar os de hoje?"
+            );
         } catch (error) {
             console.error("[NotificationService] Nudge Email Error:", error);
         }
@@ -492,6 +570,13 @@ export class NotificationService {
                 </div>
             `;
             await sendEmail({ to: user.email, subject, htmlContent: html });
+
+            // ALSO SEND PUSH
+            await this.sendPush(
+                userId, 
+                "🚀 Muitas novidades no FinancePro!", 
+                "Fizemos várias melhorias e adicionamos o Fin AI Inteligente. Que tal voltar e conferir?"
+            );
         } catch (error) {
             console.error("[NotificationService] Comeback Email Error:", error);
         }

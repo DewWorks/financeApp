@@ -22,6 +22,17 @@ interface VoiceAssistantWidgetProps {
     onRefresh: () => Promise<void>;
 }
 
+const renderFormattedText = (text: string | null) => {
+    if (!text) return null;
+    const parts = text.split(/\*\*([^*]+)\*\*/g);
+    return parts.map((part, index) => {
+        if (index % 2 === 1) {
+            return <strong key={index} className="font-bold">{part}</strong>;
+        }
+        return part;
+    });
+};
+
 export function VoiceAssistantWidget({ onRefresh }: VoiceAssistantWidgetProps) {
     // Mode switcher: 'voice' (Fin Assistant) or 'import' (Statement Uploader)
     const [activeTab, setActiveTab] = useState<"voice" | "import">("voice")
@@ -413,9 +424,9 @@ export function VoiceAssistantWidget({ onRefresh }: VoiceAssistantWidgetProps) {
                                                 animate={{ opacity: 1, y: 0 }}
                                                 className="bg-indigo-50/50 dark:bg-indigo-950/10 p-3 rounded-xl border border-indigo-100/30 dark:border-indigo-900/20 text-xs text-indigo-900 dark:text-indigo-200 leading-relaxed flex items-start gap-2.5"
                                             >
-                                                <div className="flex-1">
+                                                <div className="flex-1 whitespace-pre-line">
                                                     <span className="font-semibold text-indigo-600 dark:text-indigo-400 block text-[9px] uppercase tracking-wide mb-0.5">Fin:</span>
-                                                    {reply}
+                                                    {renderFormattedText(reply)}
                                                 </div>
                                                 <Button
                                                     variant="ghost"
@@ -587,7 +598,7 @@ export function VoiceAssistantWidget({ onRefresh }: VoiceAssistantWidgetProps) {
                                                 <span className="text-xs font-bold">Importação Concluída!</span>
                                             </div>
                                             <p className="text-[11px] text-gray-600 dark:text-gray-300 leading-tight">
-                                                Adicionamos **{importedCount}** transações no seu perfil.
+                                                Adicionamos <strong className="font-bold">{importedCount}</strong> transações no seu perfil.
                                             </p>
                                             {importedList.length > 0 && (
                                                 <details className="text-[10px] text-gray-400 dark:text-gray-500 cursor-pointer">

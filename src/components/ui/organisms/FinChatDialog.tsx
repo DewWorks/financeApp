@@ -33,6 +33,17 @@ interface FinChatDialogProps {
     autoStartVoice?: boolean
 }
 
+const renderFormattedText = (text: string) => {
+    if (!text) return null;
+    const parts = text.split(/\*\*([^*]+)\*\*/g);
+    return parts.map((part, index) => {
+        if (index % 2 === 1) {
+            return <strong key={index} className="font-bold">{part}</strong>;
+        }
+        return part;
+    });
+};
+
 export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: FinChatDialogProps) {
     const [messages, setMessages] = useState<Message[]>([])
     const [isListening, setIsListening] = useState(false)
@@ -43,6 +54,15 @@ export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: Fi
     const [showShortcutInfo, setShowShortcutInfo] = useState(false)
     const [userId, setUserId] = useState("")
     const [copied, setCopied] = useState(false)
+    const [copiedUrl, setCopiedUrl] = useState(false)
+    
+    const getVoiceUrl = () => {
+        if (typeof window === "undefined") return "https://finance-pro-mu.vercel.app/?startVoice=true"
+        if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+            return "https://finance-pro-mu.vercel.app/?startVoice=true"
+        }
+        return window.location.origin + "/?startVoice=true"
+    }
 
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -311,7 +331,7 @@ export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: Fi
                                         : "bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 border border-gray-100 dark:border-gray-700/50 rounded-tl-none"
                                 }`}
                             >
-                                <p className="whitespace-pre-line">{msg.text}</p>
+                                <p className="whitespace-pre-line">{renderFormattedText(msg.text)}</p>
                                 
                                 <div className="flex justify-end items-center gap-1.5 mt-1.5 text-[9px] opacity-60">
                                     <span>
@@ -449,92 +469,147 @@ export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: Fi
                                 Escolha uma das formas abaixo para falar com o Fin sem precisar abrir o app manualmente:
                             </p>
 
-                            <div className="space-y-4">
-                                {/* Option 1: Native PWA Shortcut */}
-                                <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800">
-                                    <span className="inline-block text-[10px] font-bold px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-md mb-2">
-                                        Método 1: Atalho do Ícone (Sem Configurar Nada)
-                                    </span>
-                                    <h4 className="text-xs font-bold text-gray-800 dark:text-gray-200 mb-1">
-                                        Pressione e Segure o Ícone
-                                    </h4>
-                                    <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-normal">
-                                        Na tela inicial do seu celular, **pressione e segure o ícone** do FinancePro. Um menu se abrirá com a opção **"Falar com o Fin 🎙️"**. Toque nela e o app abrirá gravando seu áudio instantaneamente!
-                                    </p>
-                                </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                 {/* Android Section */}
+                                 <div className="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-gray-100 dark:border-gray-800 flex flex-col justify-between">
+                                     <div>
+                                         <div className="flex items-center gap-2 mb-3">
+                                             <svg className="w-5 h-5 text-emerald-500" viewBox="0 0 24 24" fill="currentColor">
+                                                 <path d="M17.5 13c-.8 0-1.5-.7-1.5-1.5s.7-1.5 1.5-1.5 1.5.7 1.5 1.5-.7 1.5-1.5 1.5m-11 0c-.8 0-1.5-.7-1.5-1.5S5.7 10 6.5 10s1.5.7 1.5 1.5-.7 1.5-1.5 1.5m11.5-6.7l1.7-3c.1-.2.1-.5-.1-.6-.2-.1-.5-.1-.6.1l-1.8 3C15.7 5.3 13.9 5 12 5c-1.9 0-3.7.3-5.2.8L5 2.8c-.1-.2-.4-.2-.6-.1-.2.1-.2.4-.1.6l1.7 3C3.3 8.3 1.2 11.4 1 15h22c-.2-3.6-2.3-6.7-5-8.7z"/>
+                                             </svg>
+                                             <span className="text-xs font-bold text-gray-800 dark:text-gray-200">Android (Google Assistente)</span>
+                                         </div>
+                                         <div className="space-y-3">
+                                             <div className="flex gap-2">
+                                                 <span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold shrink-0">1</span>
+                                                 <p className="text-[11px] text-gray-600 dark:text-gray-400">
+                                                     Abra o aplicativo <strong className="font-bold">Google</strong>, acesse as <strong className="font-bold">Configurações</strong> e vá em <strong className="font-bold">Google Assistente</strong> &gt; <strong className="font-bold">Rotinas</strong>.
+                                                 </p>
+                                             </div>
+                                             <div className="flex gap-2">
+                                                 <span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold shrink-0">2</span>
+                                                 <p className="text-[11px] text-gray-600 dark:text-gray-400">
+                                                     Crie uma nova rotina e adicione o comando de voz: <strong className="font-bold">"Fin me ajude"</strong>.
+                                                 </p>
+                                             </div>
+                                             <div className="flex gap-2">
+                                                 <span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold shrink-0">3</span>
+                                                 <div className="flex-1 min-w-0">
+                                                     <p className="text-[11px] text-gray-600 dark:text-gray-400">
+                                                         Em ações, adicione <strong className="font-bold">Abrir a URL</strong> e copie o endereço abaixo:
+                                                     </p>
+                                                     <div className="flex items-center gap-1.5 mt-1">
+                                                         <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-[10px] break-all select-all flex-1 border border-gray-200 dark:border-gray-700">
+                                                             {getVoiceUrl()}
+                                                         </code>
+                                                         <button
+                                                             onClick={() => {
+                                                                 const urlToCopy = getVoiceUrl();
+                                                                 if (navigator.clipboard) {
+                                                                     navigator.clipboard.writeText(urlToCopy);
+                                                                     setCopiedUrl(true);
+                                                                     setTimeout(() => setCopiedUrl(false), 2000);
+                                                                 }
+                                                             }}
+                                                             className="px-2.5 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-[10px] font-bold text-gray-700 dark:text-gray-200 rounded-lg flex items-center gap-1 shrink-0"
+                                                         >
+                                                             {copiedUrl ? (
+                                                                 <>
+                                                                     <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                                                     <span className="text-emerald-500 font-bold">Copiado!</span>
+                                                                 </>
+                                                             ) : (
+                                                                 <>
+                                                                     <Copy className="w-3.5 h-3.5" />
+                                                                     <span>COPIAR</span>
+                                                                 </>
+                                                             )}
+                                                         </button>
+                                                     </div>
+                                                 </div>
+                                             </div>
+                                         </div>
+                                     </div>
+                                     <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex flex-col gap-2">
+                                         <a
+                                             href="googleassistant://"
+                                             className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-xs font-bold text-white rounded-lg transition-colors text-center"
+                                         >
+                                             <span>Abrir Configurações do Assistente</span>
+                                             <ExternalLink className="w-3.5 h-3.5" />
+                                         </a>
+                                         <p className="text-[9px] text-gray-400 dark:text-gray-500 text-center font-medium">
+                                             Fale "Ok Google, Fin me ajude" para ativar.
+                                         </p>
+                                     </div>
+                                 </div>
 
-                                {/* Option 2: Google Assistant (Android) */}
-                                <div className="p-3 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-xl border border-emerald-100/30 dark:border-emerald-950/30">
-                                    <span className="inline-block text-[10px] font-bold px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-md mb-2">
-                                        Método 2: Google Assistente (Android - Mãos Livres)
-                                    </span>
-                                    <h4 className="text-xs font-bold text-gray-800 dark:text-gray-200 mb-1">
-                                        Chame "Ok Google, Fin me ajude" com o app fechado
-                                    </h4>
-                                    <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-normal mb-2">
-                                        Você pode configurar o Google Assistente para abrir a voz mesmo com o celular bloqueado ou app fechado:
-                                    </p>
-                                    <ol className="text-[10px] text-gray-600 dark:text-gray-400 space-y-1 list-decimal pl-4 mb-2">
-                                        <li>Abra o app **Google** → toque no seu avatar → **Configurações** → **Google Assistente** → **Rotinas**.</li>
-                                        <li>Toque em **Nova** e adicione o comando: *"Fin me ajude"* ou *"Registrar no Fin"*.</li>
-                                        <li>Em ações, adicione: **Abrir a URL**: `https://finance-pro-mu.vercel.app/?startVoice=true`</li>
-                                    </ol>
-                                    <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
-                                        Pronto! Basta dizer "Ok Google, Fin me ajude" para o celular abrir o app e iniciar a captura na hora.
-                                    </p>
-                                </div>
+                                 {/* iPhone Section */}
+                                 <div className="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-gray-100 dark:border-gray-800 flex flex-col justify-between">
+                                     <div>
+                                         <div className="flex items-center gap-2 mb-3">
+                                             <svg className="w-5 h-5 text-gray-800 dark:text-gray-200" viewBox="0 0 24 24" fill="currentColor">
+                                                 <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-1 .04-2.2.67-2.92 1.49-.62.71-1.16 1.85-1.01 2.96 1.12.09 2.26-.57 2.94-1.39z"/>
+                                             </svg>
+                                             <span className="text-xs font-bold text-gray-800 dark:text-gray-200">iOS / iPhone (Atalhos Siri)</span>
+                                         </div>
+                                         <div className="space-y-3 mb-4">
+                                             <div className="flex gap-2">
+                                                 <span className="flex items-center justify-center w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold shrink-0">1</span>
+                                                 <p className="text-[11px] text-gray-600 dark:text-gray-400">
+                                                     Copie a sua chave de acesso de segurança abaixo.
+                                                 </p>
+                                             </div>
+                                             <div className="flex gap-2">
+                                                 <span className="flex items-center justify-center w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold shrink-0">2</span>
+                                                 <p className="text-[11px] text-gray-600 dark:text-gray-400">
+                                                     Instale o atalho oficial da Siri pelo botão abaixo.
+                                                 </p>
+                                             </div>
+                                             <div className="flex gap-2">
+                                                 <span className="flex items-center justify-center w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold shrink-0">3</span>
+                                                 <p className="text-[11px] text-gray-600 dark:text-gray-400">
+                                                     Cole a chave de acesso quando o atalho solicitar a configuração.
+                                                 </p>
+                                             </div>
+                                         </div>
+                                     </div>
+                                     <div className="flex flex-col gap-2">
+                                         <button
+                                             onClick={() => {
+                                                 if (navigator.clipboard) {
+                                                     navigator.clipboard.writeText(userId)
+                                                     setCopied(true)
+                                                     setTimeout(() => setCopied(false), 2000)
+                                                 }
+                                             }}
+                                             className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-xs font-medium text-gray-700 dark:text-gray-200 rounded-lg transition-colors"
+                                         >
+                                             {copied ? (
+                                                 <>
+                                                     <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                                     <span className="text-emerald-500 font-bold">Chave Copiada!</span>
+                                                 </>
+                                             ) : (
+                                                 <>
+                                                     <Copy className="w-3.5 h-3.5" />
+                                                     <span>Copiar Chave de Acesso</span>
+                                                 </>
+                                             )}
+                                         </button>
 
-                                {/* Option 3: Siri Shortcut integration */}
-                                <div className="p-3 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-xl border border-indigo-100/30 dark:border-indigo-950/30">
-                                    <span className="inline-block text-[10px] font-bold px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-md mb-2">
-                                        Método 3: Atalho Siri (iPhone - Mãos Livres)
-                                    </span>
-                                    <h4 className="text-xs font-bold text-gray-800 dark:text-gray-200 mb-1">
-                                        Registrar por Voz por Comando da Siri
-                                    </h4>
-                                    <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-normal mb-3">
-                                        Copie seu token de segurança e instale nosso Atalho da Siri oficial. Você poderá apenas dizer *"E aí Siri, Registrar Gasto"* para cadastrar em segundo plano!
-                                    </p>
-
-                                    <div className="flex flex-col gap-2">
-                                        <button
-                                            onClick={() => {
-                                                if (navigator.clipboard) {
-                                                    navigator.clipboard.writeText(userId)
-                                                    setCopied(true)
-                                                    setTimeout(() => setCopied(false), 2000)
-                                                }
-                                            }}
-                                            className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-xs font-medium text-gray-700 dark:text-gray-200 rounded-lg transition-colors"
-                                        >
-                                            {copied ? (
-                                                <>
-                                                    <Check className="w-3.5 h-3.5 text-emerald-500" />
-                                                    <span className="text-emerald-500">Chave Copiada!</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Copy className="w-3.5 h-3.5" />
-                                                    <span>1. Copiar Chave de Acesso</span>
-                                                </>
-                                            )}
-                                        </button>
-
-                                        <a
-                                            href="https://www.icloud.com/shortcuts/c7e8e74a88bc4d4eb0ea772412852277"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-indigo-600 hover:bg-indigo-700 text-xs font-bold text-white rounded-lg transition-colors text-center"
-                                        >
-                                            <span>2. Instalar Atalho Siri</span>
-                                            <ExternalLink className="w-3.5 h-3.5" />
-                                        </a>
-                                    </div>
-                                    <p className="text-[9px] text-indigo-400/80 dark:text-indigo-500/70 mt-2 text-center">
-                                        *Ao instalar, cole a Chave de Acesso quando solicitado pelo app Atalhos.
-                                    </p>
-                                </div>
-                            </div>
+                                         <a
+                                             href="https://www.icloud.com/shortcuts/c7e8e74a88bc4d4eb0ea772412852277"
+                                             target="_blank"
+                                             rel="noopener noreferrer"
+                                             className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-indigo-600 hover:bg-indigo-700 text-xs font-bold text-white rounded-lg transition-colors text-center"
+                                         >
+                                             <span>Instalar Atalho Siri</span>
+                                             <ExternalLink className="w-3.5 h-3.5" />
+                                         </a>
+                                     </div>
+                                 </div>
+                             </div>
                         </motion.div>
                     )}
                 </AnimatePresence>

@@ -27,6 +27,9 @@ export const mfaVerifyLimiter = new RateLimiterMemory({
  * Throws error if blocked? Better to return boolean or throw to catch.
  */
 export async function checkRateLimit(limiter: RateLimiterMemory, key: string): Promise<boolean> {
+    if (process.env.NODE_ENV !== 'production') {
+        return true;
+    }
     try {
         await limiter.consume(key);
         return true;
