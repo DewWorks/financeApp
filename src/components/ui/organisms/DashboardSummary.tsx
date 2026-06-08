@@ -41,7 +41,7 @@ export function DashboardSummary({
     onAddExpense
 }: DashboardSummaryProps) {
     return (
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+        <div className="flex flex-col gap-6 mb-8">
             {/* Insight Widget */}
             <div className="w-full">
                 <FinancialInsight

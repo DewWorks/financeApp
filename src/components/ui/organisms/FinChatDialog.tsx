@@ -33,6 +33,17 @@ interface FinChatDialogProps {
     autoStartVoice?: boolean
 }
 
+const renderFormattedText = (text: string) => {
+    if (!text) return null;
+    const parts = text.split(/\*\*([^*]+)\*\*/g);
+    return parts.map((part, index) => {
+        if (index % 2 === 1) {
+            return <strong key={index} className="font-bold">{part}</strong>;
+        }
+        return part;
+    });
+};
+
 export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: FinChatDialogProps) {
     const [messages, setMessages] = useState<Message[]>([])
     const [isListening, setIsListening] = useState(false)
@@ -311,7 +322,7 @@ export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: Fi
                                         : "bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 border border-gray-100 dark:border-gray-700/50 rounded-tl-none"
                                 }`}
                             >
-                                <p className="whitespace-pre-line">{msg.text}</p>
+                                <p className="whitespace-pre-line">{renderFormattedText(msg.text)}</p>
                                 
                                 <div className="flex justify-end items-center gap-1.5 mt-1.5 text-[9px] opacity-60">
                                     <span>

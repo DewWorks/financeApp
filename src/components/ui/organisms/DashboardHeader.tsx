@@ -121,20 +121,16 @@ export function DashboardHeader({
                             </PopoverTrigger>
                             <PopoverContent className="w-72 max-w-[calc(100vw-1rem)] p-3 mr-2 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-xl" align="end">
                                 <div className="flex flex-col gap-2">
-                                    {/* Mobile User Info Section */}
+                                    {/* Mobile User Info Section - Clickable Greeting */}
                                     {displayUser && (
-                                        <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-100 dark:border-gray-700 mb-2">
-                                            <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center border border-blue-200 dark:border-blue-800 flex-shrink-0">
-                                                <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                                            </div>
-                                            <div className="min-w-0 flex-1">
-                                                <p className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
-                                                    {displayUser.name || "Usuário"}
-                                                </p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                                    {displayUser.email}
-                                                </p>
-                                            </div>
+                                        <div 
+                                            onClick={handleProfile}
+                                            className="flex items-center justify-between p-3 bg-indigo-50/40 dark:bg-indigo-950/20 hover:bg-indigo-100/40 dark:hover:bg-indigo-950/40 rounded-xl border border-indigo-100/20 dark:border-indigo-900/20 mb-2 cursor-pointer transition-colors active:scale-[0.98] duration-150"
+                                        >
+                                            <span className="font-bold text-sm text-gray-900 dark:text-gray-100">
+                                                Olá, {displayUser.name?.split(" ")[0] || "Usuário"}...
+                                            </span>
+                                            <User className="h-4 w-4 text-indigo-500 dark:text-indigo-400" />
                                         </div>
                                     )}
 

@@ -36,7 +36,7 @@ import { RecentTransactionsChart } from "@/components/ui/charts/RecentTransactio
 import { IncomeVsExpensesChart } from "@/components/ui/charts/IncomeVsExpensesChart"
 import { ChartTypeSelector } from "@/components/ui/charts/ChartTypeSelection"
 import { Card, CardContent, CardTitle } from "@/components/ui/atoms/card"
-import { Bell, PieChart, TrendingUp, TrendingDown, Mic } from "lucide-react"
+import { Bell, PieChart, TrendingUp, TrendingDown, Mic, Sparkles } from "lucide-react"
 
 import { useState, useEffect, useRef } from "react"
 import { motion } from "framer-motion"
@@ -68,6 +68,13 @@ const itemVariants = {
     transition: { type: "spring", stiffness: 300, damping: 24 }
   }
 }
+
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Bom dia";
+  if (hour < 18) return "Boa tarde";
+  return "Boa noite";
+};
 
 function DashboardContent() {
   const router = useRouter()
@@ -578,6 +585,29 @@ function DashboardContent() {
 
           {/* SECTION: HOME */}
           <div className={activeTab === 'home' ? 'block min-h-[80vh] pb-32 md:min-h-0 md:pb-0' : 'hidden md:block'}>
+            
+            {/* Elegant Header Greeting & Fin AI Highlighted CTA */}
+            <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-gradient-to-r from-indigo-500/10 via-purple-500/5 to-transparent dark:from-indigo-950/20 dark:via-purple-950/10 p-5 rounded-2xl border border-indigo-100/20 dark:border-indigo-900/30">
+              <div>
+                <h1 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-gray-100 tracking-tight">
+                  {getGreeting()}, {user?.name || "Usuário"}! 👋
+                </h1>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Seu co-piloto financeiro inteligente está pronto. O que quer analisar ou registrar agora?
+                </p>
+              </div>
+              <Button
+                onClick={() => {
+                  setIsFinChatOpen(true);
+                  setAutoStartVoice(false);
+                }}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-md shadow-indigo-600/20 hover:scale-[1.02] active:scale-[0.98] transition-all self-start sm:self-center"
+              >
+                <Sparkles className="w-4 h-4 animate-pulse" />
+                <span>Conversar com o Fin AI</span>
+              </Button>
+            </div>
+
             <DashboardSummary
               balance={displayBalance}
               totalIncome={displayIncome}
