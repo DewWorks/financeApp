@@ -8,6 +8,7 @@ import {
     Mic, 
     MicOff, 
     Volume2, 
+    VolumeX,
     Sparkles, 
     Loader2, 
     MessageCircle,
@@ -55,6 +56,18 @@ export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: Fi
     const [userId, setUserId] = useState("")
     const [copied, setCopied] = useState(false)
     const [copiedUrl, setCopiedUrl] = useState(false)
+    const [isMuted, setIsMuted] = useState(() => {
+        if (typeof window !== "undefined") {
+            return localStorage.getItem("fin-chat-tts-muted") === "true"
+        }
+        return false
+    })
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            localStorage.setItem("fin-chat-tts-muted", String(isMuted))
+        }
+    }, [isMuted])
     
     const getVoiceUrl = () => {
         if (typeof window === "undefined") return "https://finance-pro-mu.vercel.app/?startVoice=true"
@@ -149,6 +162,61 @@ export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: Fi
         }
     }, [isOpen, autoStartVoice, supportVoice])
 
+    // Sync offline queue when coming back online
+    useEffect(() => {
+        const handleOnlineSync = async () => {
+            const queue = JSON.parse(localStorage.getItem("offline-voice-queue") || "[]")
+            if (queue.length === 0) return
+
+            localStorage.removeItem("offline-voice-queue")
+
+            // Process each item in sequence
+            for (const item of queue) {
+                try {
+                    const isDemoMode = typeof window !== "undefined" && !localStorage.getItem("auth_token")
+                    if (isDemoMode) {
+                        const finMsg: Message = {
+                            id: `fin-synced-${Date.now()}`,
+                            text: `[Sincronizado offline]: Registrei a transação "${item.text}" no painel temporário. 🚀`,
+                            sender: "fin",
+                            timestamp: new Date()
+                        }
+                        setMessages(prev => [...prev, finMsg])
+                        speakReply(`Sincronizado offline: ${item.text}`)
+                    } else {
+                        const response = await fetch("/api/agent/chat", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ message: item.text }),
+                        })
+                        if (response.ok) {
+                            const data = await response.json()
+                            const finMsg: Message = {
+                                id: `fin-synced-${Date.now()}`,
+                                text: `[Sincronizado offline]: ${data.response}`,
+                                sender: "fin",
+                                timestamp: new Date()
+                            }
+                            setMessages(prev => [...prev, finMsg])
+                            speakReply(`Sincronizado offline: ${data.response}`)
+                        }
+                    }
+                } catch (err) {
+                    console.error("Failed to sync offline voice item", item, err)
+                }
+            }
+
+            if (onRefresh) {
+                await onRefresh()
+            }
+        }
+
+        if (typeof window !== "undefined") {
+            window.addEventListener("online", handleOnlineSync)
+            return () => window.removeEventListener("online", handleOnlineSync)
+        }
+    }, [onRefresh, isMuted])
+
     const toggleListening = () => {
         if (!supportVoice) return
 
@@ -166,6 +234,31 @@ export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: Fi
 
     const handleSendMessage = async (textToSend: string) => {
         if (!textToSend.trim()) return
+
+        // Check if offline
+        if (typeof window !== "undefined" && !navigator.onLine) {
+            const queue = JSON.parse(localStorage.getItem("offline-voice-queue") || "[]")
+            queue.push({ id: `offline-${Date.now()}`, text: textToSend })
+            localStorage.setItem("offline-voice-queue", JSON.stringify(queue))
+
+            const userMsg: Message = {
+                id: `user-${Date.now()}`,
+                text: textToSend,
+                sender: "user",
+                timestamp: new Date()
+            }
+            const finMsg: Message = {
+                id: `fin-offline-${Date.now()}`,
+                text: `Você está offline no momento. Salvei o seu comando "${textToSend}" localmente e irei sincronizá-lo com o Fin assim que sua conexão de rede voltar! 📡`,
+                sender: "fin",
+                timestamp: new Date()
+            }
+            setMessages(prev => [...prev, userMsg, finMsg])
+            setTypedMessage("")
+            setIsProcessing(false)
+            speakReply("Sem conexão com a internet. Comando salvo localmente.")
+            return
+        }
 
         // 1. Add user message
         const userMsg: Message = {
@@ -253,9 +346,19 @@ export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: Fi
     }
 
     const speakReply = (textToSpeak: string) => {
+        if (isMuted) return
         if (!("speechSynthesis" in window)) return
         window.speechSynthesis.cancel()
-        const utterance = new SpeechSynthesisUtterance(textToSpeak)
+
+        // Clean markdown formatting like **bold** to prevent screen reader speaking asterisks literally
+        const cleanText = textToSpeak
+            .replace(/\*\*/g, "")
+            .replace(/\*/g, "")
+            .replace(/#/g, "")
+            .replace(/-\s+/g, "")
+            .trim()
+
+        const utterance = new SpeechSynthesisUtterance(cleanText)
         utterance.lang = "pt-BR"
         window.speechSynthesis.speak(utterance)
     }
@@ -302,6 +405,13 @@ export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: Fi
                             <Info className="w-3.5 h-3.5 text-indigo-200" />
                             <span>Atalho de Voz</span>
                         </button>
+                        <button
+                            onClick={() => setIsMuted(prev => !prev)}
+                            className="p-1.5 hover:bg-white/10 rounded-full transition-colors flex items-center justify-center text-indigo-100 bg-white/5 border border-white/10 rounded-lg shadow-sm"
+                            title={isMuted ? "Ativar som do Fin" : "Silenciar Fin"}
+                        >
+                            {isMuted ? <VolumeX className="w-3.5 h-3.5 text-indigo-200" /> : <Volume2 className="w-3.5 h-3.5 text-indigo-200" />}
+                        </button>
                         <button 
                             onClick={onClose} 
                             className="hidden sm:block p-1.5 hover:bg-white/10 rounded-full transition-colors"
@@ -319,40 +429,86 @@ export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: Fi
 
                 {/* Messages Body Area */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 relative z-10 flex flex-col scrollbar-thin">
-                    {messages.map((msg) => (
-                        <div
-                            key={msg.id}
-                            className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
-                        >
-                            <div
-                                className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs shadow-sm relative leading-relaxed transition-all ${
-                                    msg.sender === "user"
-                                        ? "bg-indigo-600 text-white rounded-tr-none"
-                                        : "bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 border border-gray-100 dark:border-gray-700/50 rounded-tl-none"
-                                }`}
-                            >
-                                <p className="whitespace-pre-line">{renderFormattedText(msg.text)}</p>
-                                
-                                <div className="flex justify-end items-center gap-1.5 mt-1.5 text-[9px] opacity-60">
-                                    <span>
-                                        {msg.timestamp.toLocaleTimeString("pt-BR", {
-                                            hour: "2-digit",
-                                            minute: "2-digit"
-                                        })}
-                                    </span>
-                                    {msg.sender === "fin" && (
-                                        <button
-                                            onClick={() => speakReply(msg.text)}
-                                            className="hover:opacity-100 p-0.5 transition-opacity"
-                                            title="Falar áudio"
-                                        >
-                                            <Volume2 className="w-3 h-3" />
-                                        </button>
-                                    )}
+                    {messages.length === 1 && messages[0].id === "welcome" ? (
+                        <div className="my-auto flex flex-col items-center text-center p-6 bg-white dark:bg-gray-800/60 rounded-3xl border border-gray-100 dark:border-gray-700/40 shadow-xl max-w-sm mx-auto animate-fade-in relative overflow-hidden">
+                            <div className="absolute top-0 right-0 -mt-6 -mr-6 w-24 h-24 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-full blur-xl" />
+                            <div className="absolute bottom-0 left-0 -mb-6 -ml-6 w-24 h-24 bg-gradient-to-tr from-emerald-500/10 to-teal-500/10 rounded-full blur-xl" />
+                            
+                            <div className="relative mb-6">
+                                <span className="absolute inset-0 rounded-full bg-indigo-500/20 blur-md animate-ping" />
+                                <div className="h-20 w-20 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg relative z-10">
+                                    <Mic className="w-10 h-10 text-white animate-pulse" />
                                 </div>
                             </div>
+
+                            <h3 className="font-extrabold text-lg text-gray-800 dark:text-gray-100 mb-2">
+                                Experimente o Fin por Voz!
+                            </h3>
+                            <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed mb-6">
+                                Sou seu assistente de finanças. Fale um gasto ou ganho de forma natural e eu registro para você na hora, sem precisar digitar nada!
+                            </p>
+
+                            <div className="w-full space-y-2.5 mb-8">
+                                <button
+                                    onClick={() => handleSendMessage("Gastei R$ 45 com Uber hoje")}
+                                    className="w-full text-left px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-400 rounded-xl transition-all flex items-center justify-between text-xs text-gray-700 dark:text-gray-300 group"
+                                >
+                                    <span>🎙️ "Gastei R$ 45 com Uber hoje"</span>
+                                    <Sparkles className="w-3.5 h-3.5 text-gray-400 group-hover:text-indigo-500 transition-colors" />
+                                </button>
+                                <button
+                                    onClick={() => handleSendMessage("Recebi R$ 2500 de salário")}
+                                    className="w-full text-left px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-400 rounded-xl transition-all flex items-center justify-between text-xs text-gray-700 dark:text-gray-300 group"
+                                >
+                                    <span>🎙️ "Recebi R$ 2500 de salário"</span>
+                                    <Sparkles className="w-3.5 h-3.5 text-gray-400 group-hover:text-indigo-500 transition-colors" />
+                                </button>
+                            </div>
+
+                            <Button
+                                onClick={toggleListening}
+                                className="w-full py-6 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold text-sm shadow-lg flex items-center justify-center gap-2 group transition-all"
+                            >
+                                <Mic className="w-4 h-4 text-indigo-200 group-hover:scale-110 transition-transform" />
+                                Começar a Falar
+                            </Button>
                         </div>
-                    ))}
+                    ) : (
+                        messages.map((msg) => (
+                            <div
+                                key={msg.id}
+                                className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
+                            >
+                                <div
+                                    className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs shadow-sm relative leading-relaxed transition-all ${
+                                        msg.sender === "user"
+                                            ? "bg-indigo-600 text-white rounded-tr-none"
+                                            : "bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 border border-gray-100 dark:border-gray-700/50 rounded-tl-none"
+                                    }`}
+                                >
+                                    <p className="whitespace-pre-line">{renderFormattedText(msg.text)}</p>
+                                    
+                                    <div className="flex justify-end items-center gap-1.5 mt-1.5 text-[9px] opacity-60">
+                                        <span>
+                                            {msg.timestamp.toLocaleTimeString("pt-BR", {
+                                                hour: "2-digit",
+                                                minute: "2-digit"
+                                            })}
+                                        </span>
+                                        {msg.sender === "fin" && (
+                                            <button
+                                                onClick={() => speakReply(msg.text)}
+                                                className="hover:opacity-100 p-0.5 transition-opacity"
+                                                title="Falar áudio"
+                                            >
+                                                <Volume2 className="w-3.5 h-3.5" />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    )}
 
                     {/* Fin is writing loader */}
                     {isProcessing && (
