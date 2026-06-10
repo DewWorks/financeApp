@@ -4,12 +4,12 @@ import { ObjectId } from 'mongodb';
 import { getUserIdFromToken } from '@/app/functions/getUserId';
 
 /**
- * POST /api/goals/[goalId]/increase-limit
+ * POST /api/goals/[id]/increase-limit
  * Quick action from push notification – increases a goal's targetAmount by `amount` (default R$100).
  */
 export async function POST(
     request: NextRequest,
-    { params }: { params: Promise<{ goalId: string }> }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const resolvedParams = await params;
@@ -27,7 +27,7 @@ export async function POST(
 
         let goalId: ObjectId;
         try {
-            goalId = new ObjectId(resolvedParams.goalId);
+            goalId = new ObjectId(resolvedParams.id);
         } catch {
             return NextResponse.json({ error: 'Invalid goal ID' }, { status: 400 });
         }

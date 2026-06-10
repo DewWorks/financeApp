@@ -109,6 +109,7 @@ const tools = [
 ] as any;
 
 import { NotificationService } from "./NotificationService";
+import { ChatSessionService } from "./ChatSessionService";
 
 export class FinanceAgentService {
     private genAI: GoogleGenerativeAI;
@@ -164,7 +165,6 @@ export class FinanceAgentService {
             stack: error.stack,
             details: typeof error === 'object' ? error : { details: error }
         };
-        // Vercel / Serverless logging (Native JSON parsing)
         console.error(JSON.stringify(payload));
     }
 
@@ -176,7 +176,7 @@ export class FinanceAgentService {
             const transaction = {
                 userId: new ObjectId(userId),
                 type: args.type || 'expense',
-                description: args.description || 'Transação via WhatsApp',
+                description: args.description || 'Transação via Fin',
                 amount: Number(args.amount),
                 date: new Date(),
                 tag: args.category || 'Outros',
@@ -186,8 +186,14 @@ export class FinanceAgentService {
             const result = await db.collection('transactions').insertOne(transaction);
 
             if (result.acknowledged) {
-                // Trigger Smart Alerts asynchronously (Fire & Forget style)
+                // Trigger Smart Alerts asynchronously
                 this.notificationService.checkAndSendAlerts(userId).catch(e => console.error("Alert Error:", e));
+
+                // Trigger Budget Guardian asynchronously
+                import("./BudgetGuardianService").then(({ BudgetGuardianService }) => {
+                    BudgetGuardianService.checkThresholds(userId, args.category || 'Outros', Number(args.amount))
+                        .catch(e => console.error("[BudgetGuardian] Error:", e));
+                }).catch(() => {});
 
                 return { success: true, message: "Transaction Saved", id: result.insertedId };
             } else {
@@ -239,27 +245,12 @@ export class FinanceAgentService {
             const client = await getMongoClient();
             const db = client.db('financeApp');
 
-            // If specific category request, aggregate directly
             if (args.category) {
-                const start = new Date();
-                start.setDate(1); // Start of current month default
-                if (args.period === 'last_month') {
-                    start.setMonth(start.getMonth() - 1);
-                    start.setDate(1);
-                    const end = new Date(start);
-                    end.setMonth(end.getMonth() + 1);
-                    end.setDate(0);
-                    // Filter...
-                }
-
-                // Aggregation for category sum
                 const match: any = {
                     userId: new ObjectId(userId),
                     tag: args.category,
                     type: 'expense'
                 };
-
-                // Optional: date filtering can be improved here, but keep simple for now
 
                 const result = await db.collection('transactions').aggregate([
                     { $match: match },
@@ -274,7 +265,6 @@ export class FinanceAgentService {
                 };
             }
 
-            // General Insights (existing logic)
             const scope = args.scope === 'all' ? 'all' : 'recent';
             const insightResult = await this.insightService.generateDailyInsight(userId, undefined, scope);
             return {
@@ -301,7 +291,7 @@ export class FinanceAgentService {
                 currentAmount: 0,
                 tag: args.category || 'Geral',
                 type: args.type || 'savings',
-                period: 'monthly', // Default
+                period: 'monthly',
                 createdAt: new Date()
             };
 
@@ -317,9 +307,13 @@ export class FinanceAgentService {
 
     async processMessage(userMessage: string, userId: string) {
         try {
-            const chat = this.model.startChat({
-                history: []
-            });
+            // Load persistent conversation history for this user
+            const history = await ChatSessionService.getHistory(userId);
+
+            const chat = this.model.startChat({ history });
+
+            // Persist user message
+            await ChatSessionService.saveMessage(userId, "user", userMessage);
 
             let result = await chat.sendMessage(userMessage);
             let response = result.response;
@@ -356,12 +350,16 @@ export class FinanceAgentService {
                     });
                 }
 
-                // Send function results back to the model
                 result = await chat.sendMessage(functionResponses);
                 response = result.response;
             }
 
-            return response.text();
+            const responseText = response.text();
+
+            // Persist model reply
+            await ChatSessionService.saveMessage(userId, "model", responseText);
+
+            return responseText;
 
         } catch (error) {
             console.error("Agent Error Full:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
