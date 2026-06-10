@@ -6,7 +6,8 @@ import { ThemeToggle } from "@/components/ui/atoms/ThemeToggle"
 import { Button } from "@/components/ui/atoms/button"
 import { Tooltip } from "@/components/ui/atoms/tooltip"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/atoms/popover"
-import { LogOut, User, LogIn, Menu, UploadCloud, Target, PieChart } from "lucide-react"
+import { LogOut, User, LogIn, Menu, UploadCloud, Target, PieChart, ShieldCheck } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { PWAInstallButton } from "@/components/ui/molecules/PWAInstallButton"
 
@@ -29,6 +30,7 @@ export function DashboardHeader({
     onOpenImportModal,
     setActiveTab
 }: DashboardHeaderProps) {
+    const router = useRouter();
     // Fallback: If prop is null, try to read from localStorage (Visual redundancy)
     const [localUser, setLocalUser] = React.useState<IUser | null>(user);
 
@@ -75,6 +77,18 @@ export function DashboardHeader({
 
                         {displayUser && (
                             <>
+                                {/* Admin Panel — desktop only, admin only */}
+                                {displayUser.admin === true && (
+                                    <Tooltip title="Painel Admin" arrow>
+                                        <Button
+                                            className="p-2 rounded-lg bg-transparent transition-colors hover:bg-blue-100 dark:hover:bg-gray-700"
+                                            onClick={() => router.push('/admin')}
+                                        >
+                                            <ShieldCheck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                        </Button>
+                                    </Tooltip>
+                                )}
+
                                 {/* User Info */}
                                 <Tooltip title={'Perfil'} arrow>
                                     <Button
@@ -180,6 +194,16 @@ export function DashboardHeader({
                                                 <UploadCloud className="h-4 w-4 mr-2 text-emerald-500" />
                                                 Importar Extrato
                                             </Button>
+                                            {displayUser?.admin === true && (
+                                                <Button
+                                                    variant="ghost"
+                                                    className="w-full justify-start px-3 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                                    onClick={() => router.push('/admin')}
+                                                >
+                                                    <ShieldCheck className="h-4 w-4 mr-2" />
+                                                    Painel Admin
+                                                </Button>
+                                            )}
                                             <Button
                                                 variant="ghost"
                                                 className="w-full justify-start px-3 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20"
