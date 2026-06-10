@@ -1,49 +1,74 @@
 import { NextResponse } from "next/server";
 import { getMongoClient } from "@/db/connectionDb";
 import { GoalTrackingService } from "@/services/GoalTrackingService";
+import { getCronCursor, setCronCursor } from "@/lib/CronCursor";
+import { SystemLogger } from "@/lib/SystemLogger";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
+const CRON = "goal-tracker";
+const BATCH = 5; // Goals are fast (pure DB, no AI) — safe at 5
+const TIMEOUT_MS = 8500;
 
 export async function GET(request: Request) {
     const authHeader = request.headers.get("authorization");
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-        if (process.env.NODE_ENV === "production") {
-            return new NextResponse("Unauthorized", { status: 401 });
-        }
+        if (process.env.NODE_ENV === "production") return new NextResponse("Unauthorized", { status: 401 });
     }
+
+    const start = Date.now();
+    SystemLogger.info(CRON, "Cron started");
 
     try {
         const client = await getMongoClient();
         const db = client.db("financeApp");
+        const allUserIds = await db.collection("goals").distinct("userId");
 
-        // Find all users with active goals
-        const usersWithGoals = await db.collection("goals").distinct("userId");
+        const offset = await getCronCursor(CRON);
+        const slice = allUserIds.slice(offset, offset + BATCH);
 
-        console.log(`[GoalTracker Cron] Processing ${usersWithGoals.length} users with goals`);
+        if (slice.length === 0) {
+            await setCronCursor(CRON, 0);
+            SystemLogger.info(CRON, `Cycle complete. Cursor reset.`);
+            return NextResponse.json({ success: true, status: "cycle_complete", total: allUserIds.length });
+        }
 
-        let totalUpdated = 0;
-        let totalCompleted = 0;
+        SystemLogger.info(CRON, `Batch offset=${offset}, users=${slice.length}/${allUserIds.length}`);
 
-        for (const userId of usersWithGoals) {
+        let updated = 0, completed = 0, errors = 0;
+
+        for (const userId of slice) {
+            if (Date.now() - start > TIMEOUT_MS) {
+                SystemLogger.warn(CRON, "Timeout guard hit, saving cursor");
+                break;
+            }
             try {
-                const { updated, completed } = await GoalTrackingService.updateGoalProgress(userId.toString());
-                totalUpdated += updated;
-                totalCompleted += completed;
-            } catch (err) {
-                console.error(`[GoalTracker Cron] Error for user ${userId}:`, err);
+                const r = await GoalTrackingService.updateGoalProgress(userId.toString());
+                updated += r.updated;
+                completed += r.completed;
+                SystemLogger.success(CRON, `User ${userId.toString()} — updated=${r.updated} completed=${r.completed}`);
+            } catch (err: any) {
+                errors++;
+                SystemLogger.error(CRON, `Error user ${userId.toString()}: ${err.message}`);
             }
         }
 
+        await setCronCursor(CRON, offset + slice.length);
+
         return NextResponse.json({
             success: true,
-            usersProcessed: usersWithGoals.length,
-            totalUpdated,
-            totalCompleted,
-            timestamp: new Date().toISOString()
+            offset,
+            processed: slice.length,
+            remaining: allUserIds.length - offset - slice.length,
+            updated,
+            completed,
+            errors,
+            elapsedMs: Date.now() - start
         });
 
-    } catch (error) {
-        console.error("[GoalTracker Cron] Fatal error:", error);
-        return new NextResponse("Internal Error", { status: 500 });
+    } catch (error: any) {
+        SystemLogger.error(CRON, `Fatal: ${error.message}`);
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }

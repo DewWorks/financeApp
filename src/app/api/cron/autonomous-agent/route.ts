@@ -2,8 +2,16 @@ import { NextResponse } from "next/server";
 import { getMongoClient } from "@/db/connectionDb";
 import { AutonomousAgentService } from "@/services/AutonomousAgentService";
 import { BehaviorPatternService } from "@/services/BehaviorPatternService";
+import { getCronCursor, setCronCursor } from "@/lib/CronCursor";
+import { SystemLogger } from "@/lib/SystemLogger";
 
 export const dynamic = "force-dynamic";
+// Vercel Pro: increase to 60. Hobby: stays at 10 (enforced by Vercel, not this export).
+export const maxDuration = 60;
+
+const CRON = "autonomous-agent";
+const BATCH = 3; // Process 3 users per invocation — safe within 10s
+const TIMEOUT_MS = 8500; // Hard stop before Vercel kills the function
 
 export async function GET(request: Request) {
     const authHeader = request.headers.get("authorization");
@@ -13,47 +21,68 @@ export async function GET(request: Request) {
         }
     }
 
+    const start = Date.now();
+    SystemLogger.info(CRON, "Cron started");
+
     try {
         const client = await getMongoClient();
         const db = client.db("financeApp");
 
-        // Find users active in the last 30 days
+        // Get all active user IDs (last 30 days)
         const since = new Date();
         since.setDate(since.getDate() - 30);
+        const allUserIds = await db.collection("transactions").distinct("userId", { date: { $gte: since } });
 
-        const activeUserIds = await db.collection("transactions").distinct("userId", {
-            date: { $gte: since }
-        });
+        const offset = await getCronCursor(CRON);
+        const slice = allUserIds.slice(offset, offset + BATCH);
 
-        console.log(`[AutonomousAgent Cron] Processing ${activeUserIds.length} active users`);
+        // If we've processed everyone, reset cursor for next full pass
+        if (slice.length === 0) {
+            await setCronCursor(CRON, 0);
+            SystemLogger.info(CRON, `All ${allUserIds.length} users processed. Cursor reset.`);
+            return NextResponse.json({ success: true, status: "cycle_complete", total: allUserIds.length });
+        }
 
-        let sent = 0;
-        let analyzed = 0;
-        const BATCH = 50;
+        SystemLogger.info(CRON, `Processing batch offset=${offset}, users=${slice.length}/${allUserIds.length}`);
 
-        for (const userId of activeUserIds.slice(0, BATCH)) {
+        let sent = 0, errors = 0;
+
+        for (const userId of slice) {
+            // Hard timeout guard — stop before Vercel kills us
+            if (Date.now() - start > TIMEOUT_MS) {
+                SystemLogger.warn(CRON, `Timeout guard hit at user ${userId.toString()}, saving cursor`);
+                break;
+            }
             try {
-                // Run behavior analysis first (lightweight)
                 await BehaviorPatternService.analyzeForUser(userId.toString());
-
-                // Run autonomous insight
                 const result = await AutonomousAgentService.runForUser(userId.toString());
                 if (result.sent) sent++;
-                analyzed++;
-            } catch (err) {
-                console.error(`[AutonomousAgent Cron] Error for user ${userId}:`, err);
+                SystemLogger.success(CRON, `User ${userId.toString()} processed`, { sent: result.sent });
+            } catch (err: any) {
+                errors++;
+                SystemLogger.error(CRON, `Error for user ${userId.toString()}: ${err.message}`);
+                // Always continue — one user error must not stop others
             }
         }
 
+        // Advance cursor for next invocation
+        await setCronCursor(CRON, offset + slice.length);
+
+        const elapsed = Date.now() - start;
+        SystemLogger.success(CRON, `Batch done — sent=${sent} errors=${errors} elapsed=${elapsed}ms`);
+
         return NextResponse.json({
             success: true,
-            analyzed,
+            offset,
+            processed: slice.length,
+            remaining: allUserIds.length - offset - slice.length,
             sent,
-            timestamp: new Date().toISOString()
+            errors,
+            elapsedMs: elapsed
         });
 
-    } catch (error) {
-        console.error("[AutonomousAgent Cron] Fatal error:", error);
-        return new NextResponse("Internal Error", { status: 500 });
+    } catch (error: any) {
+        SystemLogger.error(CRON, `Fatal: ${error.message}`);
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }

@@ -1,52 +1,77 @@
 import { NextResponse } from "next/server";
 import { getMongoClient } from "@/db/connectionDb";
 import { FinScoreService } from "@/services/FinScoreService";
+import { getCronCursor, setCronCursor } from "@/lib/CronCursor";
+import { SystemLogger } from "@/lib/SystemLogger";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
+const CRON = "finscore";
+const BATCH = 5; // FinScore is DB-only, fast
+const TIMEOUT_MS = 8500;
 
 export async function GET(request: Request) {
     const authHeader = request.headers.get("authorization");
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-        if (process.env.NODE_ENV === "production") {
-            return new NextResponse("Unauthorized", { status: 401 });
-        }
+        if (process.env.NODE_ENV === "production") return new NextResponse("Unauthorized", { status: 401 });
     }
+
+    const start = Date.now();
+    SystemLogger.info(CRON, "Cron started");
 
     try {
         const client = await getMongoClient();
         const db = client.db("financeApp");
-
         const allUsers = await db.collection("users")
             .find({ email: { $exists: true } })
             .project({ _id: 1 })
             .toArray();
 
-        console.log(`[FinScore Cron] Calculating scores for ${allUsers.length} users`);
+        const offset = await getCronCursor(CRON);
+        const slice = allUsers.slice(offset, offset + BATCH);
 
-        let processed = 0;
+        if (slice.length === 0) {
+            await setCronCursor(CRON, 0);
+            SystemLogger.info(CRON, "Cycle complete. Cursor reset.");
+            return NextResponse.json({ success: true, status: "cycle_complete", total: allUsers.length });
+        }
+
+        SystemLogger.info(CRON, `Batch offset=${offset}, users=${slice.length}/${allUsers.length}`);
+
         const scores: number[] = [];
+        let errors = 0;
 
-        for (const user of allUsers) {
+        for (const user of slice) {
+            if (Date.now() - start > TIMEOUT_MS) {
+                SystemLogger.warn(CRON, "Timeout guard hit, saving cursor");
+                break;
+            }
             try {
                 const { score } = await FinScoreService.calculateAndSave(user._id.toString());
                 scores.push(score);
-                processed++;
-            } catch (err) {
-                console.error(`[FinScore Cron] Error for user ${user._id}:`, err);
+                SystemLogger.success(CRON, `User ${user._id.toString()} score=${score}`);
+            } catch (err: any) {
+                errors++;
+                SystemLogger.error(CRON, `Error user ${user._id.toString()}: ${err.message}`);
             }
         }
 
-        const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+        await setCronCursor(CRON, offset + slice.length);
+        const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
 
         return NextResponse.json({
             success: true,
-            processed,
-            avgScore,
-            timestamp: new Date().toISOString()
+            offset,
+            processed: slice.length,
+            remaining: allUsers.length - offset - slice.length,
+            avgScore: avg,
+            errors,
+            elapsedMs: Date.now() - start
         });
 
-    } catch (error) {
-        console.error("[FinScore Cron] Fatal error:", error);
-        return new NextResponse("Internal Error", { status: 500 });
+    } catch (error: any) {
+        SystemLogger.error(CRON, `Fatal: ${error.message}`);
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }
