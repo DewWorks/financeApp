@@ -11,14 +11,23 @@ export function PWAInstallButton({ className }: { className?: string }) {
     const [showIOSPrompt, setShowIOSPrompt] = useState(false);
 
     useEffect(() => {
-        // Detect iOS
+        // Universal Standalone Check
+        const isStandaloneMatch = window.matchMedia('(display-mode: standalone)').matches;
+        const isIOSStandalone = ('standalone' in window.navigator) && (window.navigator as any).standalone;
+        
+        if (isStandaloneMatch || isIOSStandalone) {
+            setIsInstallable(false);
+            return;
+        }
+
+        // Detect iOS for manual instruction prompt
         const userAgent = window.navigator.userAgent.toLowerCase();
         const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
-        const isStandalone = ('standalone' in window.navigator) && (window.navigator as any).standalone;
         
-        if (isIosDevice && !isStandalone) {
+        if (isIosDevice) {
             setIsIOS(true);
             setIsInstallable(true);
+            // No need to listen to beforeinstallprompt on iOS since it doesn't support it
             return;
         }
 
@@ -27,22 +36,36 @@ export function PWAInstallButton({ className }: { className?: string }) {
             setIsInstallable(true);
         }
 
-        const handleInstallable = () => setIsInstallable(true);
-        const handleInstalled = () => setIsInstallable(false);
+        const handleInstallable = (e: any) => {
+            (window as any).deferredPrompt = e.detail || e;
+            setIsInstallable(true);
+        };
+        
+        const handleInstalled = () => {
+            (window as any).deferredPrompt = null;
+            setIsInstallable(false);
+        };
 
         window.addEventListener("pwa-installable", handleInstallable);
         window.addEventListener("pwa-installed", handleInstalled);
-
-        // Also listen to beforeinstallprompt just in case
+        window.addEventListener("appinstalled", handleInstalled);
         window.addEventListener("beforeinstallprompt", (e) => {
             e.preventDefault();
-            (window as any).deferredPrompt = e;
-            setIsInstallable(true);
+            handleInstallable(e);
         });
+
+        // Listen for display-mode changes (e.g., user installed app)
+        const mediaQuery = window.matchMedia('(display-mode: standalone)');
+        const handleMediaChange = (e: MediaQueryListEvent) => {
+            if (e.matches) handleInstalled();
+        };
+        mediaQuery.addEventListener('change', handleMediaChange);
 
         return () => {
             window.removeEventListener("pwa-installable", handleInstallable);
             window.removeEventListener("pwa-installed", handleInstalled);
+            window.removeEventListener("appinstalled", handleInstalled);
+            mediaQuery.removeEventListener('change', handleMediaChange);
         };
     }, []);
 
@@ -53,18 +76,25 @@ export function PWAInstallButton({ className }: { className?: string }) {
         }
 
         const deferredPrompt = (window as any).deferredPrompt;
-        if (!deferredPrompt) return;
+        if (!deferredPrompt) {
+            console.warn("No deferredPrompt available");
+            return;
+        }
         
-        // Show the install prompt
-        deferredPrompt.prompt();
-        // Wait for the user to respond to the prompt
-        const { outcome } = await deferredPrompt.userChoice;
-        console.log(`User response to the install prompt: ${outcome}`);
-        
-        // We've used the prompt, so it can't be used again, discard it
-        if (outcome === 'accepted') {
-            (window as any).deferredPrompt = null;
-            setIsInstallable(false);
+        try {
+            // Show the install prompt
+            await deferredPrompt.prompt();
+            // Wait for the user to respond to the prompt
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response to the install prompt: ${outcome}`);
+            
+            // We've used the prompt, so it can't be used again, discard it
+            if (outcome === 'accepted') {
+                (window as any).deferredPrompt = null;
+                setIsInstallable(false);
+            }
+        } catch (err) {
+            console.error("Error showing PWA prompt:", err);
         }
     };
 
