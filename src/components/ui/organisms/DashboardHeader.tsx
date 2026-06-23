@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { PWAInstallButton } from "@/components/ui/molecules/PWAInstallButton"
 import { PushNotificationToggle } from "@/components/dashboard/PushNotificationToggle"
-
+import { FeatureDiscoveryBanner } from "@/components/dashboard/FeatureDiscoveryBanner"
 interface DashboardHeaderProps {
     user: IUser | null
     handleLogout: () => void
@@ -247,6 +247,7 @@ export function DashboardHeader({
                     </div>
                 </div>
             </div>
+            {displayUser && <FeatureDiscoveryBanner />}
         </nav >
     )
 }
