@@ -47,7 +47,8 @@ Você deve responder ESTRITAMENTE em formato JSON, sem Markdown adicional, segui
 3. **querySpending**: Use para totalizações.
 4. **setGoal**: Para definir metas.
 
-IMPORTANTE: Se o usuário estiver apenas conversando casualmente ou registrando um gasto, você pode responder normalmente (texto plano). O JSON é exigido QUANDO HÁ PEDIDO DE ANÁLISE, DICA, OU QUANDO VOCÊ RECEBE O 'ContextForAI'.
+IMPORTANTE: Para registrar gastos ou ganhos, VOCÊ DEVE OBRIGATORIAMENTE chamar a ferramenta `addTransaction`. NUNCA diga que registrou sem ter chamado a ferramenta. Após a ferramenta retornar sucesso, você pode confirmar para o usuário em texto plano.
+Se o usuário estiver apenas conversando casualmente, você pode responder normalmente. O JSON é exigido QUANDO HÁ PEDIDO DE ANÁLISE, DICA, OU QUANDO VOCÊ RECEBE O 'ContextForAI'.
 `;
 
 const tools = [
@@ -62,7 +63,8 @@ const tools = [
                         amount: { type: SchemaType.NUMBER, description: "Valor numérico. Ex: 50.0" },
                         description: { type: SchemaType.STRING, description: "Descrição curta. Ex: 'Mercado', 'Uber'" },
                         type: { type: SchemaType.STRING, enum: ["expense", "income", "transfer"], description: "Tipo: expense, income ou transfer." },
-                        category: { type: SchemaType.STRING, description: "Categoria inferida." }
+                        category: { type: SchemaType.STRING, description: "Categoria inferida." },
+                        date: { type: SchemaType.STRING, description: "Data da transação (YYYY-MM-DD) inferida pelo texto (ex: 'ontem', 'quinta'). Deixe vazio se for hoje." }
                     },
                     required: ["amount", "description", "type"]
                 }
@@ -178,7 +180,7 @@ export class FinanceAgentService {
                 type: args.type || 'expense',
                 description: args.description || 'Transação via Fin',
                 amount: Number(args.amount),
-                date: new Date(),
+                date: args.date ? new Date(`${args.date}T12:00:00.000Z`) : new Date(),
                 tag: args.category || 'Outros',
                 createdAt: new Date(),
             };

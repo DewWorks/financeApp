@@ -272,41 +272,6 @@ export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: Fi
         setIsProcessing(true)
         setErrorMsg(null)
 
-        const isDemoMode = typeof window !== "undefined" && !localStorage.getItem("auth_token");
-        if (isDemoMode) {
-            // Wait for 1.2 seconds to simulate AI thinking
-            setTimeout(async () => {
-                let replyText = "Desculpe, não entendi o formato dessa transação. Você pode tentar algo como: 'Gastei R$ 40 com mercado' ou 'Recebi R$ 3000 de salário'.";
-                const lowerText = textToSend.toLowerCase();
-                if (
-                    lowerText.includes("gastei") || 
-                    lowerText.includes("recebi") || 
-                    lowerText.includes("paguei") || 
-                    lowerText.includes("comi") || 
-                    lowerText.includes("comprar") || 
-                    lowerText.includes("padaria") || 
-                    lowerText.includes("almoço") || 
-                    lowerText.includes("netflix") || 
-                    lowerText.includes("pix") ||
-                    lowerText.includes("salário") ||
-                    lowerText.includes("aluguel")
-                ) {
-                    replyText = `Entendido! Processei o seu comando de voz/texto e registrei a transação com sucesso no seu painel temporário. 🚀\n\nDescrição: "${textToSend}"\n\n*(Lembre-se: em Modo de Demonstração as transações não são salvas permanentemente. Crie uma conta ou faça login para começar de verdade!)*`;
-                }
-
-                const finMsg: Message = {
-                    id: `fin-${Date.now()}`,
-                    text: replyText,
-                    sender: "fin",
-                    timestamp: new Date()
-                }
-                setMessages(prev => [...prev, finMsg])
-                speakReply(replyText)
-                setIsProcessing(false)
-            }, 1200);
-            return;
-        }
-
         try {
             // 2. Query Gemini chat agent
             const response = await fetch("/api/agent/chat", {
