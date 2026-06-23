@@ -114,17 +114,86 @@ export class RecurringDetectionService {
                     }
                 }
             );
+
+            await this.projectFutureRecurring(userId, detected, db);
         }
 
         return { detected: detected.length };
     }
 
+    /**
+     * Injeta transações pendentes no futuro (próximo mês/semana) baseado nas recorrências ativas detectadas.
+     * Isso reduz o atrito do usuário, prevendo os gastos fixos.
+     */
+    private static async projectFutureRecurring(userId: string, patterns: RecurringPattern[], db: any) {
+        const projectedTxs: any[] = [];
+        const today = new Date();
+
+        for (const pattern of patterns) {
+            // Se a última ocorrência foi há mais de 45 dias para mensal, ou mais de 14 para semanal, ignoramos (pode ter sido cancelado)
+            const daysSinceLast = (today.getTime() - pattern.lastSeen.getTime()) / (1000 * 60 * 60 * 24);
+            if (pattern.interval === 'monthly' && daysSinceLast > 45) continue;
+            if (pattern.interval === 'weekly' && daysSinceLast > 14) continue;
+
+            const nextDate = new Date(pattern.lastSeen);
+            if (pattern.interval === 'monthly') {
+                nextDate.setMonth(nextDate.getMonth() + 1);
+            } else {
+                nextDate.setDate(nextDate.getDate() + 7);
+            }
+
+            // Se a próxima data ainda não chegou ou acabou de chegar (janela de 5 dias), projetamos
+            // Verificamos se já não existe uma transação projetada para esse label nesse mês/semana para evitar duplicatas infinitas
+            
+            const startOfWindow = new Date(nextDate);
+            startOfWindow.setDate(startOfWindow.getDate() - 5);
+            const endOfWindow = new Date(nextDate);
+            endOfWindow.setDate(endOfWindow.getDate() + 5);
+
+            const existing = await db.collection("transactions").findOne({
+                userId: new ObjectId(userId),
+                recurringLabel: pattern.normalizedLabel,
+                date: { $gte: startOfWindow, $lte: endOfWindow }
+            });
+
+            if (!existing) {
+                projectedTxs.push({
+                    userId: new ObjectId(userId),
+                    type: 'expense',
+                    amount: pattern.amount,
+                    description: `[Previsto] ${pattern.label}`,
+                    merchantName: pattern.label,
+                    category: 'Despesas Fixas',
+                    date: nextDate,
+                    status: 'pending', // Fundamental: não foi pago ainda
+                    isProjected: true, // Flag para a UI saber
+                    recurringLabel: pattern.normalizedLabel,
+                    recurringInterval: pattern.interval,
+                    recurring: true,
+                    provider: 'manual', // Tratar como se fosse manual para permitir edição pelo usuário
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                });
+            }
+        }
+
+        if (projectedTxs.length > 0) {
+            await db.collection("transactions").insertMany(projectedTxs);
+        }
+    }
+
     private static normalizeMerchant(name: string): string {
-        return name
+        const stopWords = ['pix', 'pgto', 'pagamento', 'compra', 'cartao', 'transf', 'transferencia', 'ted', 'doc'];
+        let normalized = name
             .toLowerCase()
-            .replace(/[^a-z0-9\u00C0-\u017F\s]/g, "") // keep letters/numbers/accents
+            .replace(/[^a-z\u00C0-\u017F\s]/g, " ") // remove numbers and special chars completely
             .replace(/\s+/g, " ")
-            .trim()
-            .substring(0, 40); // cap length for key grouping
+            .trim();
+
+        // Remove stop words
+        const words = normalized.split(' ').filter(w => w.length > 2 && !stopWords.includes(w));
+        normalized = words.join(' ').substring(0, 40);
+
+        return normalized || name.toLowerCase().replace(/[^a-z0-9]/g, "").substring(0, 20); // fallback
     }
 }
