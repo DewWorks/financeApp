@@ -21,6 +21,7 @@ export interface IUser {
     mfaSecret?: string;
     verification?: IUserVerification;
     subscription?: ISubscription;
+    pushSubscriptions?: any[]; // Array of web-push subscriptions
     updatedAt?: Date;
     createdAt: Date;
 }

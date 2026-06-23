@@ -54,7 +54,8 @@ const UserSchema = new Schema<IUser>({
         providerId: String,     // Asaas Customer ID (cus_xxx)
         subscriptionId: String, // Asaas Subscription ID (sub_xxx)
         expiresAt: Date
-    }
+    },
+    pushSubscriptions: [{ type: Schema.Types.Mixed }]
 });
 
 import { CryptoService } from "@/lib/crypto";

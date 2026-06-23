@@ -10,6 +10,7 @@ import { LogOut, User, LogIn, Menu, UploadCloud, Target, PieChart, ShieldCheck, 
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { PWAInstallButton } from "@/components/ui/molecules/PWAInstallButton"
+import { PushNotificationToggle } from "@/components/dashboard/PushNotificationToggle"
 
 interface DashboardHeaderProps {
     user: IUser | null
@@ -68,12 +69,12 @@ export function DashboardHeader({
                     </div>
 
                     {/* Desktop Area - User Info, Logout, Theme */}
-                    <div className="hidden sm:flex items-center space-x-2">
-
-                        <PWAInstallButton className="hidden sm:flex" />
-
-                        {/* Theme Toggle */}
-                        <ThemeToggle />
+                    <div className="hidden sm:flex sm:items-center sm:space-x-4">
+                        <PushNotificationToggle />
+                        <PWAInstallButton />
+                        <div className="hidden sm:block">
+                            <ThemeToggle />
+                        </div>
 
                         {displayUser && (
                             <>
