@@ -190,11 +190,19 @@ export async function POST(request: Request) {
     const db = client.db("financeApp");
     const transaction = await request.json()
 
-    const result = await db.collection('transactions').insertOne({
-      ...transaction,
-      userId,
+    // Defesa: Sanitização estrita contra Data Pollution / Mass Assignment
+    const newTransaction = {
+      description: String(transaction.description || ""),
+      amount: Number(transaction.amount || 0),
+      type: String(transaction.type || ""),
       date: new Date(transaction.date),
-    })
+      tag: transaction.tag ? String(transaction.tag) : undefined,
+      isRecurring: Boolean(transaction.isRecurring),
+      installments: transaction.installments ? Number(transaction.installments) : undefined,
+      userId
+    };
+
+    const result = await db.collection('transactions').insertOne(newTransaction)
 
     return NextResponse.json({ message: 'Transaction added successfully', id: result.insertedId }, { status: 201 })
   } catch (error) {

@@ -63,7 +63,13 @@ import { AuditService } from '@/services/AuditService';
 
 export async function POST(request: Request) {
   try {
-    const { email, cel, password, mfaCode, isPwa } = await request.json()
+    const body = await request.json()
+    // Defesa: Forçar casting para String para impedir NoSQL Injection (ataques que passam Objetos como {"$ne": null})
+    const email = body.email ? String(body.email).trim() : undefined;
+    const cel = body.cel ? String(body.cel).trim() : undefined;
+    const password = body.password ? String(body.password) : undefined;
+    const mfaCode = body.mfaCode ? String(body.mfaCode) : undefined;
+    const isPwa = body.isPwa;
 
     // 1. Rate Limiting Check (Security: Brute Force Protection)
     const ip = request.headers.get("x-forwarded-for") || "unknown";

@@ -32,8 +32,16 @@ export async function DELETE(request: Request) {
         // We log it now because after deletion, we might lose the link, though AuditLog stores userId string.
         await AuditService.log('ACCOUNT_DELETED', userId, { reason: 'User requested deletion (LGPD)' }, request);
 
-        // 3. Delete Data
+        // 3. Delete Data (Cascade)
         const tResult = await db.collection('transactions').deleteMany({ userId: userId });
+        const gResult = await db.collection('goals').deleteMany({ userId: userId });
+        const bResult = await db.collection('bank_connections').deleteMany({ userId: userId });
+        const pResult = await db.collection('push_subscriptions').deleteMany({ userId: userId });
+        
+        // Profiles Cleanup
+        const profDelResult = await db.collection('profiles').deleteMany({ 'members.userId': userId, members: { $size: 1 } });
+        const profPullResult = await db.collection('profiles').updateMany({ 'members.userId': userId }, { $pull: { members: { userId: userId } } } as any);
+
         const uResult = await db.collection('users').deleteOne({ _id: new ObjectId(userId) });
         // We do NOT delete AuditLogs automatically, to preserve proof of deletion request. 
         // LGPD Art 16 allow keeping data for "cumprimento de obrigação legal".

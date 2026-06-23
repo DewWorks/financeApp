@@ -45,7 +45,13 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
  */
 export async function POST(request: Request) {
     try {
-        const { email, code } = await request.json();
+        const body = await request.json();
+        const email = body.email ? String(body.email).trim() : undefined;
+        const code = body.code ? String(body.code).trim() : undefined;
+
+        if (!email || !code) {
+            return NextResponse.json({ error: 'Email e código são obrigatórios.' }, { status: 400 });
+        }
 
         const client = await getMongoClient();
         const db = client.db("financeApp");

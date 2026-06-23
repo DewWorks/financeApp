@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { getMongoClient } from '@/db/connectionDb';
 import { AuditService } from '@/services/AuditService';
+import { loginLimiter, checkRateLimit } from '@/lib/rateLimit';
 
 /**
  * @swagger
@@ -42,7 +43,24 @@ import { AuditService } from '@/services/AuditService';
 
 export async function POST(request: Request) {
   try {
-    const { name, email, cel, password, termsAccepted } = await request.json()
+    const body = await request.json()
+    // Defesa: Forçar casting para String para impedir NoSQL Injection
+    const name = body.name ? String(body.name).trim() : undefined;
+    const email = body.email ? String(body.email).trim() : undefined;
+    const cel = body.cel ? String(body.cel).trim() : undefined;
+    const password = body.password ? String(body.password) : undefined;
+    const termsAccepted = body.termsAccepted;
+
+    if (!name || !email || !password) {
+        return NextResponse.json({ error: 'Nome, email e senha são obrigatórios.' }, { status: 400 });
+    }
+
+    const ip = request.headers.get("x-forwarded-for") || "unknown";
+    const isAllowed = await checkRateLimit(loginLimiter, ip);
+    if (!isAllowed) {
+      return NextResponse.json({ error: 'Muitas requisições. Tente novamente em 15 minutos.' }, { status: 429 });
+    }
+
     const client = await getMongoClient();
 
     if (!termsAccepted) {
@@ -63,7 +81,7 @@ export async function POST(request: Request) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    const ip = request.headers.get("x-forwarded-for") || "unknown";
+    // const ip = request.headers.get("x-forwarded-for") || "unknown"; // Already defined above
     const userAgent = request.headers.get("user-agent") || "unknown";
 
     // Insert new user

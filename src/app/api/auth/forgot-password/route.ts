@@ -1,6 +1,7 @@
 import { getMongoClient } from '@/db/connectionDb';
 import { NextResponse } from 'next/server';
 import { sendEmail } from '@/app/functions/emails/sendEmail';
+import { loginLimiter, checkRateLimit } from '@/lib/rateLimit';
 
 /**
  * @swagger
@@ -31,7 +32,19 @@ import { sendEmail } from '@/app/functions/emails/sendEmail';
  */
 export async function POST(request: Request) {
     try {
-        const { email } = await request.json();
+        const body = await request.json();
+        // Defesa: Forçar casting para String para impedir NoSQL Injection
+        const email = body.email ? String(body.email).trim() : undefined;
+
+        if (!email) {
+            return NextResponse.json({ error: "Email obrigatório" }, { status: 400 });
+        }
+
+        const ip = request.headers.get("x-forwarded-for") || "unknown";
+        const isAllowed = await checkRateLimit(loginLimiter, ip);
+        if (!isAllowed) {
+            return NextResponse.json({ error: 'Muitas requisições. Tente novamente em 15 minutos.' }, { status: 429 });
+        }
 
         const client = await getMongoClient();
         const db = client.db("financeApp");

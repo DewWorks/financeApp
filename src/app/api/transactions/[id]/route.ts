@@ -52,17 +52,22 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         const transactionId = new ObjectId(resolvedParams.id);
         const updatedTransaction = await request.json();
 
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { _id, userId: _, ...updateData } = updatedTransaction;
+        // Defesa: Sanitização estrita contra Data Pollution / Mass Assignment
+        const safeUpdateData: any = {
+            amount: parseFloat(updatedTransaction.amount),
+            date: new Date(updatedTransaction.date),
+        };
+
+        if (updatedTransaction.description !== undefined) safeUpdateData.description = String(updatedTransaction.description);
+        if (updatedTransaction.type !== undefined) safeUpdateData.type = String(updatedTransaction.type);
+        if (updatedTransaction.tag !== undefined) safeUpdateData.tag = String(updatedTransaction.tag);
+        if (updatedTransaction.isRecurring !== undefined) safeUpdateData.isRecurring = Boolean(updatedTransaction.isRecurring);
+        if (updatedTransaction.installments !== undefined) safeUpdateData.installments = Number(updatedTransaction.installments);
 
         const result = await db.collection('transactions').updateOne(
             { _id: transactionId, userId },
             {
-                $set: {
-                    ...updateData,
-                    amount: parseFloat(updateData.amount),
-                    date: new Date(updateData.date),
-                },
+                $set: safeUpdateData,
             }
         );
 

@@ -41,9 +41,14 @@ export async function GET(request: Request) {
 
         const transactions = await db.collection('transactions').find({ userId: userId }).toArray();
         const auditLogs = await db.collection('auditlogs').find({ userId: userId }).toArray();
+        const goals = await db.collection('goals').find({ userId: userId }).toArray();
+        const bankConnections = await db.collection('bank_connections').find({ userId: userId }).toArray();
+        const pushSubscriptions = await db.collection('push_subscriptions').find({ userId: userId }).toArray();
+        const profiles = await db.collection('profiles').find({ 'members.userId': userId }).toArray();
 
         // Exclude sensitive internal fields
         delete user.password;
+        delete user.verification;
 
         const exportData = {
             metadata: {
@@ -52,6 +57,10 @@ export async function GET(request: Request) {
             },
             personalData: user,
             financialData: transactions,
+            goals: goals,
+            bankConnections: bankConnections,
+            pushSubscriptions: pushSubscriptions,
+            profiles: profiles,
             activityLogs: auditLogs
         };
 
