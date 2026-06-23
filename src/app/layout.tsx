@@ -52,6 +52,23 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.addEventListener('beforeinstallprompt', function(e) {
+                e.preventDefault();
+                window.deferredPrompt = e;
+                window.dispatchEvent(new CustomEvent('pwa-installable', { detail: e }));
+              });
+              window.addEventListener('appinstalled', function() {
+                window.deferredPrompt = null;
+                window.dispatchEvent(new CustomEvent('pwa-installed'));
+              });
+            `
+          }}
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

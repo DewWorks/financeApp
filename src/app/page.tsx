@@ -28,6 +28,7 @@ import { MfaNudge } from "@/components/dashboard/MfaNudge"
 import { VoiceAssistantWidget } from "@/components/ui/molecules/VoiceAssistantWidget"
 import { FinChatDialog } from "@/components/ui/organisms/FinChatDialog"
 import { SmartImportDialog } from "@/components/ui/organisms/SmartImportDialog"
+import { PWAInstallNudge } from "@/components/dashboard/PWAInstallNudge"
 
 // Charts (Analytics Section)
 import { CashFlowChart } from "@/components/ui/charts/CashFlowChart"
@@ -566,6 +567,9 @@ function DashboardContent() {
 
           {/* SECURITY NUDGE */}
           <MfaNudge mfaEnabled={user?.mfaEnabled} />
+
+          {/* PWA INSTALL NUDGE */}
+          <PWAInstallNudge />
 
           {/* NOTIFICATION PROMPT NUDGE */}
           {showNotificationPrompt && (
