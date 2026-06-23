@@ -51,8 +51,8 @@ const UserSchema = new Schema<IUser>({
             enum: ['ACTIVE', 'CANCELED', 'PAST_DUE', 'TRIAL'],
             default: 'ACTIVE'
         },
-        providerId: String,    // Stripe Customer ID
-        subscriptionId: String, // Stripe Sub ID
+        providerId: String,     // Asaas Customer ID (cus_xxx)
+        subscriptionId: String, // Asaas Subscription ID (sub_xxx)
         expiresAt: Date
     }
 });

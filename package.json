@@ -62,7 +62,6 @@
     "replica-failover-mongodb-ts": "^3.0.9",
     "rxjs": "^7.8.2",
     "speakeasy": "^2.0.0",
-    "stripe": "^20.2.0",
     "swagger-ui-react": "^5.31.0",
     "sweetalert2": "^11.6.13",
     "swiper": "^12.1.3",

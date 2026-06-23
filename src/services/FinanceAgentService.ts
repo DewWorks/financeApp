@@ -47,7 +47,7 @@ Você deve responder ESTRITAMENTE em formato JSON, sem Markdown adicional, segui
 3. **querySpending**: Use para totalizações.
 4. **setGoal**: Para definir metas.
 
-IMPORTANTE: Para registrar gastos ou ganhos, VOCÊ DEVE OBRIGATORIAMENTE chamar a ferramenta `addTransaction`. NUNCA diga que registrou sem ter chamado a ferramenta. Após a ferramenta retornar sucesso, você pode confirmar para o usuário em texto plano.
+IMPORTANTE: Para registrar gastos ou ganhos, VOCÊ DEVE OBRIGATORIAMENTE chamar a ferramenta \`addTransaction\`. NUNCA diga que registrou sem ter chamado a ferramenta. Após a ferramenta retornar sucesso, você pode confirmar para o usuário em texto plano.
 Se o usuário estiver apenas conversando casualmente, você pode responder normalmente. O JSON é exigido QUANDO HÁ PEDIDO DE ANÁLISE, DICA, OU QUANDO VOCÊ RECEBE O 'ContextForAI'.
 `;
 

@@ -22,14 +22,11 @@ export default function PricingPage() {
                 return;
             }
 
-            const response = await fetch('/api/stripe/checkout', {
+            const response = await fetch('/api/payments/checkout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    priceId: plan,
-                    userId: userString,
-                    successUrl: window.location.origin + '/dashboard?success=true',
-                    cancelUrl: window.location.origin + '/pricing?canceled=true',
+                    priceId: plan
                 }),
             });
 
@@ -37,7 +34,7 @@ export default function PricingPage() {
             if (data.url) {
                 window.location.href = data.url;
             } else {
-                console.error("Stripe Error:", data.error);
+                console.error("Payment Gateway Error:", data.error);
                 alert("Erro ao iniciar pagamento. Tente novamente.");
                 setLoading(null);
             }

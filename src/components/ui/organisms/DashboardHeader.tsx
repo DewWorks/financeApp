@@ -6,7 +6,7 @@ import { ThemeToggle } from "@/components/ui/atoms/ThemeToggle"
 import { Button } from "@/components/ui/atoms/button"
 import { Tooltip } from "@/components/ui/atoms/tooltip"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/atoms/popover"
-import { LogOut, User, LogIn, Menu, UploadCloud, Target, PieChart, ShieldCheck } from "lucide-react"
+import { LogOut, User, LogIn, Menu, UploadCloud, Target, PieChart, ShieldCheck, Star } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { PWAInstallButton } from "@/components/ui/molecules/PWAInstallButton"
@@ -185,6 +185,14 @@ export function DashboardHeader({
                                             >
                                                 <PieChart className="h-4 w-4 mr-2 text-purple-500" />
                                                 Análise
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                className="w-full justify-start px-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                onClick={() => router.push('/settings/billing')}
+                                            >
+                                                <Star className="h-4 w-4 mr-2 text-yellow-500" />
+                                                Assinatura
                                             </Button>
                                             <Button
                                                 variant="ghost"
