@@ -81,6 +81,7 @@ export function VoiceAssistantWidget({ onRefresh }: VoiceAssistantWidgetProps) {
             const currentResult = event.resultIndex
             const speechText = event.results[currentResult][0].transcript
             setTranscript(speechText)
+            setIsListening(false) // Force update UI
             processVoiceMessage(speechText)
         }
 
@@ -106,13 +107,23 @@ export function VoiceAssistantWidget({ onRefresh }: VoiceAssistantWidgetProps) {
         if (!supportVoice) return
 
         if (isListening) {
-            recognitionRef.current?.stop()
+            setIsListening(false)
+            try {
+                recognitionRef.current?.stop()
+            } catch (e) {
+                console.error(e)
+            }
         } else {
+            setIsListening(true)
+            setErrorMsg(null)
+            setTranscript("")
+            setReply(null)
             try {
                 recognitionRef.current?.start()
             } catch (e) {
                 console.error("Failed to start speech recognition", e)
-                recognitionRef.current?.stop()
+                try { recognitionRef.current?.stop() } catch (err) {}
+                setIsListening(false)
             }
         }
     }

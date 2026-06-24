@@ -121,6 +121,7 @@ export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: Fi
         recognition.onresult = (event: any) => {
             const currentResult = event.resultIndex
             const speechText = event.results[currentResult][0].transcript
+            setIsListening(false)
             if (speechText.trim()) {
                 handleSendMessage(speechText)
             }
@@ -221,13 +222,21 @@ export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: Fi
         if (!supportVoice) return
 
         if (isListening) {
-            recognitionRef.current?.stop()
+            setIsListening(false)
+            try {
+                recognitionRef.current?.stop()
+            } catch (e) {
+                console.error(e)
+            }
         } else {
+            setIsListening(true)
+            setErrorMsg(null)
             try {
                 recognitionRef.current?.start()
             } catch (e) {
                 console.error("Failed to start speech recognition", e)
-                recognitionRef.current?.stop()
+                try { recognitionRef.current?.stop() } catch (err) {}
+                setIsListening(false)
             }
         }
     }
