@@ -10,7 +10,10 @@ const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 // Configurar chaves VAPID
 const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
 const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY || "";
-const vapidEmail = process.env.VAPID_EMAIL || "mailto:suporte@financepro.com";
+const vapidEmailRaw = process.env.VAPID_EMAIL || "mailto:suporte@financepro.com";
+const vapidEmail = vapidEmailRaw.startsWith("mailto:") || vapidEmailRaw.startsWith("https:") 
+    ? vapidEmailRaw 
+    : `mailto:${vapidEmailRaw}`;
 
 if (vapidPublicKey && vapidPrivateKey) {
     webPush.setVapidDetails(
