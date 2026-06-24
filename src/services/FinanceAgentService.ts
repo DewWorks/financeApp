@@ -127,12 +127,12 @@ export class FinanceAgentService {
         }
         this.genAI = new GoogleGenerativeAI(apiKey);
         this.model = this.genAI.getGenerativeModel({
-            model: "gemini-flash-latest",
+            model: "gemini-2.5-flash",
             systemInstruction: SYSTEM_INSTRUCTION,
             tools: tools
         });
         this.transcriptionModel = this.genAI.getGenerativeModel({
-            model: "gemini-1.5-flash",
+            model: "gemini-2.5-flash",
             systemInstruction: "Você é um transcritor de áudio financeiro em português brasileiro. Transcreva o áudio de forma literal e precisa. Retorne APENAS a transcrição direta do texto falado, sem introdução, explicações, aspas ou comentários extras."
         });
         this.insightService = new InsightService();
