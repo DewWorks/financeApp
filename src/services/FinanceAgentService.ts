@@ -7,7 +7,6 @@ import {
 import { getMongoClient } from "@/db/connectionDb";
 import { ObjectId } from "mongodb";
 import { InsightService } from "./InsightService";
-import { ChatSessionService } from "./ChatSessionService";
 import fs from 'fs';
 import path from 'path';
 
