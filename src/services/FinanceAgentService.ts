@@ -7,8 +7,7 @@ import {
 import { getMongoClient } from "@/db/connectionDb";
 import { ObjectId } from "mongodb";
 import { InsightService } from "./InsightService";
-import fs from 'fs';
-import path from 'path';
+
 
 const SYSTEM_INSTRUCTION = `
 Você é o "Fin", um Agente Financeiro Preditivo de alta precisão (Nudge AI) que utiliza Estatística Avançada (Regressão e Correlação) para fundamentar suas decisões.
@@ -64,7 +63,7 @@ const tools = [
                         description: { type: SchemaType.STRING, description: "Descrição curta. Ex: 'Mercado', 'Uber'" },
                         type: { type: SchemaType.STRING, enum: ["expense", "income", "transfer"], description: "Tipo: expense, income ou transfer." },
                         category: { type: SchemaType.STRING, description: "Categoria inferida." },
-                        date: { type: SchemaType.STRING, description: "Data da transação (YYYY-MM-DD) inferida pelo texto (ex: 'ontem', 'quinta'). Deixe vazio se for hoje." }
+                        date: { type: SchemaType.STRING, description: "Data da transação. Pode ser 'ontem', 'anteontem', 'hoje', ou 'YYYY-MM-DD'. Deixe vazio se for hoje." }
                     },
                     required: ["amount", "description", "type"]
                 }
@@ -116,7 +115,7 @@ import { ChatSessionService } from "./ChatSessionService";
 export class FinanceAgentService {
     private genAI: GoogleGenerativeAI;
     private model: GenerativeModel;
-    private transcriptionModel: GenerativeModel;
+
     private insightService: InsightService;
     private notificationService: NotificationService;
 
@@ -131,32 +130,11 @@ export class FinanceAgentService {
             systemInstruction: SYSTEM_INSTRUCTION,
             tools: tools
         });
-        this.transcriptionModel = this.genAI.getGenerativeModel({
-            model: "gemini-2.5-flash",
-            systemInstruction: "Você é um transcritor de áudio financeiro em português brasileiro. Transcreva o áudio de forma literal e precisa. Retorne APENAS a transcrição direta do texto falado, sem introdução, explicações, aspas ou comentários extras."
-        });
+
         this.insightService = new InsightService();
         this.notificationService = new NotificationService();
     }
 
-    async transcribeAudio(base64Data: string, mimeType: string): Promise<string> {
-        try {
-            const result = await this.transcriptionModel.generateContent([
-                {
-                    inlineData: {
-                        data: base64Data,
-                        mimeType: mimeType
-                    }
-                },
-                "Transcreva o áudio acima de forma literal. Retorne apenas o texto transcrito em português brasileiro."
-            ]);
-            return result.response.text().trim();
-        } catch (error) {
-            console.error("Error transcribing audio with Gemini:", error);
-            this.logError(error);
-            return "";
-        }
-    }
 
     private logError(error: any) {
         const payload = {
@@ -170,6 +148,31 @@ export class FinanceAgentService {
         console.error(JSON.stringify(payload));
     }
 
+    private parseDateInput(dateStr?: string): Date {
+        if (!dateStr) return new Date();
+        const str = dateStr.toLowerCase().trim();
+        const today = new Date();
+        
+        if (str === 'ontem') {
+            today.setDate(today.getDate() - 1);
+            return today;
+        }
+        if (str === 'anteontem') {
+            today.setDate(today.getDate() - 2);
+            return today;
+        }
+        if (str === 'hoje') {
+            return today;
+        }
+        
+        if (str.includes('-')) {
+            const parsed = new Date(`${str}T12:00:00.000Z`);
+            if (!isNaN(parsed.getTime())) return parsed;
+        }
+        
+        return today;
+    }
+
     private async addTransaction(args: any, userId: string) {
         try {
             const client = await getMongoClient();
@@ -180,7 +183,7 @@ export class FinanceAgentService {
                 type: args.type || 'expense',
                 description: args.description || 'Transação via Fin',
                 amount: Number(args.amount),
-                date: args.date ? new Date(`${args.date}T12:00:00.000Z`) : new Date(),
+                date: this.parseDateInput(args.date),
                 tag: args.category || 'Outros',
                 createdAt: new Date(),
             };
@@ -307,15 +310,17 @@ export class FinanceAgentService {
         }
     }
 
-    async processMessage(userMessage: string, userId: string) {
+    async processMessage(userMessage: string, userId: string, saveToHistory: boolean = true) {
         try {
             // Load persistent conversation history for this user
-            const history = await ChatSessionService.getHistory(userId);
+            const history = saveToHistory ? await ChatSessionService.getHistory(userId) : [];
 
             const chat = this.model.startChat({ history });
 
             // Persist user message
-            await ChatSessionService.saveMessage(userId, "user", userMessage);
+            if (saveToHistory) {
+                await ChatSessionService.saveMessage(userId, "user", userMessage);
+            }
 
             let result = await chat.sendMessage(userMessage);
             let response = result.response;
@@ -359,7 +364,9 @@ export class FinanceAgentService {
             const responseText = response.text();
 
             // Persist model reply
-            await ChatSessionService.saveMessage(userId, "model", responseText);
+            if (saveToHistory) {
+                await ChatSessionService.saveMessage(userId, "model", responseText);
+            }
 
             return responseText;
 

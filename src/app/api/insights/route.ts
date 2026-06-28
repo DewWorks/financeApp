@@ -98,7 +98,7 @@ export async function GET(request: Request) {
                     const agent = new FinanceAgentService();
                     
                     const aiPrompt = `Gere Nudges prescritivos baseados neste contexto financeiro exato: ${JSON.stringify(insight.contextForAI)}. Lembre-se, retorne APENAS o JSON válido.`;
-                    const aiResponseRaw = await agent.processMessage(aiPrompt, userId);
+                    const aiResponseRaw = await agent.processMessage(aiPrompt, userId, false);
                     
                     const cleanJsonStr = aiResponseRaw.replace(/```json/g, '').replace(/```/g, '').trim();
                     aiData = JSON.parse(cleanJsonStr);

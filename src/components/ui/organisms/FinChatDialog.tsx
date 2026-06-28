@@ -16,7 +16,8 @@ import {
     Info,
     Copy,
     Check,
-    ExternalLink
+    ExternalLink,
+    Trash2
 } from "lucide-react"
 import { Button } from "@/components/ui/atoms/button"
 
@@ -63,6 +64,10 @@ export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: Fi
         return false
     })
 
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+    const audioChunksRef = useRef<Blob[]>([])
+    const streamRef = useRef<MediaStream | null>(null)
+
     useEffect(() => {
         if (typeof window !== "undefined") {
             localStorage.setItem("fin-chat-tts-muted", String(isMuted))
@@ -87,62 +92,149 @@ export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: Fi
     const recognitionRef = useRef<any>(null)
     const chatEndRef = useRef<HTMLDivElement>(null)
 
-    // Set up welcome message and speech recognition
+    // Check MediaRecorder support on mount
     useEffect(() => {
-        if (isOpen && messages.length === 0) {
-            setMessages([
-                {
+        if (!navigator.mediaDevices || !window.MediaRecorder) {
+            setSupportVoice(false)
+        }
+    }, [])
+
+    // Load history
+    useEffect(() => {
+        if (!isOpen) return;
+        const fetchHistory = async () => {
+            try {
+                const res = await fetch("/api/agent/chat/history");
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.history && data.history.length > 0) {
+                        const historyMsgs: Message[] = data.history.map((h: any, i: number) => ({
+                            id: `hist-${Date.now()}-${i}`,
+                            text: h.text,
+                            sender: h.role === "user" ? "user" : "fin",
+                            timestamp: new Date(h.timestamp)
+                        }));
+                        setMessages(historyMsgs);
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to load history", err);
+            }
+            if (messages.length === 0) {
+                setMessages([{
                     id: "welcome",
                     text: "Olá! Sou o Fin, seu co-piloto financeiro. 💰 Como posso te ajudar hoje? Pode digitar ou clicar no microfone para falar, ex: 'Gastei R$ 40 no almoço hoje'.",
                     sender: "fin",
                     timestamp: new Date()
+                }]);
+            }
+        };
+        fetchHistory();
+    }, [isOpen]);
+
+    const processAudioToServer = async (audioBlob: Blob) => {
+        setIsProcessing(true);
+        setErrorMsg(null);
+        
+        try {
+            const formData = new FormData();
+            formData.append("audio", audioBlob, "audio.webm");
+
+            const response = await fetch("/api/voice/transcribe", {
+                method: "POST",
+                body: formData,
+            });
+
+            const data = await response.json();
+
+            if (response.status === 202) {
+                setMessages(prev => [...prev, {
+                    id: `fin-${Date.now()}`,
+                    text: "Serviços de IA instáveis no momento. O áudio foi enfileirado e será processado em breve.",
+                    sender: "fin",
+                    timestamp: new Date()
+                }]);
+                return;
+            }
+            
+            if (response.status === 207) {
+                setMessages(prev => [
+                    ...prev,
+                    { id: `user-${Date.now()}`, text: data.rawText || "Áudio", sender: "user", timestamp: new Date() },
+                    { id: `fin-${Date.now()}`, text: `Transcrição realizada, mas falha na extração dos dados: ${data.error}`, sender: "fin", timestamp: new Date() }
+                ]);
+                return;
+            }
+
+            if (!response.ok) {
+                throw new Error(data.error || "Failed to process audio");
+            }
+
+            const userMsg: Message = { id: `user-${Date.now()}`, text: data.rawText || "Áudio", sender: "user", timestamp: new Date() };
+            const finMsg: Message = { id: `fin-${Date.now()}`, text: `Transação "${data.transaction.description}" de R$${data.transaction.amount} registrada com sucesso!`, sender: "fin", timestamp: new Date() };
+            setMessages(prev => [...prev, userMsg, finMsg]);
+            speakReply(finMsg.text);
+
+            if (onRefresh) await onRefresh();
+        } catch (error) {
+            console.error("Error processing audio:", error);
+            setErrorMsg("Opa! Tive uma falha ao enviar o áudio. Tente novamente.");
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } 
+            });
+            streamRef.current = stream;
+            
+            let mimeType = 'audio/webm';
+            if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+                mimeType = 'audio/webm;codecs=opus';
+            } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+                mimeType = 'audio/mp4';
+            }
+
+            const mediaRecorder = new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 128000 });
+            mediaRecorderRef.current = mediaRecorder;
+            audioChunksRef.current = [];
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) audioChunksRef.current.push(event.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+                audioChunksRef.current = [];
+                if (streamRef.current) {
+                    streamRef.current.getTracks().forEach(track => track.stop());
+                    streamRef.current = null;
                 }
-            ])
+                setIsListening(false);
+                await processAudioToServer(audioBlob);
+            };
+
+            mediaRecorder.start();
+            setIsListening(true);
+            setErrorMsg(null);
+        } catch (error) {
+            console.error("Microphone access error:", error);
+            setErrorMsg("Permissão de microfone negada ou indisponível.");
+            setIsListening(false);
         }
+    };
 
-        // Web Speech API
-        const SpeechRecognition =
-            (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-        if (!SpeechRecognition) {
-            setSupportVoice(false)
-            return
+    const stopRecording = () => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+            mediaRecorderRef.current.stop();
+        } else {
+            setIsListening(false);
         }
-
-        const recognition = new SpeechRecognition()
-        recognition.continuous = false
-        recognition.interimResults = false
-        recognition.lang = "pt-BR"
-
-        recognition.onstart = () => {
-            setIsListening(true)
-            setErrorMsg(null)
-        }
-
-        recognition.onresult = (event: any) => {
-            const currentResult = event.resultIndex
-            const speechText = event.results[currentResult][0].transcript
-            setIsListening(false)
-            if (speechText.trim()) {
-                handleSendMessage(speechText)
-            }
-        }
-
-        recognition.onerror = (event: any) => {
-            console.error("Speech recognition error in chat", event)
-            setIsListening(false)
-            if (event.error === "not-allowed") {
-                setErrorMsg("Permissão de microfone negada.")
-            } else {
-                setErrorMsg("Não entendi o áudio. Tente novamente.")
-            }
-        }
-
-        recognition.onend = () => {
-            setIsListening(false)
-        }
-
-        recognitionRef.current = recognition
-    }, [isOpen])
+    };
 
     // Scroll to bottom on new messages
     useEffect(() => {
@@ -151,13 +243,9 @@ export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: Fi
 
     // Auto-start voice capture if requested
     useEffect(() => {
-        if (isOpen && autoStartVoice && supportVoice) {
+        if (isOpen && autoStartVoice && supportVoice && !isListening) {
             const timer = setTimeout(() => {
-                try {
-                    recognitionRef.current?.start()
-                } catch (e) {
-                    console.error("Failed to autostart speech recognition", e)
-                }
+                startRecording();
             }, 600); // Aguarda a animação do modal concluir
             return () => clearTimeout(timer);
         }
@@ -218,26 +306,29 @@ export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: Fi
         }
     }, [onRefresh, isMuted])
 
+    const handleClearHistory = async () => {
+        try {
+            const res = await fetch("/api/agent/chat/history", { method: "DELETE" });
+            if (res.ok) {
+                setMessages([{
+                    id: "welcome",
+                    text: "Olá! Sou o Fin, seu co-piloto financeiro. 💰 Como posso te ajudar hoje? Pode digitar ou clicar no microfone para falar, ex: 'Gastei R$ 40 no almoço hoje'.",
+                    sender: "fin",
+                    timestamp: new Date()
+                }]);
+            }
+        } catch (err) {
+            console.error("Failed to clear history", err);
+        }
+    };
+
     const toggleListening = () => {
         if (!supportVoice) return
 
         if (isListening) {
-            setIsListening(false)
-            try {
-                recognitionRef.current?.stop()
-            } catch (e) {
-                console.error(e)
-            }
+            stopRecording()
         } else {
-            setIsListening(true)
-            setErrorMsg(null)
-            try {
-                recognitionRef.current?.start()
-            } catch (e) {
-                console.error("Failed to start speech recognition", e)
-                try { recognitionRef.current?.stop() } catch (err) {}
-                setIsListening(false)
-            }
+            startRecording()
         }
     }
 
@@ -378,6 +469,13 @@ export function FinChatDialog({ isOpen, onClose, onRefresh, autoStartVoice }: Fi
                         >
                             <Info className="w-3.5 h-3.5 text-indigo-200" />
                             <span>Atalho de Voz</span>
+                        </button>
+                        <button
+                            onClick={handleClearHistory}
+                            className="p-1.5 hover:bg-white/10 rounded-full transition-colors flex items-center justify-center text-indigo-100 bg-white/5 border border-white/10 rounded-lg shadow-sm"
+                            title="Limpar Histórico"
+                        >
+                            <Trash2 className="w-3.5 h-3.5 text-indigo-200" />
                         </button>
                         <button
                             onClick={() => setIsMuted(prev => !prev)}

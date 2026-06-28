@@ -45,89 +45,126 @@ export function VoiceAssistantWidget({ onRefresh }: VoiceAssistantWidgetProps) {
     const [supportVoice, setSupportVoice] = useState(true)
     const [typedMessage, setTypedMessage] = useState("")
     const [errorMsg, setErrorMsg] = useState<string | null>(null)
-    const recognitionRef = useRef<any>(null)
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+    const audioChunksRef = useRef<Blob[]>([])
+    const streamRef = useRef<MediaStream | null>(null)
 
-    // File Import State
-    const [file, setFile] = useState<File | null>(null)
-    const [isDragActive, setIsDragActive] = useState(false)
-    const [importStatus, setImportStatus] = useState<"idle" | "selected" | "loading" | "success" | "error">("idle")
-    const [importMessage, setImportMessage] = useState("")
-    const [importedCount, setImportedCount] = useState(0)
-    const [importedList, setImportedList] = useState<string[]>([])
-    const fileInputRef = useRef<HTMLInputElement>(null)
-
-    // Speech Recognition setup
+    // Check MediaRecorder support on mount
     useEffect(() => {
-        const SpeechRecognition =
-            (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-        if (!SpeechRecognition) {
+        if (!navigator.mediaDevices || !window.MediaRecorder) {
             setSupportVoice(false)
-            return
         }
-
-        const recognition = new SpeechRecognition()
-        recognition.continuous = false
-        recognition.interimResults = false
-        recognition.lang = "pt-BR"
-
-        recognition.onstart = () => {
-            setIsListening(true)
-            setTranscript("")
-            setReply(null)
-            setErrorMsg(null)
-        }
-
-        recognition.onresult = (event: any) => {
-            const currentResult = event.resultIndex
-            const speechText = event.results[currentResult][0].transcript
-            setTranscript(speechText)
-            setIsListening(false) // Force update UI
-            processVoiceMessage(speechText)
-        }
-
-        recognition.onerror = (event: any) => {
-            console.error("Speech recognition error", event)
-            setIsListening(false)
-            if (event.error === "not-allowed") {
-                setErrorMsg("Permissão de microfone negada. Verifique as configurações do seu navegador.")
-            } else {
-                setErrorMsg("Não consegui ouvir. Tente falar novamente.")
-            }
-        }
-
-        recognition.onend = () => {
-            setIsListening(false)
-        }
-
-        recognitionRef.current = recognition
     }, [])
 
-    // Voice/Chat Logic
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+            streamRef.current = stream
+            
+            const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
+            mediaRecorderRef.current = mediaRecorder
+            audioChunksRef.current = []
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    audioChunksRef.current.push(event.data)
+                }
+            }
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+                audioChunksRef.current = []
+                
+                // Stop all tracks to release microphone
+                if (streamRef.current) {
+                    streamRef.current.getTracks().forEach(track => track.stop())
+                    streamRef.current = null
+                }
+                
+                setIsListening(false)
+                await processAudioToServer(audioBlob)
+            }
+
+            mediaRecorder.start()
+            setIsListening(true)
+            setErrorMsg(null)
+            setTranscript("")
+            setReply(null)
+            
+        } catch (error) {
+            console.error("Microphone access error:", error)
+            setErrorMsg("Permissão de microfone negada ou indisponível.")
+            setIsListening(false)
+        }
+    }
+
+    const stopRecording = () => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+            mediaRecorderRef.current.stop()
+        } else {
+            setIsListening(false)
+        }
+    }
+
     const toggleListening = () => {
         if (!supportVoice) return
 
         if (isListening) {
-            setIsListening(false)
-            try {
-                recognitionRef.current?.stop()
-            } catch (e) {
-                console.error(e)
-            }
+            stopRecording()
         } else {
-            setIsListening(true)
-            setErrorMsg(null)
-            setTranscript("")
-            setReply(null)
-            try {
-                recognitionRef.current?.start()
-            } catch (e) {
-                console.error("Failed to start speech recognition", e)
-                try { recognitionRef.current?.stop() } catch (err) {}
-                setIsListening(false)
-            }
+            startRecording()
         }
     }
 
+    const processAudioToServer = async (audioBlob: Blob) => {
+        setIsProcessing(true)
+        setReply(null)
+        setErrorMsg(null)
+
+        try {
+            const formData = new FormData()
+            formData.append("audio", audioBlob, "audio.webm")
+
+            const response = await fetch("/api/voice/transcribe", {
+                method: "POST",
+                body: formData,
+            })
+
+            const data = await response.json()
+
+            if (!response.ok) {
+                // Handling 202 Async Queue
+                if (response.status === 202) {
+                    setReply("Serviços de IA instáveis no momento. O áudio foi enfileirado e sua transação será processada em breve.")
+                } 
+                // Handling 207 Partial Degradation (Transcription OK, Extraction failed)
+                else if (response.status === 207) {
+                    setTranscript(data.rawText || "")
+                    setReply(`Transcrição realizada, mas falha na extração dos dados: ${data.error}`)
+                } else {
+                    throw new Error(data.error || "Failed to process audio")
+                }
+                return
+            }
+
+            // Success (201)
+            setTranscript(data.rawText || "")
+            setReply(`Transação "${data.transaction.description}" de R$${data.transaction.amount} (${data.transaction.tag}) registrada com sucesso!`)
+            
+            if (onRefresh) {
+                await onRefresh()
+            }
+        } catch (error) {
+            console.error("Error processing audio message:", error)
+            setErrorMsg("Opa! Tive uma falha ao enviar o áudio. Tente novamente.")
+        } finally {
+            setIsProcessing(false)
+        }
+    }
+
+    // Process text messages using the old chat endpoint or you could route to the new one
+    // if the new one accepts text, but since we didn't implement text in /api/voice/transcribe,
+    // we'll keep the text going to /api/agent/chat.
     const processVoiceMessage = async (messageText: string) => {
         if (!messageText.trim()) return
 

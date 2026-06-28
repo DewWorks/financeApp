@@ -43,6 +43,10 @@ export class ChatSessionService {
 
     /**
      * Get the full chat history for a user (for Gemini startChat history).
+     * Gemini strictly requires:
+     * 1. The first message must have role "user".
+     * 2. Roles must strictly alternate (user -> model -> user -> model).
+     * 3. The history must end with a "model" message before calling sendMessage (which sends a user message).
      */
     static async getHistory(userId: string): Promise<ChatMessage[]> {
         try {
@@ -54,7 +58,25 @@ export class ChatSessionService {
                 { projection: { messages: 1 } }
             );
 
-            return (session?.messages as ChatMessage[]) || [];
+            const rawHistory = (session?.messages as ChatMessage[]) || [];
+            
+            // Normalize history for Gemini
+            const validHistory: ChatMessage[] = [];
+            let expectedRole: "user" | "model" = "user";
+
+            for (const msg of rawHistory) {
+                if (msg.role === expectedRole) {
+                    validHistory.push(msg);
+                    expectedRole = expectedRole === "user" ? "model" : "user";
+                }
+            }
+            
+            // The history passed to startChat MUST end with 'model' so the next sendMessage ('user') maintains alternating pattern.
+            if (validHistory.length > 0 && validHistory[validHistory.length - 1].role === "user") {
+                validHistory.pop();
+            }
+
+            return validHistory;
         } catch (error) {
             console.error("[ChatSessionService] Failed to get history:", error);
             return [];
