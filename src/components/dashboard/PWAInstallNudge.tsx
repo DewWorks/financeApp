@@ -67,40 +67,51 @@ export function PWAInstallNudge() {
         localStorage.setItem("pwa-nudge-dismissed", "true");
     };
 
-    if (!isInstallable || dismissed) return null;
+    if (!isInstallable) return null;
+
+    if (dismissed) {
+        return (
+            <button
+                onClick={() => setDismissed(false)}
+                className="fixed top-20 right-4 z-40 bg-zinc-900 border border-zinc-800 text-white rounded-full p-2 shadow-lg flex items-center justify-center opacity-60 hover:opacity-100 transition-opacity"
+                title="Instalar App"
+            >
+                <Download className="w-4 h-4" />
+            </button>
+        );
+    }
 
     return (
         <>
-            <div className="fixed bottom-20 left-4 right-4 md:left-auto md:right-8 md:bottom-8 z-40">
-                <div className="bg-white dark:bg-zinc-900 border border-blue-100 dark:border-blue-900/50 shadow-2xl rounded-2xl p-4 md:p-5 flex flex-col md:flex-row items-center gap-4 max-w-md w-full animate-in slide-in-from-bottom-5 fade-in duration-300">
-                    <button 
-                        onClick={handleDismiss}
-                        className="absolute top-2 right-2 p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 rounded-full transition-colors"
-                        aria-label="Fechar"
-                    >
-                        <X className="w-4 h-4" />
-                    </button>
-                    
-                    <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center shrink-0">
-                        <Download className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    
-                    <div className="flex-1 text-center md:text-left">
-                        <h4 className="font-semibold text-zinc-900 dark:text-zinc-100 mb-1">
-                            Instale o financePro
-                        </h4>
-                        <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-snug">
-                            Tenha acesso mais rápido e receba notificações importantes diretamente no seu celular.
-                        </p>
-                    </div>
-
-                    <Button 
-                        onClick={handleInstallClick}
-                        className="w-full md:w-auto shrink-0 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-600/20"
-                    >
-                        Instalar Agora
-                    </Button>
+            <div className="fixed top-20 left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-4 z-50 bg-zinc-900 border border-zinc-700 shadow-2xl rounded-2xl p-2 pr-1 flex flex-row items-center gap-3 w-[92%] max-w-sm animate-in slide-in-from-top-5 fade-in duration-300">
+                <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shrink-0 ml-1">
+                    <Download className="w-5 h-5 text-white" />
                 </div>
+                
+                <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-white text-[13px] leading-tight truncate">
+                        financePro App
+                    </h4>
+                    <p className="text-[11px] text-zinc-400 leading-tight truncate">
+                        Acesso rápido e notificações
+                    </p>
+                </div>
+
+                <Button 
+                    size="sm"
+                    onClick={handleInstallClick}
+                    className="h-8 px-4 text-xs bg-white hover:bg-zinc-200 text-zinc-900 rounded-full font-bold shrink-0"
+                >
+                    Instalar
+                </Button>
+
+                <button 
+                    onClick={handleDismiss}
+                    className="p-2 text-zinc-400 hover:text-white transition-colors shrink-0 flex items-center justify-center"
+                    aria-label="Fechar"
+                >
+                    <X className="w-4 h-4" />
+                </button>
             </div>
 
             {showIOSPrompt && (
