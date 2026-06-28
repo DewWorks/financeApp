@@ -8,7 +8,7 @@
  * API: OpenAI-compatible
  */
 
-import OpenAI from 'openai';
+import OpenAI, { toFile } from 'openai';
 import { IInferenceProvider, TranscriptionResult, ExtractionResult } from '../types';
 
 export class GroqProvider implements IInferenceProvider {
@@ -38,9 +38,9 @@ export class GroqProvider implements IInferenceProvider {
     async transcribe(audioBuffer: Buffer, mimeType: string): Promise<TranscriptionResult> {
         const start = Date.now();
 
-        // Converte Buffer para File-like object para a API OpenAI
+        // Use toFile utility from openai SDK for Node.js compatibility
         const extension = this.getExtensionFromMime(mimeType);
-        const file = new File([audioBuffer], `audio.${extension}`, { type: mimeType });
+        const file = await toFile(audioBuffer, `audio.${extension}`, { type: mimeType });
 
         const response = await this.client.audio.transcriptions.create({
             file,

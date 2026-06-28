@@ -11,10 +11,11 @@
  * Fluxo:
  *   Audio → Provider[0].whisper → Provider[0].llm → JSON
  *              ↓ (falha)            ↓ (falha)
- *           Provider[1].whisper → Provider[1].llm → JSON
  *              ↓ (falha)            ↓ (falha)
  *           (degraded response)  Provider[2].llm → JSON
  */
+
+import { SystemLogger } from '@/lib/SystemLogger';
 
 import {
     IInferenceProvider,
@@ -38,8 +39,8 @@ function initializeProviders(): IInferenceProvider[] {
         try {
             const { GroqProvider } = require('./providers/GroqProvider');
             providers.push(new GroqProvider());
-        } catch (error) {
-            console.warn('[InferenceGateway] Falha ao inicializar GroqProvider:', error);
+        } catch (error: any) {
+            SystemLogger.warn('[InferenceGateway] Falha ao inicializar GroqProvider', { error: error.message });
         }
     }
 
@@ -48,8 +49,8 @@ function initializeProviders(): IInferenceProvider[] {
         try {
             const { CloudflareProvider } = require('./providers/CloudflareProvider');
             providers.push(new CloudflareProvider());
-        } catch (error) {
-            console.warn('[InferenceGateway] Falha ao inicializar CloudflareProvider:', error);
+        } catch (error: any) {
+            SystemLogger.warn('[InferenceGateway] Falha ao inicializar CloudflareProvider', { error: error.message });
         }
     }
 
@@ -58,13 +59,13 @@ function initializeProviders(): IInferenceProvider[] {
         try {
             const { CerebrasProvider } = require('./providers/CerebrasProvider');
             providers.push(new CerebrasProvider());
-        } catch (error) {
-            console.warn('[InferenceGateway] Falha ao inicializar CerebrasProvider:', error);
+        } catch (error: any) {
+            SystemLogger.warn('[InferenceGateway] Falha ao inicializar CerebrasProvider', { error: error.message });
         }
     }
 
     if (providers.length === 0) {
-        console.error('[InferenceGateway] NENHUM provider de IA configurado! Verifique as variáveis de ambiente.');
+        SystemLogger.error('[InferenceGateway] NENHUM provider de IA configurado! Verifique as variáveis de ambiente.');
     }
 
     // Ordena por prioridade (menor = mais prioritário)
@@ -146,9 +147,8 @@ export class InferenceGateway {
                 return result;
 
             } catch (error: any) {
-                const errMsg = error.message || String(error);
-                console.error(`[InferenceGateway] Falha no ${provider.name}:whisper — ${errMsg}`);
-                errors.push(`${provider.name}: ${errMsg}`);
+                SystemLogger.warn(`[InferenceGateway] Falha no ${provider.name}:whisper`, { error: error.message });
+                errors.push(`${provider.name}: ${error.message}`);
                 continue;
             }
         }
@@ -207,9 +207,8 @@ export class InferenceGateway {
                 return result;
 
             } catch (error: any) {
-                const errMsg = error.message || String(error);
-                console.error(`[InferenceGateway] Falha no ${provider.name}:llm — ${errMsg}`);
-                errors.push(`${provider.name}: ${errMsg}`);
+                SystemLogger.warn(`[InferenceGateway] Falha no ${provider.name}:llm`, { error: error.message });
+                errors.push(`${provider.name}: ${error.message}`);
                 continue;
             }
         }

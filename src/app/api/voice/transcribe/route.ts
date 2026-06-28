@@ -29,6 +29,8 @@ import {
     VoiceTranscribeErrorResponse,
 } from "@/services/ai/types";
 
+import { SystemLogger } from "@/lib/SystemLogger";
+
 // Timeout máximo para esta rota serverless (Vercel Pro)
 export const maxDuration = 25;
 
@@ -140,7 +142,7 @@ export async function POST(request: Request) {
         } catch (pipelineError: any) {
             // Degradação Nível 2: Whisper OK mas LLM falhou
             if (rawText && pipelineError.message?.includes('LLM')) {
-                console.warn(`[VoiceTranscribe] Degradação Nível 2 — texto transcrito mas extração falhou`);
+                SystemLogger.warn(`[VoiceTranscribe] Degradação Nível 2 — texto transcrito mas extração falhou: ${pipelineError.message}`);
 
                 return NextResponse.json({
                     success: false,
@@ -151,7 +153,7 @@ export async function POST(request: Request) {
             }
 
             // Degradação Nível 3: Tudo falhou — enfileira para processamento assíncrono
-            console.error(`[VoiceTranscribe] Degradação Nível 3 — enfileirando para processamento assíncrono`);
+            SystemLogger.error(`[VoiceTranscribe] Degradação Nível 3 — enfileirando para processamento assíncrono`, { error: pipelineError.message, stack: pipelineError.stack });
 
             try {
                 const jobId = await queueForAsyncProcessing(userId, audioBuffer, mimeType);
@@ -162,8 +164,8 @@ export async function POST(request: Request) {
                     jobId,
                     needsManualReview: false,
                 } as VoiceTranscribeErrorResponse, { status: 202 });
-            } catch (queueError) {
-                console.error(`[VoiceTranscribe] Falha ao enfileirar:`, queueError);
+            } catch (queueError: any) {
+                SystemLogger.error(`[VoiceTranscribe] Falha ao enfileirar job assíncrono`, { error: queueError.message });
 
                 return NextResponse.json({
                     success: false,
@@ -173,7 +175,7 @@ export async function POST(request: Request) {
         }
 
     } catch (error: any) {
-        console.error("[VoiceTranscribe] Erro inesperado:", error);
+        SystemLogger.error("[VoiceTranscribe] Erro inesperado", { error: error.message, stack: error.stack });
         return NextResponse.json(
             { success: false, error: "Erro interno do servidor" },
             { status: 500 }
