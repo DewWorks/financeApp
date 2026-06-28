@@ -103,6 +103,18 @@ export async function POST(request: Request) {
             const result = await InferenceGateway.processAudioToTransaction(audioBuffer, mimeType);
             rawText = result.rawText;
 
+            // Filtro de Qualidade / Ruído (Evita salvar ruídos do microfone com valor R$ 0,00)
+            if (result.extraction.amount <= 0 || rawText.trim().length <= 2) {
+                SystemLogger.warn(`[VoiceTranscribe] Áudio descartado (ruído ou sem valor financeiro). Texto original: "${rawText}"`);
+                
+                return NextResponse.json({
+                    success: false,
+                    error: "Não consegui identificar um valor financeiro válido. Por favor, repita (ex: 'Gastei 20 reais na padaria').",
+                    rawText,
+                    needsManualReview: false,
+                } as VoiceTranscribeErrorResponse, { status: 400 });
+            }
+
             // 6. Resolver datas relativas (TODAY, YESTERDAY, etc.)
             const resolvedDate = resolveRelativeDate(result.extraction.date);
 
